@@ -1,30 +1,30 @@
-HELP.md
-.gradle
-build/
-!gradle/wrapper/gradle-wrapper.jar
-!**/src/main/**/build/
-!**/src/test/**/build/
+### ビルド成果物系 ###
+/bin/
+/build/
+/.gradle/
+/target/
 
-### STS ###
-# .apt_generated ← 自動生成されるけど一応無視
-# ↓↓↓ これらを **コメントアウト or 削除**
+### Gradle Wrapper は含める ###
+!gradle/wrapper/gradle-wrapper.jar
+
+### Eclipse / STS ###
+# 以下はGitで管理したいから除外しない
 # .classpath
 # .project
-# .settings
-# .sts4-cache
-bin/
+# .settings/
 
-!**/src/main/**/bin/
-!**/src/test/**/bin/
+.sts4-cache/
+.apt_generated/
+.factorypath/
+.springBeans/
 
-### IntelliJ IDEA ###
-.idea
+### IDEごとの不要ファイル ###
+.idea/
 *.iws
 *.iml
 *.ipr
-out/
-!**/src/main/**/out/
-!**/src/test/**/out/
+
+.vscode/
 
 ### NetBeans ###
 /nbproject/private/
@@ -32,6 +32,3 @@ out/
 /dist/
 /nbdist/
 /.nb-gradle/
-
-### VS Code ###
-.vscode/
