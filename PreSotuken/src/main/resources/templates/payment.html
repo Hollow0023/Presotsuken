@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+	<meta charset="UTF-8">
+	<title>会計詳細</title>
+	<style>
+		body {
+			display: flex;
+			font-family: sans-serif;
+			padding: 20px;
+		}
+
+		.payment-summary {
+			width: 25%;
+			margin-right: 20px;
+			border: 1px solid #ccc;
+			padding: 16px;
+			border-radius: 8px;
+		}
+
+		.payment-summary h3 {
+			margin-top: 0;
+		}
+
+		.payment-row {
+			margin-bottom: 12px;
+		}
+
+		.payment-row label {
+			font-weight: bold;
+		}
+
+		.detail-button {
+			padding: 4px 8px;
+			cursor: pointer;
+		}
+
+		.payment-details {
+			flex: 1;
+			border: 1px solid #ccc;
+			padding: 16px;
+			border-radius: 8px;
+		}
+
+		.modal {
+			display: none;
+			position: fixed;
+			z-index: 20;
+			left: 0;
+			top: 0;
+			width: 100%;
+			height: 100%;
+			background: rgba(0, 0, 0, 0.5);
+		}
+
+		.modal-content {
+			background: white;
+			padding: 20px;
+			margin: 10% auto;
+			width: 400px;
+			border-radius: 8px;
+		}
+
+		.close {
+			float: right;
+			cursor: pointer;
+			font-weight: bold;
+		}
+	</style>
+</head>
+
+<body>
+
+	<!-- Hidden for JS -->
+	<input type="hidden" id="paymentId" th:value="${payment.paymentId}" />
+
+	<!-- 会計サマリー -->
+	<div class="payment-summary">
+		<h3>会計情報</h3>
+		<div class="payment-row"><label>人数:</label><span th:text="${visit.numberOfPeople} + '名'"></span></div>
+		<div class="payment-row"><label>小計:</label><span id="subtotal" th:text="${subtotal} + '円'">0円</spanid></div>
+		<div class="payment-row"><label>値引/割引:</label><span id="discount">0円</span><button class="detail-button"
+				onclick="openDiscountModal()">変更</button></div>
+		<div class="payment-row"><label>合計:</label><span id="total">0円</span></div>
+		<div class="payment-row"><label>お預かり:</label><span id="received">0円</span><button class="detail-button"
+				onclick="openReceivedModal()">変更</button></div>
+				<div class="payment-row">
+	<label>会計種別:</label>
+	<select id="paymentTypeSelect">
+		<option value="">選択してください</option>
+		<option th:each="type : ${paymentTypeList}"
+				th:value="${type.typeId}"
+				th:text="${type.typeName}">
+		</option>
+	</select>
+</div>
+		<div class="payment-row"><label>お釣り:</label><span id="change">0円</span></div>
+		<button class="detail-button" onclick="openDetailModal()">金額詳細</button>
+		<button class="detail-button" onclick="finalizePayment()">会計確定</button>
+		<button class="detail-button" onclick="goBackToSeats()">キャンセル</button>
+	</div>
+
+	<div class="payment-details">
+		<h3>備考や操作スペース</h3>
+		<p>ここにボタン配置や印刷など追加可能</p>
+	</div>
+
+	<!-- Modals -->
+	<div id="discountModal" class="modal">
+		<div class="modal-content">
+			<span class="close" onclick="closeDiscountModal()">&times;</span>
+			<h3>割引を入力</h3>
+			<label>割引金額:</label><input type="number" id="discountInput" min="0" placeholder="割引金額を入力"><br>
+			<label>割引理由:</label><input type="text" id="discountReasonInput" placeholder="割引理由を入力"><br>
+			<button onclick="applyDiscount()">保存</button>
+		</div>
+	</div>
+	<div id="receivedModal" class="modal">
+		<div class="modal-content">
+			<span class="close" onclick="closeReceivedModal()">&times;</span>
+			<h3>お預かり金額を入力</h3>
+			<input type="number" id="receivedInput" min="0" placeholder="金額を入力"><br>
+			<button onclick="applyReceived()">保存</button>
+		</div>
+	</div>
+	<!-- 金額詳細モーダル -->
+	<div id="detailModal" class="modal">
+		<div class="modal-content">
+			<span class="close" onclick="closeDetailModal()">&times;</span>
+			<h3>金額詳細</h3>
+			<table border="1" style="width:100%">
+				　<thead>
+					<tr>
+						<th>商品</th>
+						<th>単価</th>
+						<th>数量</th>
+						<th>税率</th>
+						<th>小計</th>
+					</tr>
+				</thead>
+				<tbody id="detailBody">
+					<tr th:each="detail : ${details}">
+						<td th:text="${detail.menu.menuName}"></td>
+						<td th:text="${#numbers.formatDecimal(detail.menu.price, 0, 0)} + '円'"></td>
+						<td th:text="${detail.quantity}"></td>
+						<td th:text="${#numbers.formatDecimal(detail.taxRate.rate * 100, 0, 0)} + '%'"></td>
+						<td
+							th:text="${#numbers.formatDecimal(detail.menu.price * detail.quantity + detail.menu.price * detail.quantity * detail.taxRate.rate, 0, 0)} + '円'">
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+	</div>
+
+	<script>
+		let subtotal = 0, discount = 0, discountReason = "", received = 0;
+		function calculateTotals() {
+			const total = Math.floor(subtotal - discount);
+			const change = received - total;
+			document.getElementById("total").innerText = total + '円';
+			document.getElementById("change").innerText = change + '円';
+		}
+		function applyDiscount() {
+			discount = parseFloat(document.getElementById("discountInput").value) || 0;
+			discountReason = document.getElementById("discountReasonInput").value;
+			document.getElementById("discount").innerText = discount + '円';
+			closeDiscountModal(); calculateTotals();
+		}
+		function applyReceived() {
+			received = parseFloat(document.getElementById("receivedInput").value) || 0;
+			document.getElementById("received").innerText = received + '円';
+			closeReceivedModal(); calculateTotals();
+		}
+		function finalizePayment() {
+			const paymentId = document.getElementById("paymentId").value;
+			const paymentTypeId = document.getElementById("paymentTypeSelect").value;
+
+			fetch("/payments/finalize", {
+				method: "POST", headers: {'Content-Type': 'application/json'},
+				body: JSON.stringify({
+					paymentId: paymentId, subtotal: subtotal, discount: discount,
+					discountReason: discountReason, total: subtotal - discount,
+					paymentTime: new Date().toISOString(),
+					paymentTypeId: paymentTypeId
+				})
+			}).then(res => {
+				if (res.ok) {
+					alert("会計が確定されました。");
+					window.location.href = '/seats';
+				} else {
+					alert("確定に失敗しました。");
+				}
+			});
+		}
+		function goBackToSeats() {
+			window.location.href = '/seats';
+		}
+		function openDiscountModal() {document.getElementById('discountModal').style.display = 'block';}
+		function closeDiscountModal() {document.getElementById('discountModal').style.display = 'none';}
+		function openReceivedModal() {document.getElementById('receivedModal').style.display = 'block';}
+		function closeReceivedModal() {document.getElementById('receivedModal').style.display = 'none';}
+		function openDetailModal() {document.getElementById('detailModal').style.display = 'block';}
+		function closeDetailModal() {document.getElementById('detailModal').style.display = 'none';}
+		window.onclick = e => ['discountModal', 'receivedModal', 'detailModal'].forEach(id => {if (e.target === document.getElementById(id)) document.getElementById(id).style.display = 'none';});
+		window.onload = () => {
+		    // 初期subtotalはHTMLから取得（サーバーで計算されたもの）
+		    subtotal = parseFloat(document.getElementById("subtotal").innerText.replace('円', '')) || 0;
+		
+		    // discount（割引）は初期0として計算開始
+		    discount = 0;
+		
+		    calculateTotals();
+		};
+
+	</script>
+
+</body>
+
+</html>

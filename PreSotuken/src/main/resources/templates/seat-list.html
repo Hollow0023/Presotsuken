@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>座席一覧</title>
+    <style>
+        .group {
+            margin-bottom: 24px;
+        }
+
+        .seat {
+            display: inline-block;
+            width: 100px;
+            height: 100px;
+            border: 1px solid #aaa;
+            margin: 4px;
+            text-align: center;
+            padding: 8px;
+            cursor: pointer;
+            vertical-align: top;
+        }
+
+        .occupied {
+            background-color: #2196f3;
+            color: white;
+        }
+
+        .elapsed-yellow {
+            background-color: #ffeb3b !important;
+            color: black;
+        }
+
+        .elapsed-red {
+            background-color: #f44336 !important;
+            color: white;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 10;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        .modal-content {
+            background: white;
+            margin: 10% auto;
+            padding: 20px;
+            width: 300px;
+            border-radius: 8px;
+        }
+
+        .close {
+            float: right;
+            cursor: pointer;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+<h2>座席一覧</h2>
+<div style="text-align: right; margin-bottom: 16px;">
+        <form th:action="@{/logout}" method="get">
+            <button type="submit">ログアウト</button>
+        </form>
+</div>
+
+<div th:each="entry : ${groupedSeats}" class="group">
+    <h3 th:text="${entry.key.seatGroupName}">グループ名</h3>
+
+    <div th:each="seat : ${entry.value}"
+         class="seat"
+         th:attr="data-seat-id=${seat.seatId}, data-seat-name=${seat.seatName}"
+         onclick="openSeat(this)">
+
+        <div th:text="${seat.seatName}"></div>
+        <div class="seat-info" th:attr="id='info-' + ${seat.seatId}"></div>
+    </div>
+</div>
+
+<!-- 入店用モーダル -->
+<div id="seatModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <h3 id="modalSeatName">テーブル名</h3>
+        <form th:action="@{/visits}" method="post">
+            <input type="hidden" name="seat.seatId" id="modalSeatId">
+            <input type="hidden" name="store.storeId" value="1" />
+            <label>人数: <input type="number" name="numberOfPeople" min="1" required /></label><br><br>
+            <button type="submit">入店</button>
+        </form>
+    </div>
+</div>
+
+<!-- 入店中の座席をクリックしたときのモーダル -->
+<div id="activeModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <h3 id="activeModalSeatName">テーブル名</h3>
+        <button id="paymentCheckBtn">会計確認</button>
+        <button onclick="closeModal()">キャンセル</button>
+        <button id="deleteVisitBtn">入店情報を削除</button>
+    </div>
+</div>
+
+
+<script>
+    let activeSeatId = null; // ← グローバルに定義
+
+    function openSeat(elem) {
+        const seatId = elem.getAttribute('data-seat-id');
+        const seatName = elem.getAttribute('data-seat-name');
+        activeSeatId = seatId;
+
+        fetch(`/api/visit-info?seatId=${seatId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.visiting) {
+                    document.getElementById('activeModal').setAttribute("data-seat-id", seatId);
+                    document.getElementById('activeModalSeatName').innerText = seatName;
+                    document.getElementById('activeModal').style.display = 'block';
+
+                    document.getElementById('paymentCheckBtn').onclick = () => {
+                        window.location.href = `/payments?visitId=${data.visitId}`;
+                    };
+                } else {
+                    document.getElementById("modalSeatId").value = seatId;
+                    document.getElementById("modalSeatName").innerText = seatName;
+                    document.getElementById("seatModal").style.display = "block";
+                }
+            });
+
+        document.getElementById('deleteVisitBtn').onclick = () => {
+            if (confirm("この入店情報を削除しますか？")) {
+                fetch(`/api/delete-visit?seatId=${activeSeatId}`, { method: 'DELETE' })
+                    .then(res => {
+                        if (res.ok) {
+                            closeModal();
+                            resetSeatTile(activeSeatId);
+                        } else {
+                            alert("削除に失敗しました");
+                        }
+                    });
+            }
+        };
+    }
+
+    function closeModal() {
+        document.getElementById("seatModal").style.display = "none";
+        document.getElementById("activeModal").style.display = "none";
+    }
+
+    window.onclick = function (event) {
+        const seatModal = document.getElementById("seatModal");
+        const activeModal = document.getElementById("activeModal");
+        if (event.target === seatModal || event.target === activeModal) {
+            closeModal();
+        }
+    }
+
+    function fetchVisitInfo() {
+        document.querySelectorAll('.seat').forEach(seat => {
+            const seatId = seat.getAttribute('data-seat-id');
+            fetch(`/api/visit-info?seatId=${seatId}`)
+                .then(response => response.json())
+                .then(data => {
+                    updateSeatTile(seatId, data);
+                });
+        });
+    }
+
+    function updateSeatTile(seatId, data) {
+        const seat = document.querySelector(`.seat[data-seat-id="${seatId}"]`);
+        const infoDiv = document.getElementById(`info-${seatId}`);
+        seat.classList.remove('elapsed-yellow', 'elapsed-red', 'occupied');
+
+        if (data.visiting) {
+            seat.classList.add('occupied');
+            const elapsedMinutes = Math.floor(data.elapsedMinutes);
+            if (elapsedMinutes >= 60) {
+                seat.classList.add('elapsed-red');
+            } else if (elapsedMinutes >= 30) {
+                seat.classList.add('elapsed-yellow');
+            }
+            infoDiv.innerHTML = `${data.numberOfPeople}名<br>注文受付中<br>${elapsedMinutes}分経過`;
+        } else {
+            infoDiv.innerHTML = '';
+        }
+    }
+
+    function resetSeatTile(seatId) {
+        const seat = document.querySelector(`.seat[data-seat-id="${seatId}"]`);
+        const infoDiv = document.getElementById(`info-${seatId}`);
+        seat.classList.remove('occupied', 'elapsed-yellow', 'elapsed-red');
+        infoDiv.innerHTML = '';
+    }
+
+    setInterval(fetchVisitInfo, 60000);
+    window.onload = fetchVisitInfo;
+</script>
+</body>
+</html>

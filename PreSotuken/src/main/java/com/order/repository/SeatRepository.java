@@ -1,0 +1,13 @@
+package com.order.repository;
+
+import java.util.List;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import com.order.entity.Seat;
+
+@Repository
+public interface SeatRepository extends JpaRepository<Seat, Integer> {
+	List<Seat> findByStore_StoreIdAndSeatGroup_SeatGroupId(Integer storeId, Integer seatGroupId);
+}
