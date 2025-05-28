@@ -6,14 +6,14 @@ build/
 !**/src/test/**/build/
 
 ### STS ###
-.apt_generated
-.classpath
-.factorypath
-.project
-.settings
-.springBeans
-.sts4-cache
+# .apt_generated ← 自動生成されるけど一応無視
+# ↓↓↓ これらを **コメントアウト or 削除**
+# .classpath
+# .project
+# .settings
+# .sts4-cache
 bin/
+
 !**/src/main/**/bin/
 !**/src/test/**/bin/
 
