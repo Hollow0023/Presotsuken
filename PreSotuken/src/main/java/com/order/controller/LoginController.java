@@ -27,7 +27,6 @@ public class LoginController {
         Cookie[] cookies = request.getCookies();
         Integer storeId = null;
         String storeName = null;
-        System.out.println("tes2t3");
 
         if (cookies != null) {
             for (Cookie cookie : cookies) {
