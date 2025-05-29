@@ -24,7 +24,5 @@ public class Terminal {
     @ManyToOne
     @JoinColumn(name = "store_id")
     private Store store;
-
     private String ipAddress;
-    private Boolean isAvailable;
 }

@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.CookieValue;
@@ -31,17 +32,20 @@ public class PaymentController {
     private final PaymentRepository paymentRepository;
     private final PaymentDetailRepository paymentDetailRepository;
     private final PaymentTypeRepository paymentTypeRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @Autowired
     public PaymentController(
             VisitRepository visitRepository,
             PaymentRepository paymentRepository,
             PaymentDetailRepository paymentDetailRepository,
-            PaymentTypeRepository paymentTypeRepository) {
+            PaymentTypeRepository paymentTypeRepository,
+            SimpMessagingTemplate messagingTemplate) {
         this.visitRepository = visitRepository;
         this.paymentRepository = paymentRepository;
         this.paymentDetailRepository = paymentDetailRepository;
         this.paymentTypeRepository = paymentTypeRepository;
+        this.messagingTemplate = messagingTemplate;
     }
 
     @GetMapping("/payments")
@@ -111,6 +115,7 @@ public class PaymentController {
         // ④ Visit 退店時刻を更新
         Visit visit = payment.getVisit();
         visit.setLeaveTime(req.getPaymentTime());
+        messagingTemplate.convertAndSend("/topic/seats/" + visit.getSeat().getSeatId(), "LEAVE");
         visitRepository.save(visit);
 
         // ⑤ 保存

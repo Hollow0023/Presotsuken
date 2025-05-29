@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -27,16 +28,19 @@ public class VisitInfoController {
     private final VisitRepository visitRepository;
     private final PaymentRepository paymentRepository;
     private final PaymentDetailRepository paymentDetailRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
     //コンストラクタ
     public VisitInfoController(
         VisitRepository visitRepository,
         PaymentRepository paymentRepository,
-        PaymentDetailRepository paymentDetailRepository
+        PaymentDetailRepository paymentDetailRepository,
+        SimpMessagingTemplate messagingTemplate
     ) {
         this.visitRepository = visitRepository;
         this.paymentRepository = paymentRepository;
         this.paymentDetailRepository = paymentDetailRepository;
+        this.messagingTemplate = messagingTemplate;
     }
 
     @GetMapping("/visit-info")
@@ -46,7 +50,7 @@ public class VisitInfoController {
 
         if (visit != null) {
             result.put("visiting", true);
-            result.put("visitId", visit.getVisitId());  // ←★コレ追加
+            result.put("visitId", visit.getVisitId());  
             result.put("numberOfPeople", visit.getNumberOfPeople());
 
             LocalDateTime now = LocalDateTime.now();
@@ -75,6 +79,8 @@ public class VisitInfoController {
 
             // Visitの削除
             visitRepository.delete(visit);
+            messagingTemplate.convertAndSend("/topic/seats/" + seatId, "LEAVE");
+
 
             return ResponseEntity.ok().build();
         } else {

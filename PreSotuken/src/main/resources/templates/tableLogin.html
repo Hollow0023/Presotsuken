@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>店舗ログイン</title>
+</head>
+<body>
+<h2>店舗ログイン(座席端末)</h2>
+
+<form th:action="@{/tableLogin}" th:object="${store}" method="post">
+    <label>店舗ID: <input type="number" th:field="*{storeId}" /></label><br>
+    <label>店舗名: <input type="text" th:field="*{storeName}" /></label><br>
+    <button type="submit">ログイン</button>
+</form>
+
+<div th:if="${error}" th:text="${error}" style="color:red;"></div>
+</body>
+</html>
