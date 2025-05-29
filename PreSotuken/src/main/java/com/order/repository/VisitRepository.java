@@ -12,6 +12,8 @@ public interface VisitRepository extends JpaRepository<Visit, Integer> {
 	List<Visit> findByStore_StoreId(Integer storeId);
 	Visit findFirstBySeat_SeatIdAndLeaveTimeIsNullOrderByVisitTimeDesc(int seatId);
 	List<Visit> findByStore_StoreIdAndLeaveTimeIsNull(Integer storeId);
+	Visit findTopByStore_StoreIdAndSeat_SeatIdOrderByVisitTimeDesc(Integer storeId, Integer seatId);
+
 
 
 

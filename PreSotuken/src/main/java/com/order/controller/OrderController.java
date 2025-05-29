@@ -1,6 +1,7 @@
 package com.order.controller;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -11,18 +12,22 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
 
+import com.order.dto.OrderHistoryDto;
 import com.order.entity.Menu;
 import com.order.entity.Payment;
 import com.order.entity.PaymentDetail;
 import com.order.entity.TaxRate;
 import com.order.entity.User;
+import com.order.entity.Visit;
 import com.order.repository.MenuGroupRepository;
 import com.order.repository.MenuRepository;
 import com.order.repository.PaymentDetailRepository;
 import com.order.repository.PaymentRepository;
 import com.order.repository.TaxRateRepository;
 import com.order.repository.UserRepository;
+import com.order.repository.VisitRepository;
 
 @Controller
 @RequestMapping("/order")
@@ -33,6 +38,7 @@ public class OrderController {
     private final PaymentRepository paymentRepository;
     private final PaymentDetailRepository paymentDetailRepository;
     private final TaxRateRepository taxRateRepository;
+    private final VisitRepository visitRepository;
     private final UserRepository userRepository;
 
     @Autowired
@@ -41,8 +47,11 @@ public class OrderController {
                            PaymentRepository paymentRepository,
                            PaymentDetailRepository paymentDetailRepository,
                            TaxRateRepository taxRateRepository,
-                           UserRepository userRepository) {
-        this.menuGroupRepository = menuGroupRepository;
+                           VisitRepository visitRepository,
+                           UserRepository userRepository) 
+    	{
+    	this.visitRepository = visitRepository;
+    	this.menuGroupRepository = menuGroupRepository;
         this.menuRepository = menuRepository;
         this.paymentRepository = paymentRepository;
         this.paymentDetailRepository = paymentDetailRepository;
@@ -115,4 +124,28 @@ public class OrderController {
             this.quantity = quantity;
         }
     }
+    
+    @GetMapping("/history")
+    @ResponseBody
+    public List<OrderHistoryDto> getOrderHistory(
+            @CookieValue(name = "storeId") Integer storeId,
+            @CookieValue(name = "seatId") Integer seatId
+    ) {
+        Visit currentVisit = visitRepository.findTopByStore_StoreIdAndSeat_SeatIdOrderByVisitTimeDesc(storeId, seatId);
+        if (currentVisit == null) return List.of();
+
+        Payment payment = paymentRepository.findByVisitVisitId(currentVisit.getVisitId());
+        if (payment == null) return List.of();
+
+        List<PaymentDetail> details = paymentDetailRepository.findByPaymentPaymentId(payment.getPaymentId());
+
+        return details.stream().map(detail -> {
+            OrderHistoryDto dto = new OrderHistoryDto();
+            dto.setMenuName(detail.getMenu().getMenuName());
+            dto.setQuantity(detail.getQuantity());
+            dto.setSubtotal(detail.getSubtotal().intValue());
+            return dto;
+        }).collect(Collectors.toList());
+    }
+
 }

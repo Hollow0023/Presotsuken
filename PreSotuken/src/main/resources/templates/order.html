@@ -49,7 +49,7 @@
             margin-top: 8px;
             padding: 5px 10px;
         }
-        #cartModal {
+        #cartModal, #historyModal {
             display: none;
             position: fixed;
             z-index: 20;
@@ -63,13 +63,22 @@
             background: white;
             padding: 20px;
             margin: 10% auto;
-            width: 400px;
+            width: 600px;
             border-radius: 8px;
         }
         .close {
             float: right;
             cursor: pointer;
             font-weight: bold;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
         }
     </style>
     <script th:inline="javascript">
@@ -105,6 +114,8 @@
                 th:data-name="${menu.menuName}">カートに追加</button>
     </div>
 </div>
+<button onclick="openCartModal()">カートを見る</button>
+<button onclick="openHistoryModal()">注文履歴</button>
 
 <div id="cartModal">
     <div class="cart-modal-content">
@@ -115,7 +126,18 @@
     </div>
 </div>
 
-<button onclick="openCartModal()">カートを見る</button>
+<div id="historyModal" class="modal">
+    <div class="cart-modal-content">
+        <span class="close" onclick="closeHistoryModal()">&times;</span>
+        <h3>注文履歴</h3>
+        <table id="historyTable">
+            <thead>
+                <tr><th>商品名</th><th>数量</th><th>小計</th>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
 
 <script>
     const cart = [];
@@ -153,6 +175,25 @@
 
     function closeCartModal() {
         document.getElementById('cartModal').style.display = 'none';
+    }
+
+    function openHistoryModal() {
+        fetch('/order/history')
+            .then(response => response.json())
+            .then(data => {
+                const tbody = document.querySelector('#historyTable tbody');
+                tbody.innerHTML = '';
+                data.forEach(item => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `<td>${item.menuName}</td><td>${item.quantity}</td><td>${item.subtotal}円</td><td>${item.orderedAt || ''}</td>`;
+                    tbody.appendChild(row);
+                });
+                document.getElementById('historyModal').style.display = 'block';
+            });
+    }
+
+    function closeHistoryModal() {
+        document.getElementById('historyModal').style.display = 'none';
     }
 
     function submitOrder() {

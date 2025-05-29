@@ -67,34 +67,34 @@
 			cursor: pointer;
 			font-weight: bold;
 		}
+
+		#errorMessage {
+			color: red;
+			display: none;
+			margin-bottom: 10px;
+		}
 	</style>
 </head>
 
 <body>
 
-	<!-- Hidden for JS -->
 	<input type="hidden" id="paymentId" th:value="${payment.paymentId}" />
 
-	<!-- 会計サマリー -->
 	<div class="payment-summary">
 		<h3>会計情報</h3>
+		<p id="errorMessage"></p>
 		<div class="payment-row"><label>人数:</label><span th:text="${visit.numberOfPeople} + '名'"></span></div>
-		<div class="payment-row"><label>小計:</label><span id="subtotal" th:text="${subtotal} + '円'">0円</spanid></div>
-		<div class="payment-row"><label>値引/割引:</label><span id="discount">0円</span><button class="detail-button"
-				onclick="openDiscountModal()">変更</button></div>
+		<div class="payment-row"><label>小計:</label><span id="subtotal" th:text="${subtotal} + '円'">0円</span></div>
+		<div class="payment-row"><label>値引/割引:</label><span id="discount">0円</span><button class="detail-button" onclick="openDiscountModal()">変更</button></div>
 		<div class="payment-row"><label>合計:</label><span id="total">0円</span></div>
-		<div class="payment-row"><label>お預かり:</label><span id="received">0円</span><button class="detail-button"
-				onclick="openReceivedModal()">変更</button></div>
-				<div class="payment-row">
-	<label>会計種別:</label>
-	<select id="paymentTypeSelect">
-		<option value="">選択してください</option>
-		<option th:each="type : ${paymentTypeList}"
-				th:value="${type.typeId}"
-				th:text="${type.typeName}">
-		</option>
-	</select>
-</div>
+		<div class="payment-row"><label>お預かり:</label><span id="received">0円</span><button class="detail-button" onclick="openReceivedModal()">変更</button></div>
+		<div class="payment-row">
+			<label>会計種別:</label>
+			<select id="paymentTypeSelect">
+				<option value="">選択してください</option>
+				<option th:each="type : ${paymentTypeList}" th:value="${type.typeId}" th:text="${type.typeName}"></option>
+			</select>
+		</div>
 		<div class="payment-row"><label>お釣り:</label><span id="change">0円</span></div>
 		<button class="detail-button" onclick="openDetailModal()">金額詳細</button>
 		<button class="detail-button" onclick="finalizePayment()">会計確定</button>
@@ -106,7 +106,7 @@
 		<p>ここにボタン配置や印刷など追加可能</p>
 	</div>
 
-	<!-- Modals -->
+	<!-- 割引モーダル -->
 	<div id="discountModal" class="modal">
 		<div class="modal-content">
 			<span class="close" onclick="closeDiscountModal()">&times;</span>
@@ -116,6 +116,8 @@
 			<button onclick="applyDiscount()">保存</button>
 		</div>
 	</div>
+
+	<!-- お預かりモーダル -->
 	<div id="receivedModal" class="modal">
 		<div class="modal-content">
 			<span class="close" onclick="closeReceivedModal()">&times;</span>
@@ -124,13 +126,14 @@
 			<button onclick="applyReceived()">保存</button>
 		</div>
 	</div>
+
 	<!-- 金額詳細モーダル -->
 	<div id="detailModal" class="modal">
 		<div class="modal-content">
 			<span class="close" onclick="closeDetailModal()">&times;</span>
 			<h3>金額詳細</h3>
 			<table border="1" style="width:100%">
-				　<thead>
+				<thead>
 					<tr>
 						<th>商品</th>
 						<th>単価</th>
@@ -144,10 +147,8 @@
 						<td th:text="${detail.menu.menuName}"></td>
 						<td th:text="${#numbers.formatDecimal(detail.menu.price, 0, 0)} + '円'"></td>
 						<td th:text="${detail.quantity}"></td>
-						<td th:text="${#numbers.formatDecimal(detail.taxRate.rate * 100, 0, 0)} + '%'"></td>
-						<td
-							th:text="${#numbers.formatDecimal(detail.menu.price * detail.quantity + detail.menu.price * detail.quantity * detail.taxRate.rate, 0, 0)} + '円'">
-						</td>
+						<td th:text="${#numbers.formatDecimal(detail.taxRate.rate * 100, 0, 0)} + '%' "></td>
+						<td th:text="${#numbers.formatDecimal(detail.menu.price * detail.quantity + detail.menu.price * detail.quantity * detail.taxRate.rate, 0, 0)} + '円'"></td>
 					</tr>
 				</tbody>
 			</table>
@@ -176,12 +177,34 @@
 		function finalizePayment() {
 			const paymentId = document.getElementById("paymentId").value;
 			const paymentTypeId = document.getElementById("paymentTypeSelect").value;
+			const total = parseInt(document.getElementById("total").innerText.replace('円', '')) || 0;
+			const change = parseInt(document.getElementById("change").innerText.replace('円', '')) || 0;
+
+			const errorElem = document.getElementById("errorMessage");
+			errorElem.style.display = "none";
+			errorElem.textContent = "";
+
+			if (!paymentTypeId) {
+				errorElem.textContent = "会計種別を選択してください。";
+				errorElem.style.display = "block";
+				return;
+			}
+
+			if (change < 0) {
+				errorElem.textContent = "お釣りがマイナスです。預かり金額が不足しています。";
+				errorElem.style.display = "block";
+				return;
+			}
 
 			fetch("/payments/finalize", {
-				method: "POST", headers: {'Content-Type': 'application/json'},
+				method: "POST",
+				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
-					paymentId: paymentId, subtotal: subtotal, discount: discount,
-					discountReason: discountReason, total: subtotal - discount,
+					paymentId: paymentId,
+					subtotal: subtotal,
+					discount: discount,
+					discountReason: discountReason,
+					total: total,
 					paymentTime: new Date().toISOString(),
 					paymentTypeId: paymentTypeId
 				})
@@ -197,23 +220,18 @@
 		function goBackToSeats() {
 			window.location.href = '/seats';
 		}
-		function openDiscountModal() {document.getElementById('discountModal').style.display = 'block';}
-		function closeDiscountModal() {document.getElementById('discountModal').style.display = 'none';}
-		function openReceivedModal() {document.getElementById('receivedModal').style.display = 'block';}
-		function closeReceivedModal() {document.getElementById('receivedModal').style.display = 'none';}
-		function openDetailModal() {document.getElementById('detailModal').style.display = 'block';}
-		function closeDetailModal() {document.getElementById('detailModal').style.display = 'none';}
-		window.onclick = e => ['discountModal', 'receivedModal', 'detailModal'].forEach(id => {if (e.target === document.getElementById(id)) document.getElementById(id).style.display = 'none';});
+		function openDiscountModal() { document.getElementById('discountModal').style.display = 'block'; }
+		function closeDiscountModal() { document.getElementById('discountModal').style.display = 'none'; }
+		function openReceivedModal() { document.getElementById('receivedModal').style.display = 'block'; }
+		function closeReceivedModal() { document.getElementById('receivedModal').style.display = 'none'; }
+		function openDetailModal() { document.getElementById('detailModal').style.display = 'block'; }
+		function closeDetailModal() { document.getElementById('detailModal').style.display = 'none'; }
+		window.onclick = e => ['discountModal', 'receivedModal', 'detailModal'].forEach(id => { if (e.target === document.getElementById(id)) document.getElementById(id).style.display = 'none'; });
 		window.onload = () => {
-		    // 初期subtotalはHTMLから取得（サーバーで計算されたもの）
-		    subtotal = parseFloat(document.getElementById("subtotal").innerText.replace('円', '')) || 0;
-		
-		    // discount（割引）は初期0として計算開始
-		    discount = 0;
-		
-		    calculateTotals();
+			subtotal = parseFloat(document.getElementById("subtotal").innerText.replace('円', '')) || 0;
+			discount = 0;
+			calculateTotals();
 		};
-
 	</script>
 
 </body>
