@@ -11,10 +11,8 @@
 
     <script th:inline="javascript">
 	    /*<![CDATA[*/
-	    console.log("seatId:", seatId); // 確実に seatId の値が出ているか
-
-	    const seatId = /*[[${seatId}]]*/ null;
-	    const storeId = /*[[${storeId}]]*/ null;
+	    const seatId = [[${seatId}]];
+	    const storeId = [[${storeId}]];
 	    /*]]>*/
 
         const socket = new SockJS('/ws-endpoint');

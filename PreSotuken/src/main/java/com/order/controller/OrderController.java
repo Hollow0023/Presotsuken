@@ -56,6 +56,13 @@ public class OrderController {
                                 Model model) {
         model.addAttribute("seatId", seatId);
         model.addAttribute("storeId", storeId);
+
+        var menuGroups = menuGroupRepository.findByStore_StoreId(storeId);
+        var menus = menuRepository.findByStore_StoreId(storeId);
+
+        model.addAttribute("menuGroups", menuGroups);
+        model.addAttribute("menus", menus);
+
         return "order";
     }
 
