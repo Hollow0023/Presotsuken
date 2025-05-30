@@ -104,10 +104,15 @@ public class VisitController {
     }
 
     @GetMapping("/orderwait")
-    public String orderWaitPage(@CookieValue("storeId") Integer storeId,
+    public String orderWaitPage(@CookieValue(value = "storeId", required = false) Integer storeId,
                                 HttpServletRequest request,
                                 HttpServletResponse response,
                                 Model model) {
+        if (storeId == null) {
+            return "redirect:/tableLogin";  // storeIdがないならログインページへ
+        }
+    	
+    	
     	String ip = request.getRemoteAddr();
     	if ("0:0:0:0:0:0:0:1".equals(ip) || "::1".equals(ip)) {
     	    ip = "127.0.0.1";
@@ -120,7 +125,7 @@ public class VisitController {
         model.addAttribute("seatId", seatId);
         model.addAttribute("storeId", storeId);
 
-        // Cookie に seatId を保存（1時間）
+        // Cookie に seatId を保存
         Cookie seatIdCookie = new Cookie("seatId", String.valueOf(seatId));
         seatIdCookie.setPath("/");
         seatIdCookie.setMaxAge(60 * 60 * 24 * 120);
