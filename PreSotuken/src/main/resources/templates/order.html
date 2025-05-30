@@ -81,12 +81,17 @@
             text-align: left;
             border-bottom: 1px solid #ddd;
         }
-        #historyTable tbody {
+        #historyTable {
+		    width: 100%;
+		    border-collapse: collapse;
+		}
+		#historyTable tbody {
 		    display: block;
 		    max-height: 300px;
 		    overflow-y: auto;
-		}
-		#historyTable thead, #historyTable tbody tr {
+	    }
+
+		#historyTable thead,#historyTable tbody tr {
 		    display: table;
 		    width: 100%;
 		    table-layout: fixed;
@@ -145,8 +150,13 @@
         <h3>注文履歴</h3>
         <table id="historyTable">
             <thead>
-                <tr><th>商品名</th><th>数量</th><th>小計</th>
-            </thead>
+			    <tr>
+			        <th>商品名</th>
+			        <th>数量</th>
+			        <th>小計</th>
+			    </tr>
+			</thead>
+
             <tbody></tbody>
         </table>
         <p id="historyTotal" style="text-align: right; font-weight: bold; margin-top: 10px;"></p>
@@ -204,8 +214,9 @@
                 const subtotal = parseInt(item.subtotal) || 0;
                 total += subtotal;
 
-                const row = document.createElement('tr');
-                row.innerHTML = `<td>${item.menuName}</td><td>${item.quantity}</td><td>${subtotal}円</td><td>${item.orderedAt || ''}</td>`;
+	        const row = document.createElement('tr');
+			row.innerHTML = `<td>${item.menuName}</td><td>${item.quantity}</td><td>${subtotal}円</td>`;
+
                 tbody.appendChild(row);
             });
 
