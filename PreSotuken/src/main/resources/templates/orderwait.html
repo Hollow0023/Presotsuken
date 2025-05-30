@@ -11,8 +11,8 @@
 
     <script th:inline="javascript">
 	    /*<![CDATA[*/
-	    const seatId = [[${seatId}]];
-	    const storeId = [[${storeId}]];
+	    const seatId = /*[[${seatId}]]*/ null;
+	    const storeId = /*[[${storeId}]]*/ null;
 	    /*]]>*/
 
         const socket = new SockJS('/ws-endpoint');

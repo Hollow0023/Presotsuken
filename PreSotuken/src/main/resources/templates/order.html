@@ -62,7 +62,8 @@
         .cart-modal-content {
             background: white;
             padding: 20px;
-            margin: 10% auto;
+            margin: 0 auto;
+            margin-top: 50px;
             width: 600px;
             border-radius: 8px;
         }
@@ -80,11 +81,23 @@
             text-align: left;
             border-bottom: 1px solid #ddd;
         }
+        #historyTable tbody {
+		    display: block;
+		    max-height: 300px;
+		    overflow-y: auto;
+		}
+		#historyTable thead, #historyTable tbody tr {
+		    display: table;
+		    width: 100%;
+		    table-layout: fixed;
+		}
+
     </style>
-    <script th:inline="javascript">
-        const seatId = [[${seatId}]];
-        const storeId = [[${storeId}]];
-    </script>
+<script th:inline="javascript">
+    const seatId = /*[[${seatId}]]*/ null;
+    const storeId = /*[[${storeId}]]*/ null;
+</script>
+
     <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
 </head>
@@ -136,6 +149,7 @@
             </thead>
             <tbody></tbody>
         </table>
+        <p id="historyTotal" style="text-align: right; font-weight: bold; margin-top: 10px;"></p>
     </div>
 </div>
 
@@ -177,20 +191,29 @@
         document.getElementById('cartModal').style.display = 'none';
     }
 
-    function openHistoryModal() {
-        fetch('/order/history')
-            .then(response => response.json())
-            .then(data => {
-                const tbody = document.querySelector('#historyTable tbody');
-                tbody.innerHTML = '';
-                data.forEach(item => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `<td>${item.menuName}</td><td>${item.quantity}</td><td>${item.subtotal}円</td><td>${item.orderedAt || ''}</td>`;
-                    tbody.appendChild(row);
-                });
-                document.getElementById('historyModal').style.display = 'block';
+   function openHistoryModal() {
+    fetch('/order/history')
+        .then(response => response.json())
+        .then(data => {
+            const tbody = document.querySelector('#historyTable tbody');
+            const totalEl = document.getElementById('historyTotal');
+            tbody.innerHTML = '';
+            let total = 0;
+
+            data.forEach(item => {
+                const subtotal = parseInt(item.subtotal) || 0;
+                total += subtotal;
+
+                const row = document.createElement('tr');
+                row.innerHTML = `<td>${item.menuName}</td><td>${item.quantity}</td><td>${subtotal}円</td><td>${item.orderedAt || ''}</td>`;
+                tbody.appendChild(row);
             });
-    }
+
+            totalEl.textContent = `合計金額：${total}円`;
+            document.getElementById('historyModal').style.display = 'block';
+        });
+}
+
 
     function closeHistoryModal() {
         document.getElementById('historyModal').style.display = 'none';

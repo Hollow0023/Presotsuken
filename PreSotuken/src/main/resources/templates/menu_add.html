@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>メニュー追加</title>
+</head>
+<body>
+<h2>メニュー追加</h2>
+
+<form th:action="@{/menu/add}" method="post" th:object="${menu}" enctype="multipart/form-data">
+    <label>メニュー名: <input type="text" th:field="*{menuName}" required /></label><br>
+    <label>メニュー画像: <input type="file" name="imageFile" /></label><br>
+    <label>価格: <input type="number" th:field="*{price}" required /></label><br>
+    <label>メニュー説明: <input type="text" th:field="*{menuDescription}" /></label><br>
+    <label>レシート表記名: <input type="text" th:field="*{receiptLabel}" /></label><br>
+
+    <label>税率:
+        <select th:field="*{taxRate.taxRateId}">
+            <option th:each="rate : ${taxRates}" th:value="${rate.taxRateId}" th:text="${rate.rate * 100 + '%'}"></option>
+        </select>
+    </label><br>
+
+    <label>メニューグループ:
+        <select th:field="*{menuGroup.groupId}">
+            <option th:each="group : ${menuGroups}" th:value="${group.groupId}" th:text="${group.groupName}"></option>
+        </select>
+    </label><br>
+
+    <button type="submit">追加</button>
+</form>
+
+<div th:if="${success}" style="color: green;" th:text="${success}"></div>
+</body>
+</html>
