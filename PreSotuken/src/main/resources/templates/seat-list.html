@@ -4,6 +4,47 @@
     <meta charset="UTF-8">
     <title>座席一覧</title>
     <style>
+        .burger {
+            position: fixed;
+            top: 16px;
+            left: 16px;
+            z-index: 1001;
+            font-size: 24px;
+            background: none;
+            border: none;
+            color: black;
+        }
+
+        .menu-drawer {
+            position: fixed;
+            top: 0;
+            left: -100%;
+            width: 200px;
+            height: 100%;
+            background-color: #333;
+            color: white;
+            padding: 80px 20px 20px;
+            box-shadow: 2px 0 6px rgba(0, 0, 0, 0.3);
+            transition: left 0.3s ease;
+            z-index: 1000;
+        }
+
+        .menu-drawer.open {
+            left: 0;
+        }
+
+        .menu-drawer a {
+            display: block;
+            color: white;
+            text-decoration: none;
+            margin-bottom: 16px;
+            font-size: 16px;
+        }
+
+        .menu-drawer a:hover {
+            text-decoration: underline;
+        }
+
         .group {
             margin-bottom: 24px;
         }
@@ -14,10 +55,37 @@
             height: 100px;
             border: 1px solid #aaa;
             margin: 4px;
+            padding: 4px;
             text-align: center;
-            padding: 8px;
-            cursor: pointer;
+            position: relative;
+            font-size: 12px;
+            box-sizing: border-box;
             vertical-align: top;
+        }
+
+        .seat-header {
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+            font-size: 11px;
+        }
+
+        .seat-center {
+            margin-top: 12px;
+            font-weight: bold;
+        }
+
+        .seat-total {
+            font-size: 11px;
+            margin-top: 4px;
+        }
+
+        .seat-footer {
+            position: absolute;
+            left: 4px;
+            bottom: 4px;
+            font-size: 10px;
+            color: #555;
         }
 
         .occupied {
@@ -62,11 +130,16 @@
     </style>
 </head>
 <body>
-<h2>座席一覧</h2>
+<button class="burger" onclick="toggleMenu()">☰</button>
+<nav id="menuDrawer" class="menu-drawer">
+    <a href="/menu/add">メニュー追加</a>
+    <a href="/menu/group/add">メニューグループ追加</a>
+</nav>
+
 <div style="text-align: right; margin-bottom: 16px;">
-        <form th:action="@{/logout}" method="get">
-            <button type="submit">ログアウト</button>
-        </form>
+    <form th:action="@{/logout}" method="get">
+        <button type="submit">ログアウト</button>
+    </form>
 </div>
 
 <div th:each="entry : ${groupedSeats}" class="group">
@@ -77,8 +150,14 @@
          th:attr="data-seat-id=${seat.seatId}, data-seat-name=${seat.seatName}"
          onclick="openSeat(this)">
 
-        <div th:text="${seat.seatName}"></div>
-        <div class="seat-info" th:attr="id='info-' + ${seat.seatId}"></div>
+        <div class="seat-header">
+            <span th:text="${seat.seatName}" class="seat-name"></span>
+            <span class="seat-people" th:id="'people-' + ${seat.seatId}"></span>
+        </div>
+
+        <div class="seat-center">注文受付中</div>
+        <div class="seat-total" th:id="'total-' + ${seat.seatId}"></div>
+        <div class="seat-footer" th:id="'elapsed-' + ${seat.seatId}"></div>
     </div>
 </div>
 
@@ -91,19 +170,19 @@
             <input type="hidden" name="seat.seatId" id="modalSeatId">
             <input type="hidden" name="store.storeId" value="1" />
             <label>担当ユーザー:
-			    <select name="user.userId" required>
-			        <option th:each="user : ${users}"
-			                th:value="${user.userId}"
-			                th:text="${user.userName}">ユーザー名</option>
-			    </select>
-			</label><br><br>
+                <select name="user.userId" required>
+                    <option th:each="user : ${users}"
+                            th:value="${user.userId}"
+                            th:text="${user.userName}">ユーザー名</option>
+                </select>
+            </label><br><br>
             <label>人数: <input type="number" name="numberOfPeople" min="1" required /></label><br><br>
             <button type="submit">入店</button>
         </form>
     </div>
 </div>
 
-<!-- 入店中の座席をクリックしたときのモーダル -->
+<!-- 入店中モーダル -->
 <div id="activeModal" class="modal">
     <div class="modal-content">
         <span class="close" onclick="closeModal()">&times;</span>
@@ -114,9 +193,8 @@
     </div>
 </div>
 
-
 <script>
-    let activeSeatId = null; // ← グローバルに定義
+    let activeSeatId = null;
 
     function openSeat(elem) {
         const seatId = elem.getAttribute('data-seat-id');
@@ -172,38 +250,74 @@
     function fetchVisitInfo() {
         document.querySelectorAll('.seat').forEach(seat => {
             const seatId = seat.getAttribute('data-seat-id');
-            fetch(`/api/visit-info?seatId=${seatId}`)
-                .then(response => response.json())
-                .then(data => {
-                    updateSeatTile(seatId, data);
-                });
+            updateSeatTile(seatId);
         });
     }
 
-    function updateSeatTile(seatId, data) {
+    function updateSeatTile(seatId) {
         const seat = document.querySelector(`.seat[data-seat-id="${seatId}"]`);
-        const infoDiv = document.getElementById(`info-${seatId}`);
+        const peopleSpan = document.getElementById(`people-${seatId}`);
+        const totalDiv = document.getElementById(`total-${seatId}`);
+        const elapsedDiv = document.getElementById(`elapsed-${seatId}`);
+
         seat.classList.remove('elapsed-yellow', 'elapsed-red', 'occupied');
 
-        if (data.visiting) {
-            seat.classList.add('occupied');
-            const elapsedMinutes = Math.floor(data.elapsedMinutes);
-            if (elapsedMinutes >= 60) {
-                seat.classList.add('elapsed-red');
-            } else if (elapsedMinutes >= 30) {
-                seat.classList.add('elapsed-yellow');
-            }
-            infoDiv.innerHTML = `${data.numberOfPeople}名<br>注文受付中<br>${elapsedMinutes}分経過`;
-        } else {
-            infoDiv.innerHTML = '';
-        }
+        fetch(`/api/visit-info?seatId=${seatId}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.visiting) {
+                    seat.classList.add('occupied');
+                    const elapsedMinutes = Math.floor(data.elapsedMinutes);
+
+                    if (elapsedMinutes >= 60) {
+                        seat.classList.add('elapsed-red');
+                    } else if (elapsedMinutes >= 30) {
+                        seat.classList.add('elapsed-yellow');
+                    }
+
+                    peopleSpan.innerText = `${data.numberOfPeople}名`;
+                    elapsedDiv.innerText = `${elapsedMinutes}分`;
+
+                    fetch(`/api/total-amount?seatId=${seatId}`)
+                        .then(res => res.json())
+                        .then(amountData => {
+                            if (amountData.total && amountData.total > 0) {
+                                totalDiv.innerText = `合計 ${amountData.total}円`;
+                            } else {
+                                totalDiv.innerText = '';
+                            }
+                        })
+                        .catch(() => {
+                            totalDiv.innerText = '金額取得失敗';
+                        });
+
+                } else {
+                    peopleSpan.innerText = '';
+                    totalDiv.innerText = '';
+                    elapsedDiv.innerText = '';
+                }
+            });
     }
 
     function resetSeatTile(seatId) {
         const seat = document.querySelector(`.seat[data-seat-id="${seatId}"]`);
-        const infoDiv = document.getElementById(`info-${seatId}`);
+        const peopleSpan = document.getElementById(`people-${seatId}`);
+        const totalDiv = document.getElementById(`total-${seatId}`);
+        const elapsedDiv = document.getElementById(`elapsed-${seatId}`);
+
         seat.classList.remove('occupied', 'elapsed-yellow', 'elapsed-red');
-        infoDiv.innerHTML = '';
+        peopleSpan.innerText = '';
+        totalDiv.innerText = '';
+        elapsedDiv.innerText = '';
+    }
+
+    function toggleMenu() {
+        const drawer = document.getElementById("menuDrawer");
+        const burger = document.querySelector(".burger");
+
+        drawer.classList.toggle("open");
+
+        burger.style.color = drawer.classList.contains("open") ? "white" : "black";
     }
 
     setInterval(fetchVisitInfo, 60000);

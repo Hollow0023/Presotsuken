@@ -3,8 +3,10 @@ package com.order.controller;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -14,10 +16,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.order.entity.Payment;
+import com.order.entity.PaymentDetail;
 import com.order.entity.Visit;
 import com.order.repository.PaymentDetailRepository;
 import com.order.repository.PaymentRepository;
 import com.order.repository.VisitRepository;
+import com.order.service.PaymentLookupService;
 
 import jakarta.transaction.Transactional;
 
@@ -28,7 +32,10 @@ public class VisitInfoController {
     private final VisitRepository visitRepository;
     private final PaymentRepository paymentRepository;
     private final PaymentDetailRepository paymentDetailRepository;
-    private final SimpMessagingTemplate messagingTemplate;
+    private final SimpMessagingTemplate messagingTemplate;   
+    
+    @Autowired
+    private PaymentLookupService paymentLookupService;
 
     //コンストラクタ
     public VisitInfoController(
@@ -86,6 +93,28 @@ public class VisitInfoController {
         } else {
             return ResponseEntity.notFound().build();
         }
+    }
+    
+    
+    
+    
+    @GetMapping("/total-amount")
+    public Map<String, Object> getTotalAmount(@RequestParam int seatId) {
+        Payment payment = paymentLookupService.findPaymentBySeatId(seatId);
+        if (payment == null) {
+            return Map.of("total", 0);
+        }
+
+        List<PaymentDetail> details = paymentDetailRepository.findByPaymentPaymentId(payment.getPaymentId());
+
+        int total = 0;
+        for (PaymentDetail d : details) {
+            double rate = d.getTaxRate().getRate();
+            int subtotal = (int) Math.round(d.getMenu().getPrice() * d.getQuantity() * (1 + rate));
+            total += subtotal;
+        }
+
+        return Map.of("total", total);
     }
 
 }

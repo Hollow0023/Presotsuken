@@ -1,46 +1,59 @@
 package com.order.controller;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.order.entity.MenuGroup;
-import com.order.service.MenuGroupService;
+import com.order.entity.Store;
+import com.order.repository.MenuGroupRepository;
+import com.order.repository.StoreRepository;
 
-@RestController
+@Controller
 @RequestMapping("/menu/group")
 public class MenuGroupController {
 
     @Autowired
-    private MenuGroupService menuGroupService;
+    private MenuGroupRepository menuGroupRepository;
 
-    @PostMapping("/add")
+    @Autowired
+    private StoreRepository storeRepository;
+
+ // HTMLページ表示用
+    @GetMapping("/add")
+    public String showAddPage(@CookieValue("storeId") int storeId, Model model) {
+        Store store = storeRepository.findById(storeId).orElse(null);
+        if (store == null) return "error/404";
+        model.addAttribute("storeId", storeId);
+        return "menu_group_add"; // HTMLページ名
+    }
+
+    // JSON返却用API
+    @PostMapping("/api/add")
+    @ResponseBody
     public Map<String, Object> addGroup(@RequestBody Map<String, String> body) {
         int storeId = Integer.parseInt(body.get("storeId"));
         String groupName = body.get("groupName");
 
-        boolean success = menuGroupService.addMenuGroup(storeId, groupName);
-        return Map.of("success", success);
-    }
+        Store store = storeRepository.findById(storeId).orElse(null);
+        if (store == null) return Map.of("success", false, "error", "not_found");
 
-    @GetMapping("/list")
-    public List<Map<String, Object>> getGroups(@RequestParam int storeId) {
-        List<MenuGroup> groups = menuGroupService.getGroupsByStore(storeId);
-        List<Map<String, Object>> result = new ArrayList<>();
-        for (MenuGroup group : groups) {
-            result.add(Map.of(
-                "groupId", group.getGroupId(),
-                "groupName", group.getGroupName()
-            ));
-        }
-        return result;
+        boolean exists = menuGroupRepository.findByStoreAndGroupName(store, groupName).isPresent();
+        if (exists) return Map.of("success", false, "error", "duplicate");
+
+        MenuGroup group = new MenuGroup();
+        group.setStore(store);
+        group.setGroupName(groupName);
+        menuGroupRepository.save(group);
+
+        return Map.of("success", true);
     }
-}
+} 
