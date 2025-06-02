@@ -7,4 +7,5 @@ import com.order.entity.Store;
 
 @Repository
 public interface StoreRepository extends JpaRepository<Store, Integer> {
+	
 }

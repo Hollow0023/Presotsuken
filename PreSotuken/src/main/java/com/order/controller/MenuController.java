@@ -60,7 +60,7 @@ public class MenuController {
         if (storeId == null) return "redirect:/login";
 
         List<TaxRate> taxRates = taxRateRepository.findByStore_StoreId(storeId);
-        List<MenuGroup> menuGroups = menuGroupRepository.findByStore_StoreId(storeId);
+        List<MenuGroup> menuGroups = menuGroupRepository.findByStore(storeId);
 
         model.addAttribute("menu", new Menu());
         model.addAttribute("taxRates", taxRates);
