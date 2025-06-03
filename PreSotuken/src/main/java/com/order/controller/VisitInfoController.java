@@ -24,8 +24,10 @@ import com.order.repository.VisitRepository;
 import com.order.service.PaymentLookupService;
 
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api")
 public class VisitInfoController {
 
@@ -37,23 +39,13 @@ public class VisitInfoController {
     @Autowired
     private PaymentLookupService paymentLookupService;
 
-    //コンストラクタ
-    public VisitInfoController(
-        VisitRepository visitRepository,
-        PaymentRepository paymentRepository,
-        PaymentDetailRepository paymentDetailRepository,
-        SimpMessagingTemplate messagingTemplate
-    ) {
-        this.visitRepository = visitRepository;
-        this.paymentRepository = paymentRepository;
-        this.paymentDetailRepository = paymentDetailRepository;
-        this.messagingTemplate = messagingTemplate;
-    }
-
     @GetMapping("/visit-info")
-    public Map<String, Object> getVisitInfo(@RequestParam("seatId") int seatId) {
+    public Map<String, Object> getVisitInfo(@RequestParam("seatId") int seatId, @RequestParam("storeId") int storeId) {
         Map<String, Object> result = new HashMap<>();
-        Visit visit = visitRepository.findFirstBySeat_SeatIdAndLeaveTimeIsNullOrderByVisitTimeDesc(seatId);
+//        Visit visit = visitRepository.findFirstBySeat_SeatIdAndLeaveTimeIsNullOrderByVisitTimeDesc(seatId);
+        Visit visit = visitRepository
+        	    .findFirstBySeat_Store_StoreIdAndSeat_SeatIdAndLeaveTimeIsNullOrderByVisitTimeDesc(storeId, seatId);
+
 
         if (visit != null) {
             result.put("visiting", true);

@@ -1,25 +1,70 @@
 package com.order.exception;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+
+import org.springframework.dao.DataAccessException;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.method.HandlerMethod;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
 	@ExceptionHandler(Exception.class)
-	public String handleAllExceptions(Exception ex, Model model) {
-	    model.addAttribute("message", "エラーが発生しました：" + ex.getMessage());
+    public String handleAll(Exception ex, Model model, HandlerMethod handlerMethod) {
 
-	    // スタックトレースの一部（先頭5行）を文字列にして渡す
-	    StringBuilder traceBuilder = new StringBuilder();
-	    StackTraceElement[] trace = ex.getStackTrace();
-	    for (int i = 0; i < Math.min(trace.length, 5); i++) {
-	        traceBuilder.append(trace[i].toString()).append("<br/>");
-	    }
-	    model.addAttribute("stacktrace", traceBuilder.toString());
+        // どのコントローラーで発生した例外かを取得
+        String controllerName = handlerMethod.getBeanType().getSimpleName();
+        
+        //発生したコントローラーによってメッセージを変更
+        switch (controllerName) {
+	        case "VisitController":
+	        	model.addAttribute("message", "入店処理中にシステムエラーが発生しました: " + ex.getMessage());
+	        	break;
+	        case "OrderController":
+	        	model.addAttribute("message", "注文処理中にシステムエラーが発生しました: " + ex.getMessage());
+	        	break;
+	        default:
+	        	model.addAttribute("message", "システムエラーが発生しました: " + ex.getMessage());
+        }
+        
+        // スタックトレース取得（デバッグ環境のみ　要削除）
+        StringBuilder trace = new StringBuilder();
+        for (int i = 0; i < Math.min(ex.getStackTrace().length, 5); i++) {
+            trace.append(ex.getStackTrace()[i].toString()).append("<br/>");
+        }
+        model.addAttribute("stacktrace", trace.toString());
 
-	    return "error";
+        return "error";
 	}
+	
+	@ExceptionHandler(DataAccessException.class)
+    public String handleDatabaseException(DataAccessException ex, Model model) {
+        model.addAttribute("message", "データベースエラーが発生しました。");
+        
+        // スタックトレース（デバッグ用）
+        StringBuilder trace = new StringBuilder();
+        for (int i = 0; i < Math.min(ex.getStackTrace().length, 5); i++) {
+            trace.append(ex.getStackTrace()[i].toString()).append("<br/>");
+        }
+        model.addAttribute("stacktrace", trace.toString());
 
+        return "error"; // ← 任意のエラーページへ
+    }
+	
+	@ExceptionHandler({ IOException.class, FileNotFoundException.class })
+    public String handleFileIOException(Exception ex, Model model) {
+        model.addAttribute("message", "ファイルの読み書き中にエラーが発生しました");
+        
+        // スタックトレース表示（任意）
+        StringBuilder trace = new StringBuilder();
+        for (int i = 0; i < Math.min(ex.getStackTrace().length, 5); i++) {
+            trace.append(ex.getStackTrace()[i].toString()).append("<br/>");
+        }
+        model.addAttribute("stacktrace", trace.toString());
+
+        return "error"; // ← ファイル関連用のエラーページを用意しておくと親切
+    }
 }

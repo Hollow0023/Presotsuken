@@ -27,8 +27,8 @@ public class LoginController {
         Cookie[] cookies = request.getCookies();
         Integer storeId = null;
         String storeName = null;
-        System.out.println("blanchtest");
 
+        //cookieにstoreIDがある場合、IDから店舗名を求めて保存する
         if (cookies != null) {
             for (Cookie cookie : cookies) {
                 if ("storeId".equals(cookie.getName())) {
@@ -46,16 +46,15 @@ public class LoginController {
 
         // 両方取得できていれば、自動ログインを試行
         if (storeId != null && storeName != null) {
-        	final String cookieStoreName = storeName;
-        	Store found = storeRepository.findById(storeId)
-        	    .filter(s -> s.getStoreName().equals(cookieStoreName))
-        	    .orElse(null);
+	    	final String cookieStoreName = storeName;
+	    	Store found = storeRepository.findById(storeId)
+	    		.filter(s -> s.getStoreName().equals(cookieStoreName))
+	    	    .orElse(null);
 
             if (found != null) {
                 return "redirect:/seats"; // クッキーが有効ならそのままログイン成功
             }
         }
-
         // 通常ログイン画面
         model.addAttribute("store", new Store());
         return "login";
@@ -69,13 +68,13 @@ public class LoginController {
                 .orElse(null);
 
         if (found != null) {
-            // クッキーを保存（1週間）
+            // クッキーを保存（120日）
             Cookie idCookie = new Cookie("storeId", String.valueOf(found.getStoreId()));
             Cookie nameCookie = new Cookie("storeName", found.getStoreName());
             idCookie.setPath("/");
             nameCookie.setPath("/");
-            idCookie.setMaxAge(60 * 60 * 24 * 7);  // 1週間
-            nameCookie.setMaxAge(60 * 60 * 24 * 7);
+            idCookie.setMaxAge(60 * 60 * 24 * 120);  // 120日間
+            nameCookie.setMaxAge(60 * 60 * 24 * 120);
             response.addCookie(idCookie);
             response.addCookie(nameCookie);
 
