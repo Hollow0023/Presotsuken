@@ -1,5 +1,6 @@
 package com.order.controller;
 
+import java.time.LocalTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -63,11 +64,15 @@ public class OrderController {
     public String showOrderPage(@CookieValue("seatId") Integer seatId,
                                 @CookieValue("storeId") Integer storeId,
                                 Model model) {
+    	
+        LocalTime now = LocalTime.now();
+        List<Menu> menus = menuRepository.findMenusAvailableAt(now);
+    	
         model.addAttribute("seatId", seatId);
         model.addAttribute("storeId", storeId);
 
         var menuGroups = menuGroupRepository.findByStore_StoreId(storeId);
-        var menus = menuRepository.findByStore_StoreId(storeId);
+
 
         model.addAttribute("menuGroups", menuGroups);
         model.addAttribute("menus", menus);

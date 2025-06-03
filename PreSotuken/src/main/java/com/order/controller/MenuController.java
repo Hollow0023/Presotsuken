@@ -18,17 +18,21 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.order.entity.Menu;
 import com.order.entity.MenuGroup;
+import com.order.entity.MenuTimeSlot;
 import com.order.entity.Store;
 import com.order.entity.TaxRate;
 import com.order.repository.MenuGroupRepository;
 import com.order.repository.MenuRepository;
+import com.order.repository.MenuTimeSlotRepository;
 import com.order.repository.StoreRepository;
 import com.order.repository.TaxRateRepository;
 
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 
 @Controller
+@RequiredArgsConstructor
 @RequestMapping("/menu")
 public class MenuController {
 
@@ -36,16 +40,7 @@ public class MenuController {
     private final TaxRateRepository taxRateRepository;
     private final MenuGroupRepository menuGroupRepository;
     private final StoreRepository storeRepository;
-
-    public MenuController(MenuRepository menuRepository,
-                          TaxRateRepository taxRateRepository,
-                          MenuGroupRepository menuGroupRepository,
-                          StoreRepository storeRepository) {
-        this.menuRepository = menuRepository;
-        this.taxRateRepository = taxRateRepository;
-        this.menuGroupRepository = menuGroupRepository;
-        this.storeRepository = storeRepository;
-    }
+    private final MenuTimeSlotRepository menuSlotRepository;
 
     @GetMapping("/add")
     public String showAddMenuForm(HttpServletRequest request, Model model) {
@@ -61,10 +56,12 @@ public class MenuController {
 
         List<TaxRate> taxRates = taxRateRepository.findByStore_StoreId(storeId);
         List<MenuGroup> menuGroups = menuGroupRepository.findByStore_StoreId(storeId);
-
+        List<MenuTimeSlot> timeSlots = menuSlotRepository.findByStoreStoreId(storeId);
+        
         model.addAttribute("menu", new Menu());
         model.addAttribute("taxRates", taxRates);
         model.addAttribute("menuGroups", menuGroups);
+        model.addAttribute("timeSlots",timeSlots);
 
         return "menu_add";
     }

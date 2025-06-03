@@ -13,6 +13,20 @@
     <label>価格: <input type="number" th:field="*{price}" required /></label><br>
     <label>メニュー説明: <input type="text" th:field="*{menuDescription}" /></label><br>
     <label>レシート表記名: <input type="text" th:field="*{receiptLabel}" /></label><br>
+	
+	<br><br>
+	<label>表示時間帯:
+	    <select name="timeSlot.timeSlotId" required>
+	        <option value="" disabled selected>選択してください</option>
+	        <option th:each="slot : ${timeSlots}"
+	                th:value="${slot.timeSlotId}"
+	                th:text="${slot.name + '（' + slot.startTime + '〜' + slot.endTime + '）'}">
+	        </option>
+	    </select>
+	</label>
+
+    <br><br>
+
 
     <label>税率:
         <select th:field="*{taxRate.taxRateId}">

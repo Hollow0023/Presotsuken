@@ -1,170 +1,292 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <meta charset="UTF-8">
-    <title>注文画面</title>
-    <style>
-        body {
-            display: flex;
-            font-family: sans-serif;
-            padding: 20px;
-        }
-        .menu-tabs {
-            width: 200px;
-            margin-right: 20px;
-        }
-        .menu-tab {
-            padding: 10px;
-            cursor: pointer;
-            border: 1px solid #ccc;
-            margin-bottom: 5px;
-            background: #f2f2f2;
-            text-align: center;
-        }
-        .menu-tab.active {
-            background: #cce5ff;
-            font-weight: bold;
-        }
-        .menu-list {
-            flex: 1;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-        }
-        .menu-item {
-            width: 200px;
-            border: 1px solid #ccc;
-            padding: 10px;
-            border-radius: 8px;
-            display: none;
-        }
-        .menu-item img {
-            width: 100%;
-            height: auto;
-        }
-        .quantity-input {
-            width: 60px;
-        }
-        .add-cart-btn {
-            margin-top: 8px;
-            padding: 5px 10px;
-        }
-        #cartModal, #historyModal {
-            display: none;
-            position: fixed;
-            z-index: 20;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-        }
-        .cart-modal-content {
-            background: white;
-            padding: 20px;
-            margin: 0 auto;
-            margin-top: 50px;
-            width: 600px;
-            border-radius: 8px;
-        }
-        .close {
-            float: right;
-            cursor: pointer;
-            font-weight: bold;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        th, td {
-            padding: 8px;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
-        }
-        #historyTable {
-		    width: 100%;
-		    border-collapse: collapse;
-		}
-		#historyTable tbody {
-		    display: block;
-		    max-height: 300px;
-		    overflow-y: auto;
-	    }
+<meta charset="UTF-8">
+<title>注文画面</title>
+<style>
+body {
+	display: flex;
+	font-family: sans-serif;
+	padding: 20px;
+}
 
-		#historyTable thead,#historyTable tbody tr {
-		    display: table;
-		    width: 100%;
-		    table-layout: fixed;
-		}
+.menu-tabs {
+	width: 200px;
+	margin-right: 20px;
+}
 
-    </style>
+.menu-tab {
+	padding: 10px;
+	cursor: pointer;
+	border: 1px solid #ccc;
+	margin-bottom: 5px;
+	background: #f2f2f2;
+	text-align: center;
+}
+
+.menu-tab.active {
+	background: #cce5ff;
+	font-weight: bold;
+}
+
+.menu-list {
+	flex: 1;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 20px;
+}
+
+/* ==== メニュータイルレイアウト ==== */
+.menu-item {
+    width: 200px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background: #fff;
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.menu-image-wrapper {
+    height: 100px;
+    background: #f0f0f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.menu-image-wrapper img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.info-btn {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    border: 1px solid #000;
+    background: white;
+    border-radius: 50%;
+    width: 22px;
+    height: 22px;
+    font-weight: bold;
+    font-size: 14px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.menu-name {
+    font-weight: bold;
+    padding: 8px 10px 4px 10px;
+    font-size: 14px;
+}
+
+.menu-price {
+    font-size: 13px;
+    text-align: center;
+    color: red;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #ccc;
+}
+
+.menu-detail {
+    display: none;
+    text-align: center;
+    padding: 12px 8px;
+}
+
+.menu-item.expanded .menu-detail {
+    display: block;
+}
+
+
+/* ==== カートモーダル系 ==== */
+#cartModal, #historyModal {
+	display: none;
+	position: fixed;
+	z-index: 20;
+	left: 0;
+	top: 0;
+	width: 100%;
+	height: 100%;
+	background: rgba(0, 0, 0, 0.5);
+}
+
+.cart-modal-content {
+	background: white;
+	padding: 20px;
+	margin: 0 auto;
+	margin-top: 50px;
+	width: 600px;
+	border-radius: 8px;
+}
+
+.close {
+	float: right;
+	cursor: pointer;
+	font-weight: bold;
+}
+
+table {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+th, td {
+	padding: 8px;
+	text-align: left;
+	border-bottom: 1px solid #ddd;
+}
+
+#historyTable {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+#historyTable tbody {
+	display: block;
+	max-height: 300px;
+	overflow-y: auto;
+}
+
+#historyTable thead, #historyTable tbody tr {
+	display: table;
+	width: 100%;
+	table-layout: fixed;
+}
+</style>
 <script th:inline="javascript">
     const seatId = /*[[${seatId}]]*/ null;
     const storeId = /*[[${storeId}]]*/ null;
 </script>
 
-    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+<script
+	src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+<script
+	src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
 </head>
 <body>
 
-<div class="menu-tabs">
-    <div th:each="group : ${menuGroups}"
-         th:data-group-id="${group.groupId}"
-         th:text="${group.groupName}"
-         class="menu-tab"
-         onclick="switchTab(this)">
-    </div>
-</div>
+	<div class="menu-tabs">
+		<div th:each="group : ${menuGroups}"
+			th:data-group-id="${group.groupId}" th:text="${group.groupName}"
+			class="menu-tab" onclick="switchTab(this)"></div>
+	</div>
 
-<div class="menu-list" id="menuList">
-    <div th:each="menu : ${menus}"
-         th:data-group-id="${menu.menuGroup.groupId}"
-         class="menu-item">
-        <div th:text="${menu.menuName}"></div>
-        <img th:src="${menu.menuImage}" alt="画像">
-        <div th:text="${#numbers.formatDecimal(menu.price, 0, 0)} + '円'"></div>
-        <input type="number" class="quantity-input" min="1" value="1">
-        <button class="add-cart-btn" onclick="addToCart(this)"
-                th:data-menu-id="${menu.menuId}" 
-                th:data-tax-rate-id="${menu.taxRate.taxRateId}" 
-                th:data-price="${menu.price}" 
-                th:data-name="${menu.menuName}">カートに追加</button>
-    </div>
-</div>
-<button onclick="openCartModal()">カートを見る</button>
-<button onclick="openHistoryModal()">注文履歴</button>
+	<div class="menu-list" id="menuList">
 
-<div id="cartModal">
-    <div class="cart-modal-content">
-        <span class="close" onclick="closeCartModal()">&times;</span>
-        <h3>カート内容</h3>
-        <ul id="cartList"></ul>
-        <button onclick="submitOrder()">注文確定</button>
-    </div>
-</div>
 
-<div id="historyModal" class="modal">
-    <div class="cart-modal-content">
-        <span class="close" onclick="closeHistoryModal()">&times;</span>
-        <h3>注文履歴</h3>
-        <table id="historyTable">
-            <thead>
-			    <tr>
-			        <th>商品名</th>
-			        <th>数量</th>
-			        <th>小計</th>
-			    </tr>
-			</thead>
+		<div th:each="menu : ${menus}" class="menu-item"
+			th:data-group-id="${menu.menuGroup.groupId}"
+			onclick="toggleDetails(this)">
+			<div class="menu-image-wrapper">
+				<img th:src="${menu.menuImage}" alt="画像">
+				<button class="info-btn" type="button"
+					onclick="event.stopPropagation(); showDescription('[[${menu.menuName}]]', '[[${menu.description}]]')">i</button>
+			</div>
+			<div class="menu-name" th:text="${menu.menuName}"></div>
+			<div class="menu-price"
+				th:text="${#numbers.formatDecimal(menu.price, 0, 0) + '円（税込）'}"></div>
 
-            <tbody></tbody>
-        </table>
-        <p id="historyTotal" style="text-align: right; font-weight: bold; margin-top: 10px;"></p>
-    </div>
-</div>
+			<!-- 詳細部分（初期は非表示） -->
+			<div class="menu-detail">
+				<input type="number" class="quantity-input" min="1" value="1">
+				<button class="add-cart-btn"
+					onclick="event.stopPropagation(); addToCart(this)"
+					th:data-menu-id="${menu.menuId}"
+					th:data-tax-rate-id="${menu.taxRate.taxRateId}"
+					th:data-price="${menu.price}" th:data-name="${menu.menuName}">カートに追加</button>
+			</div>
+		</div>
 
-<script>
+
+	</div>
+
+
+
+
+	<!-- 右端に固定するカート情報とボタン群 -->
+	<div
+		style="position: fixed; top: 0; bottom: 0; right: 0; width: 260px; background: white; border-left: 1px solid #ccc; padding: 10px; box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1); z-index: 10; display: flex; flex-direction: column; justify-content: space-between;">
+
+		<!-- カート中身 -->
+		<div>
+			<h4 style="margin-top: 0;">カートの中身</h4>
+			<ul id="cartMiniList"
+				style="list-style: none; padding-left: 0; margin: 0; overflow-y: auto; max-height: calc(100vh - 130px);"></ul>
+		</div>
+
+		<!-- ボタン -->
+		<div style="text-align: right;">
+			<button onclick="openHistoryModal()" style="margin-right: 8px;">注文履歴</button>
+			<button onclick="openCartModal()">注文確認</button>
+		</div>
+	</div>
+
+
+	<div id="cartModal">
+		<div class="cart-modal-content">
+			<span class="close" onclick="closeCartModal()">&times;</span>
+			<h3>カート内容</h3>
+			<ul id="cartList"></ul>
+			<button onclick="submitOrder()">注文確定</button>
+		</div>
+	</div>
+
+	<div id="historyModal" class="modal">
+		<div class="cart-modal-content">
+			<span class="close" onclick="closeHistoryModal()">&times;</span>
+			<h3>注文履歴</h3>
+			<table id="historyTable">
+				<thead>
+					<tr>
+						<th>商品名</th>
+						<th>数量</th>
+						<th>小計</th>
+					</tr>
+				</thead>
+
+				<tbody></tbody>
+			</table>
+			<p id="historyTotal"
+				style="text-align: right; font-weight: bold; margin-top: 10px;"></p>
+		</div>
+	</div>
+
+	<script>
     const cart = [];
+    
+    
+    function toggleDetails(elem) {
+        elem.classList.toggle("expanded");
+    }
+
+
+function showDescription(title, description) {
+    alert(`${title}\n\n${description}`);
+}
+
+    
+    
+    function updateMiniCart() {
+    const cartMiniList = document.getElementById('cartMiniList');
+    cartMiniList.innerHTML = '';
+    cart.forEach(item => {
+        const li = document.createElement('li');
+        const subtotal = item.price * item.quantity;
+        li.textContent = `${item.name}：${subtotal}円`;
+        cartMiniList.appendChild(li);
+    });
+}
+
 
     function switchTab(tabElement) {
         document.querySelectorAll('.menu-tab').forEach(t => t.classList.remove('active'));
@@ -184,6 +306,7 @@
 
         cart.push({ menuId, taxRateId, price, quantity, name });
         alert(`${name} を ${quantity}個 カートに追加しました。`);
+        updateMiniCart();
     }
 
     function openCartModal() {
@@ -245,6 +368,7 @@
             if (res.ok) {
                 alert('注文を確定しました');
                 cart.length = 0;
+                updateMiniCart();
                 closeCartModal();
             } else {
                 alert('注文に失敗しました');
