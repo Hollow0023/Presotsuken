@@ -2,7 +2,6 @@ package com.order.controller;
 
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
@@ -24,7 +23,9 @@ import com.order.repository.PaymentTypeRepository;
 import com.order.repository.VisitRepository;
 
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 
+@RequiredArgsConstructor
 @Controller
 public class PaymentController {
 
@@ -33,20 +34,6 @@ public class PaymentController {
     private final PaymentDetailRepository paymentDetailRepository;
     private final PaymentTypeRepository paymentTypeRepository;
     private final SimpMessagingTemplate messagingTemplate;
-
-    @Autowired
-    public PaymentController(
-            VisitRepository visitRepository,
-            PaymentRepository paymentRepository,
-            PaymentDetailRepository paymentDetailRepository,
-            PaymentTypeRepository paymentTypeRepository,
-            SimpMessagingTemplate messagingTemplate) {
-        this.visitRepository = visitRepository;
-        this.paymentRepository = paymentRepository;
-        this.paymentDetailRepository = paymentDetailRepository;
-        this.paymentTypeRepository = paymentTypeRepository;
-        this.messagingTemplate = messagingTemplate;
-    }
 
     @GetMapping("/payments")
     public String showPaymentDetail(@RequestParam("visitId") int visitId,

@@ -16,6 +16,8 @@ public interface MenuRepository extends JpaRepository<Menu, Integer> {
 	
 	@Query("SELECT m FROM Menu m WHERE :now BETWEEN m.timeSlot.startTime AND m.timeSlot.endTime")
 	List<Menu> findMenusAvailableAt(@Param("now") LocalTime now);
+	
+
 
 
 }

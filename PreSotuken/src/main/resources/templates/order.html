@@ -38,75 +38,81 @@ body {
 
 /* ==== メニュータイルレイアウト ==== */
 .menu-item {
-    width: 200px;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    background: #fff;
-    padding: 0;
-    margin: 0;
-    box-sizing: border-box;
-    overflow: hidden;
-    transition: all 0.3s ease;
-    cursor: pointer;
+	width: 200px;
+	height: 180px;
+	border: 1px solid #ccc;
+	border-radius: 8px;
+	background: #fff;
+	padding: 0;
+	margin: 0;
+	box-sizing: border-box;
+	overflow: hidden;
+	transition: max-height 0.3s ease, height 0.3s ease;
+	cursor: pointer;
 }
 
 .menu-image-wrapper {
-    height: 100px;
-    background: #f0f0f0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
+	height: 100px;
+	background: #f0f0f0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	position: relative;
 }
 
 .menu-image-wrapper img {
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: contain;
+	max-width: 100%;
+	max-height: 100%;
+	object-fit: contain;
 }
 
 .info-btn {
-    position: absolute;
-    top: 6px;
-    right: 6px;
-    border: 1px solid #000;
-    background: white;
-    border-radius: 50%;
-    width: 22px;
-    height: 22px;
-    font-weight: bold;
-    font-size: 14px;
-    line-height: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
+	position: absolute;
+	top: 6px;
+	right: 6px;
+	border: 1px solid #000;
+	background: white;
+	border-radius: 50%;
+	width: 22px;
+	height: 22px;
+	font-weight: bold;
+	font-size: 14px;
+	line-height: 1;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
 }
 
 .menu-name {
-    font-weight: bold;
-    padding: 8px 10px 4px 10px;
-    font-size: 14px;
+	font-weight: bold;
+	padding: 8px 10px 4px 10px;
+	font-size: 14px;
 }
 
 .menu-price {
-    font-size: 13px;
-    text-align: center;
-    color: red;
-    padding-bottom: 8px;
-    border-bottom: 1px solid #ccc;
+	border-top: 2px solid #ccc;
+	font-size: 13px;
+	font-weight: bold;
+	text-align: center;
+	color: red;
+	padding-bottom: 8px;
+	padding-top: 4px;
 }
 
 .menu-detail {
-    display: none;
-    text-align: center;
-    padding: 12px 8px;
+	display: none;
+	text-align: center;
+	padding: 12px 8px;
+	overflow: hidden;
+	transition: max-height 0.3s ease;
+	background-color: #f9f9f9; /* 確認用 */
+	border-top: 1px solid #eee; /* 確認用 */
 }
 
 .menu-item.expanded .menu-detail {
-    display: block;
+	display: block;
 }
-
 
 /* ==== カートモーダル系 ==== */
 #cartModal, #historyModal {
@@ -163,84 +169,82 @@ th, td {
 	table-layout: fixed;
 }
 </style>
-<script th:inline="javascript">
-    const seatId = /*[[${seatId}]]*/ null;
-    const storeId = /*[[${storeId}]]*/ null;
-</script>
-
-<script
-	src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
-<script
-	src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
 </head>
 <body>
 
+
 	<div class="menu-tabs">
+		<div id="backToSeatList" style="display: none; margin-bottom: 12px;">
+		  <a href="/">← 座席リストに戻る</a>
+		</div>
 		<div th:each="group : ${menuGroups}"
 			th:data-group-id="${group.groupId}" th:text="${group.groupName}"
-			class="menu-tab" onclick="switchTab(this)"></div>
+			class="menu-tab"></div>
 	</div>
 
 	<div class="menu-list" id="menuList">
-
-
 		<div th:each="menu : ${menus}" class="menu-item"
-			th:data-group-id="${menu.menuGroup.groupId}"
-			onclick="toggleDetails(this)">
+			th:data-group-id="${menu.menuGroup.groupId}">
 			<div class="menu-image-wrapper">
-				<img th:src="${menu.menuImage}" alt="画像">
-				<button class="info-btn" type="button"
-					onclick="event.stopPropagation(); showDescription('[[${menu.menuName}]]', '[[${menu.description}]]')">i</button>
+				<img th:if="${menu.menuImage != null}" th:src="${menu.menuImage}"
+					alt="画像" />
+				<button class="info-btn" th:if="${menu.description != null}"
+					th:attr="data-name=${menu.menuName}, data-desc=${menu.description}">
+					i</button>
+
 			</div>
 			<div class="menu-name" th:text="${menu.menuName}"></div>
 			<div class="menu-price"
 				th:text="${#numbers.formatDecimal(menu.price, 0, 0) + '円（税込）'}"></div>
 
-			<!-- 詳細部分（初期は非表示） -->
 			<div class="menu-detail">
+				<div
+					th:if="${menu.optionGroups != null and !#lists.isEmpty(menu.optionGroups)}"
+					th:each="group : ${menu.optionGroups}">
+					<label th:text="${group.groupName}">オプション</label> <select
+						class="option-select"
+						th:attr="data-menu-id=${menu.menuId}, data-group-id=${group.optionGroupId}">
+						<option value="" disabled selected>選択してください</option>
+						<option th:each="item : ${group.optionItems}"
+							th:value="${item.optionItemId}" th:text="${item.itemName}"></option>
+					</select>
+				</div>
+
 				<input type="number" class="quantity-input" min="1" value="1">
 				<button class="add-cart-btn"
-					onclick="event.stopPropagation(); addToCart(this)"
-					th:data-menu-id="${menu.menuId}"
-					th:data-tax-rate-id="${menu.taxRate.taxRateId}"
-					th:data-price="${menu.price}" th:data-name="${menu.menuName}">カートに追加</button>
+					th:attr="data-menu-id=${menu.menuId}, data-tax-rate-id=${menu.taxRate.taxRateId}, data-price=${menu.price}, data-name=${menu.menuName}">
+					カートに追加</button>
 			</div>
 		</div>
-
-
 	</div>
 
-
-
-
-	<!-- 右端に固定するカート情報とボタン群 -->
+	<!-- カート固定枠 -->
 	<div
 		style="position: fixed; top: 0; bottom: 0; right: 0; width: 260px; background: white; border-left: 1px solid #ccc; padding: 10px; box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1); z-index: 10; display: flex; flex-direction: column; justify-content: space-between;">
-
-		<!-- カート中身 -->
 		<div>
 			<h4 style="margin-top: 0;">カートの中身</h4>
 			<ul id="cartMiniList"
-				style="list-style: none; padding-left: 0; margin: 0; overflow-y: auto; max-height: calc(100vh - 130px);"></ul>
+				style="list-style: none; padding-left: 0; margin: 0; overflow-y: auto; max-height: calc(100vh - 160px);"></ul>
+			<p id="cartMiniTotal" style="text-align: right; font-weight: bold;"></p>
 		</div>
-
-		<!-- ボタン -->
 		<div style="text-align: right;">
 			<button onclick="openHistoryModal()" style="margin-right: 8px;">注文履歴</button>
 			<button onclick="openCartModal()">注文確認</button>
 		</div>
 	</div>
 
-
+	<!-- モーダル：カート -->
 	<div id="cartModal">
 		<div class="cart-modal-content">
 			<span class="close" onclick="closeCartModal()">&times;</span>
 			<h3>カート内容</h3>
 			<ul id="cartList"></ul>
+			<p id="cartTotal" style="text-align: right; font-weight: bold;"></p>
 			<button onclick="submitOrder()">注文確定</button>
 		</div>
 	</div>
 
+	<!-- モーダル：履歴 -->
 	<div id="historyModal" class="modal">
 		<div class="cart-modal-content">
 			<span class="close" onclick="closeHistoryModal()">&times;</span>
@@ -253,7 +257,6 @@ th, td {
 						<th>小計</th>
 					</tr>
 				</thead>
-
 				<tbody></tbody>
 			</table>
 			<p id="historyTotal"
@@ -261,72 +264,134 @@ th, td {
 		</div>
 	</div>
 
+	<script
+		src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+	<script
+		src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
 	<script>
-    const cart = [];
-    
-    
-    function toggleDetails(elem) {
-        elem.classList.toggle("expanded");
-    }
+const cart = [];
 
+function toggleDetails(elem) {
+	  const detail = elem.querySelector(".menu-detail");
+	  const isExpanded = elem.classList.contains("expanded");
 
-function showDescription(title, description) {
-    alert(`${title}\n\n${description}`);
+	  // 閉じる処理
+	  if (isExpanded) {
+	    elem.style.height = elem.offsetHeight + "px"; // 現在の高さを設定
+	    elem.classList.remove("expanded");
+
+	    const onTransitionEnd = () => {
+	      detail.style.display = 'none';
+	      elem.removeEventListener('transitionend', onTransitionEnd);
+	      elem.style.height = ''; // アニメーション後に height をクリア
+	    };
+	    elem.addEventListener('transitionend', onTransitionEnd);
+
+	    requestAnimationFrame(() => {
+	      elem.style.height = '180px'; // 閉じた時の初期の高さ
+	    });
+
+	  } else {
+	    // 開く処理
+	    elem.classList.add("expanded");
+	    detail.style.display = 'block'; // detail を表示
+
+	    requestAnimationFrame(() => {
+	      requestAnimationFrame(() => { // ネストされた RAF で確実性を高める
+	        let fullHeight = elem.scrollHeight;
+
+	        elem.style.height = fullHeight + "px";
+	      });
+	    });
+	  }
+	}
+
+function showDescriptionFromData(btn) {
+    const title = btn.getAttribute('data-name');
+    const desc = btn.getAttribute('data-desc');
+    alert(`${title}\n\n${desc}`);
 }
 
-    
-    
-    function updateMiniCart() {
-    const cartMiniList = document.getElementById('cartMiniList');
-    cartMiniList.innerHTML = '';
-    cart.forEach(item => {
-        const li = document.createElement('li');
+function updateMiniCart() {
+    const list = document.getElementById('cartMiniList');
+    const totalEl = document.getElementById('cartMiniTotal');
+    list.innerHTML = '';
+    let total = 0;
+
+    cart.forEach((item, index) => {
         const subtotal = item.price * item.quantity;
-        li.textContent = `${item.name}：${subtotal}円`;
-        cartMiniList.appendChild(li);
+        total += subtotal;
+        const li = document.createElement('li');
+        li.innerHTML = `${item.name}：${subtotal}円 <button onclick="removeFromCart(${index})">削除</button>`;
+        list.appendChild(li);
+    });
+
+    totalEl.textContent = `合計：${total}円`;
+}
+
+function switchTab(tabElement) {
+    document.querySelectorAll('.menu-tab').forEach(t => t.classList.remove('active'));
+    tabElement.classList.add('active');
+    const groupId = tabElement.getAttribute('data-group-id');
+    document.querySelectorAll('.menu-item').forEach(item => {
+        item.style.display = (item.getAttribute('data-group-id') === groupId) ? 'block' : 'none';
     });
 }
 
+function addToCart(button) {
+    const menuId = button.getAttribute('data-menu-id');
+    const taxRateId = button.getAttribute('data-tax-rate-id');
+    const price = parseFloat(button.getAttribute('data-price'));
+    const name = button.getAttribute('data-name');
+    const quantityInput = button.previousElementSibling;
+    const quantity = parseInt(quantityInput.value);
 
-    function switchTab(tabElement) {
-        document.querySelectorAll('.menu-tab').forEach(t => t.classList.remove('active'));
-        tabElement.classList.add('active');
-        const groupId = tabElement.getAttribute('data-group-id');
-        document.querySelectorAll('.menu-item').forEach(item => {
-            item.style.display = (item.getAttribute('data-group-id') === groupId) ? 'block' : 'none';
-        });
+    if (isNaN(quantity) || quantity <= 0) {
+        alert('数量は1以上を入力してください。');
+        return;
     }
 
-    function addToCart(button) {
-        const menuId = button.getAttribute('data-menu-id');
-        const taxRateId = button.getAttribute('data-tax-rate-id');
-        const price = parseFloat(button.getAttribute('data-price'));
-        const name = button.getAttribute('data-name');
-        const quantity = parseInt(button.previousElementSibling.value);
-
+    const existing = cart.find(item => item.menuId === menuId);
+    if (existing) {
+        existing.quantity += quantity;
+    } else {
         cart.push({ menuId, taxRateId, price, quantity, name });
-        alert(`${name} を ${quantity}個 カートに追加しました。`);
-        updateMiniCart();
     }
 
-    function openCartModal() {
-        const cartList = document.getElementById('cartList');
-        cartList.innerHTML = '';
-        cart.forEach(item => {
-            const li = document.createElement('li');
-            li.textContent = `${item.name} x ${item.quantity}`;
-            cartList.appendChild(li);
-        });
-        document.getElementById('cartModal').style.display = 'block';
-    }
+    alert(`${name} を ${quantity}個 カートに追加しました。`);
+    updateMiniCart();
+}
 
-    function closeCartModal() {
-        document.getElementById('cartModal').style.display = 'none';
-    }
+function removeFromCart(index) {
+    cart.splice(index, 1);
+    updateMiniCart();
+}
 
-   function openHistoryModal() {
+function openCartModal() {
+    const cartList = document.getElementById('cartList');
+    const cartTotal = document.getElementById('cartTotal');
+    cartList.innerHTML = '';
+    let total = 0;
+
+    cart.forEach((item, index) => {
+        const subtotal = item.price * item.quantity;
+        total += subtotal;
+        const li = document.createElement('li');
+        li.innerHTML = `${item.name} x ${item.quantity}：${subtotal}円 <button onclick="removeFromCart(${index})">削除</button>`;
+        cartList.appendChild(li);
+    });
+
+    cartTotal.textContent = `合計：${total}円`;
+    document.getElementById('cartModal').style.display = 'block';
+}
+
+function closeCartModal() {
+    document.getElementById('cartModal').style.display = 'none';
+}
+
+function openHistoryModal() {
     fetch('/order/history')
-        .then(response => response.json())
+        .then(res => res.json())
         .then(data => {
             const tbody = document.querySelector('#historyTable tbody');
             const totalEl = document.getElementById('historyTotal');
@@ -336,10 +401,8 @@ function showDescription(title, description) {
             data.forEach(item => {
                 const subtotal = parseInt(item.subtotal) || 0;
                 total += subtotal;
-
-	        const row = document.createElement('tr');
-			row.innerHTML = `<td>${item.menuName}</td><td>${item.quantity}</td><td>${subtotal}円</td>`;
-
+                const row = document.createElement('tr');
+                row.innerHTML = `<td>${item.menuName}</td><td>${item.quantity}</td><td>${subtotal}円</td>`;
                 tbody.appendChild(row);
             });
 
@@ -348,53 +411,93 @@ function showDescription(title, description) {
         });
 }
 
+function closeHistoryModal() {
+    document.getElementById('historyModal').style.display = 'none';
+}
 
-    function closeHistoryModal() {
-        document.getElementById('historyModal').style.display = 'none';
-    }
+function submitOrder() {
+    const orderItems = cart.map(item => ({
+        menuId: parseInt(item.menuId),
+        taxRateId: parseInt(item.taxRateId),
+        quantity: parseInt(item.quantity)
+    }));
 
-    function submitOrder() {
-        const orderItems = cart.map(item => ({
-            menuId: parseInt(item.menuId),
-            taxRateId: parseInt(item.taxRateId),
-            quantity: parseInt(item.quantity)
-        }));
+    fetch('/order/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(orderItems)
+    }).then(res => {
+        if (res.ok) {
+            alert('注文を確定しました');
+            cart.length = 0;
+            updateMiniCart();
+            closeCartModal();
+        } else {
+            alert('注文に失敗しました');
+        }
+    });
+}
 
-        fetch('/order/submit', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(orderItems)
-        }).then(res => {
-            if (res.ok) {
-                alert('注文を確定しました');
-                cart.length = 0;
-                updateMiniCart();
-                closeCartModal();
-            } else {
-                alert('注文に失敗しました');
+window.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.menu-tab').forEach(tab => {
+        tab.addEventListener('click', () => switchTab(tab));
+    });
+
+    document.querySelectorAll('.info-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            showDescriptionFromData(btn);
+        });
+    });
+
+    document.querySelectorAll('.menu-item').forEach(item => {
+        item.addEventListener('click', (e) => {
+            const clicked = e.target;
+
+            const isToggleTarget =
+                clicked.closest('.menu-image-wrapper') ||
+                clicked.closest('.menu-name') ||
+                clicked.closest('.menu-price');
+
+            if (isToggleTarget) {
+                toggleDetails(item);
             }
         });
-    }
+    });
 
-    window.onload = () => {
-        const firstTab = document.querySelector('.menu-tab');
-        if (firstTab) firstTab.click();
-
-        const socket = new SockJS('/ws-endpoint');
-        const stompClient = Stomp.over(socket);
-        stompClient.connect({}, function () {
-            if (typeof seatId !== 'undefined' && seatId !== null) {
-                stompClient.subscribe(`/topic/seats/${seatId}`, function (message) {
-                    const body = message.body;
-                    if (body === 'LEAVE') {
-                        document.cookie = 'visitId=; Max-Age=0; path=/';
-                        document.cookie = 'userId=; Max-Age=0; path=/';
-                        window.location.href = '/visits/orderwait';
-                    }
-                });
-            }
+    document.querySelectorAll('.add-cart-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            addToCart(btn);
         });
-    };
+    });
+
+    const firstTab = document.querySelector('.menu-tab');
+    if (firstTab) firstTab.click();
+
+    const socket = new SockJS('/ws-endpoint');
+    const stompClient = Stomp.over(socket);
+    stompClient.connect({}, function () {
+        if (typeof seatId !== 'undefined' && seatId !== null) {
+            stompClient.subscribe(`/topic/seats/${seatId}`, function (message) {
+                const body = message.body;
+                if (body === 'LEAVE') {
+                    document.cookie = 'visitId=; Max-Age=0; path=/';
+                    document.cookie = 'userId=; Max-Age=0; path=/';
+                    window.location.href = '/visits/orderwait';
+                }
+            });
+        }
+    });
+});
+
+window.onload = () => {
+	  const params = new URLSearchParams(window.location.search);
+	  if (params.get("from") === "seatlist") {
+	    document.getElementById("backToSeatList").style.display = "block";
+	  }
+	};
+
 </script>
 
 </body>
