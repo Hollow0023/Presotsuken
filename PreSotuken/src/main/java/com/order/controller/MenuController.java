@@ -16,12 +16,15 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.order.entity.Menu;
 import com.order.entity.MenuGroup;
+import com.order.entity.MenuOption;
 import com.order.entity.MenuTimeSlot;
 import com.order.entity.Store;
 import com.order.entity.TaxRate;
 import com.order.repository.MenuGroupRepository;
+import com.order.repository.MenuOptionRepository;
 import com.order.repository.MenuRepository;
 import com.order.repository.MenuTimeSlotRepository;
+import com.order.repository.OptionGroupRepository;
 import com.order.repository.StoreRepository;
 import com.order.repository.TaxRateRepository;
 import com.order.service.ImageUploadService;
@@ -41,6 +44,8 @@ public class MenuController {
     private final StoreRepository storeRepository;
     private final MenuTimeSlotRepository menuSlotRepository;
     private final ImageUploadService imageUploadService;
+    private final OptionGroupRepository optionGroupRepository;
+    private final MenuOptionRepository  menuOptionRepository;
 
     @GetMapping("/add")
     public String showAddMenuForm(HttpServletRequest request, Model model) {
@@ -58,6 +63,7 @@ public class MenuController {
         List<MenuGroup> menuGroups = menuGroupRepository.findByStore_StoreId(storeId);
         List<MenuTimeSlot> timeSlots = menuSlotRepository.findByStoreStoreId(storeId);
         
+        model.addAttribute("optionGroups", optionGroupRepository.findByStoreId(storeId));
         model.addAttribute("menu", new Menu());
         model.addAttribute("taxRates", taxRates);
         model.addAttribute("menuGroups", menuGroups);
@@ -69,6 +75,7 @@ public class MenuController {
     @PostMapping("/add")
     public String addMenu(@ModelAttribute Menu menu,
                           @RequestParam("imageFile") MultipartFile imageFile,
+                          @RequestParam(required = false) List<Integer> optionGroupIds,
                           HttpServletRequest request,
                           RedirectAttributes redirectAttributes) throws IOException {
 
@@ -97,6 +104,19 @@ public class MenuController {
         }
 
         menuRepository.save(menu);
+        
+        if (optionGroupIds != null) {
+            for (Integer groupId : optionGroupIds) {
+            	if (groupId == null) continue;
+                MenuOption mog = new MenuOption();
+                mog.setMenuId(menu.getMenuId());
+                mog.setOptionGroupId(groupId);
+                menuOptionRepository.save(mog);
+            }
+        }
+        
+        
+        
         redirectAttributes.addFlashAttribute("success", "メニューを追加しました！");
         return "redirect:/menu/add";
     }

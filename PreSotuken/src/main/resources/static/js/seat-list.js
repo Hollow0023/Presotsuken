@@ -11,8 +11,6 @@ function openSeat(elem) {
 	activeSeatId = seatId;
 	
 	const storeId = getCookie("storeId");
-	console.log("seatId =", seatId);
-	console.log("storeId =", storeId);
 	
 	
 	fetch(`/api/visit-info?seatId=${seatId}&storeId=${storeId}`)
