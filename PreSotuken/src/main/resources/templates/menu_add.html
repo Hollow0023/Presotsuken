@@ -57,19 +57,41 @@
 
 <script>
 	function addOptionSelect(selectElem) {
-	    if (!selectElem.value) return; // 選択されていないなら何もしない
+	    if (!selectElem.value) return;
 	
-	    // すでに同じ値が選択されている select があれば追加しない
+	    // すでに選ばれてるオプション値を全部取得
 	    const selectedValues = Array.from(document.querySelectorAll('select[name="optionGroupIds"]'))
-	        .map(s => s.value);
-	    if (selectedValues.filter(v => v === selectElem.value).length > 1) return;
+	        .map(s => s.value)
+	        .filter(v => v); // 空を除外
 	
+	    // 次の選択肢用のselectを作成
 	    const newSelect = selectElem.cloneNode(true);
 	    newSelect.selectedIndex = 0;
-	    newSelect.onchange = function () { addOptionSelect(this); };
+	    newSelect.onchange = function () {
+	        addOptionSelect(this);
+	        updateDisabledOptions(); // 選択肢の更新
+	    };
+	
+	    // 追加
 	    document.getElementById("optionContainer").appendChild(document.createElement("br"));
 	    document.getElementById("optionContainer").appendChild(newSelect);
+	
+	    updateDisabledOptions();
 	}
+	
+	// 現在選ばれてるoptionを他のselectから非表示にする
+	function updateDisabledOptions() {
+	    const selectedValues = Array.from(document.querySelectorAll('select[name="optionGroupIds"]'))
+	        .map(s => s.value)
+	        .filter(v => v);
+	
+	    document.querySelectorAll('select[name="optionGroupIds"]').forEach(select => {
+	        Array.from(select.options).forEach(option => {
+	            option.hidden = selectedValues.includes(option.value) && option.value !== select.value;
+	        });
+	    });
+	}
+
 </script>
 
 </body>
