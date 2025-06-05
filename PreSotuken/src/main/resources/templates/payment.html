@@ -43,6 +43,10 @@
 			padding: 16px;
 			border-radius: 8px;
 		}
+		
+		#receivedInput{
+			width: 100px;
+		}
 
 		.modal {
 			display: none;
@@ -89,7 +93,8 @@
 		<div class="payment-row"><label>小計:</label><span id="subtotal" th:text="${subtotal} + '円'">0円</span></div>
 		<div class="payment-row"><label>値引/割引:</label><span id="discount">0円</span><button class="detail-button" onclick="openDiscountModal()">変更</button></div>
 		<div class="payment-row"><label>合計:</label><span id="total">0円</span></div>
-		<div class="payment-row"><label>お預かり:</label><span id="received">0円</span><button class="detail-button" onclick="openReceivedModal()">変更</button></div>
+		<div class="payment-row"><label>お預かり:</label><input type="number" id="receivedInput" min="0" value="0" oninput="updateReceived()">円
+</div>
 		<div class="payment-row">
 			<label>会計種別:</label>
 			<select id="paymentTypeSelect">
@@ -97,12 +102,18 @@
 				<option th:each="type : ${paymentTypeList}" th:value="${type.typeId}" th:text="${type.typeName}"></option>
 			</select>
 		</div>
+		<div class="payment-row">
+			<label>会計担当者:</label>
+			<select id="staffSelect">
+				<option value="">選択してください</option>
+				<option th:each="user : ${userList}" th:value="${user.userId}" th:text="${user.userName}"></option>
+			</select>
+		</div>
 		<div class="payment-row"><label>お釣り:</label><span id="change">0円</span></div>
 		<button class="detail-button" onclick="openDetailModal()">金額詳細</button>
 		<button class="detail-button" onclick="finalizePayment()">会計確定</button>
 		<button class="detail-button" onclick="goBackToSeats()">キャンセル</button>
 	</div>
-
 	<div class="payment-details">
 		<h3>備考や操作スペース</h3>
 		<p>ここにボタン配置や印刷など追加可能</p>
@@ -118,17 +129,7 @@
 			<button onclick="applyDiscount()">保存</button>
 		</div>
 	</div>
-
-	<!-- お預かりモーダル -->
-	<div id="receivedModal" class="modal">
-		<div class="modal-content">
-			<span class="close" onclick="closeReceivedModal()">&times;</span>
-			<h3>お預かり金額を入力</h3>
-			<input type="number" id="receivedInput" min="0" placeholder="金額を入力"><br>
-			<button onclick="applyReceived()">保存</button>
-		</div>
-	</div>
-
+	
 	<!-- 金額詳細モーダル -->
 	<div id="detailModal" class="modal">
 		<div class="modal-content">
@@ -171,16 +172,13 @@
 			document.getElementById("discount").innerText = discount + '円';
 			closeDiscountModal(); calculateTotals();
 		}
-		function applyReceived() {
-			received = parseFloat(document.getElementById("receivedInput").value) || 0;
-			document.getElementById("received").innerText = received + '円';
-			closeReceivedModal(); calculateTotals();
-		}
 		function finalizePayment() {
 			const paymentId = document.getElementById("paymentId").value;
 			const paymentTypeId = document.getElementById("paymentTypeSelect").value;
 			const total = parseInt(document.getElementById("total").innerText.replace('円', '')) || 0;
 			const change = parseInt(document.getElementById("change").innerText.replace('円', '')) || 0;
+			const staffId = document.getElementById("staffSelect").value;
+
 
 			const errorElem = document.getElementById("errorMessage");
 			errorElem.style.display = "none";
@@ -191,7 +189,11 @@
 				errorElem.style.display = "block";
 				return;
 			}
-
+			if (!staffId) {
+				errorElem.textContent = "会計担当者を選択してください。";
+				errorElem.style.display = "block";
+				return;
+			}
 			if (change < 0) {
 				errorElem.textContent = "お釣りがマイナスです。預かり金額が不足しています。";
 				errorElem.style.display = "block";
@@ -208,7 +210,9 @@
 					discountReason: discountReason,
 					total: total,
 					paymentTime: new Date().toISOString(),
-					paymentTypeId: paymentTypeId
+					paymentTypeId: paymentTypeId,
+					deposit: received,
+					staffId: staffId
 				})
 			}).then(res => {
 				if (res.ok) {
@@ -234,6 +238,11 @@
 			discount = 0;
 			calculateTotals();
 		};
+		function updateReceived() {
+			received = parseFloat(document.getElementById("receivedInput").value) || 0;
+			calculateTotals();
+		}
+
 	</script>
 
 </body>

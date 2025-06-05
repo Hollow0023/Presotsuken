@@ -41,13 +41,7 @@
 			<span class="close" onclick="closeModal()">&times;</span>
 			<h3 id="modalSeatName">テーブル名</h3>
 			<form th:action="@{/visits}" method="post">
-				<input type="hidden" name="seat.seatId" id="modalSeatId"> <input
-					type="hidden" name="store.storeId" value="1" /> <label>担当ユーザー:
-					<select name="user.userId" required>
-						<option th:each="user : ${users}" th:value="${user.userId}"
-							th:text="${user.userName}">ユーザー名</option>
-				</select>
-				</label><br> <br> <label>人数: <input type="number"
+				<label>人数: <input type="number"
 					name="numberOfPeople" min="1" required /></label><br> <br>
 				<button type="submit">入店</button>
 			</form>

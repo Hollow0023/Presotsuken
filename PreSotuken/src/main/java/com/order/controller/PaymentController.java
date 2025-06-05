@@ -16,10 +16,12 @@ import com.order.dto.PaymentFinalizeRequest;
 import com.order.entity.Payment;
 import com.order.entity.PaymentDetail;
 import com.order.entity.PaymentType;
+import com.order.entity.User;
 import com.order.entity.Visit;
 import com.order.repository.PaymentDetailRepository;
 import com.order.repository.PaymentRepository;
 import com.order.repository.PaymentTypeRepository;
+import com.order.repository.UserRepository;
 import com.order.repository.VisitRepository;
 
 import jakarta.transaction.Transactional;
@@ -34,6 +36,7 @@ public class PaymentController {
     private final PaymentDetailRepository paymentDetailRepository;
     private final PaymentTypeRepository paymentTypeRepository;
     private final SimpMessagingTemplate messagingTemplate;
+    private final UserRepository userRepository;
 
     @GetMapping("/payments")
     public String showPaymentDetail(@RequestParam("visitId") int visitId,
@@ -63,7 +66,8 @@ public class PaymentController {
         double total = subtotal - discount;
 
         List<PaymentType> paymentTypeList = paymentTypeRepository.findByStoreId(storeId);
-
+        
+        model.addAttribute("userList", userRepository.findByStore_StoreId(storeId));
         model.addAttribute("visit", visit);
         model.addAttribute("payment", payment);
         model.addAttribute("details", details);
@@ -75,38 +79,43 @@ public class PaymentController {
         return "payment";
     }
 
-    /**
-     * 会計確定: Payment および Visit の退店時刻を更新
-     */
+
+    //会計確定: Payment および Visit の退店時刻を更新
+
     @Transactional
     @PostMapping("/payments/finalize")
     public ResponseEntity<Void> finalizePayment(@RequestBody PaymentFinalizeRequest req) {
-        // ① Payment を取得
+    	//会計担当者を取得
+    	User staff = userRepository.findById(req.getStaffId()).orElse(null);
+    	
+        // Payment を取得
         Payment payment = paymentRepository.findById(req.getPaymentId())
             .orElseThrow(() -> new IllegalArgumentException("Invalid paymentId"));
 
-        // ② PaymentType を ID から取得してセット
+        // PaymentType を ID から取得してセット
         if (req.getPaymentTypeId() != null) {
             PaymentType type = paymentTypeRepository.findById(req.getPaymentTypeId())
                 .orElseThrow(() -> new IllegalArgumentException("Invalid paymentTypeId"));
             payment.setPaymentType(type);
         }
 
-        // ③ その他の値を設定
+        // その他の値を設定
         payment.setSubtotal(req.getSubtotal());
         payment.setDiscount(req.getDiscount());
         payment.setDiscountReason(req.getDiscountReason());
         payment.setTotal(req.getTotal());
         payment.setPaymentTime(req.getPaymentTime());
+        payment.setDeposit(req.getDeposit());
+        payment.setCashier(staff);
 
-        // ④ Visit 退店時刻を更新
+        //  Visit 退店時刻を設定
         Visit visit = payment.getVisit();
         visit.setLeaveTime(req.getPaymentTime());
         messagingTemplate.convertAndSend("/topic/seats/" + visit.getSeat().getSeatId(), "LEAVE");
-        visitRepository.save(visit);
 
-        // ⑤ 保存
+        // 保存
         paymentRepository.save(payment);
+        visitRepository.save(visit);
         return ResponseEntity.ok().build();
     }
 }

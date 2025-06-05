@@ -32,6 +32,7 @@ public class Payment {
     private Double total;
     private Double discount;
     private String discountReason;
+    private Double deposit;
     
     
     @ManyToOne
