@@ -186,8 +186,7 @@ th, td {
 		<div th:each="menu : ${menus}" class="menu-item"
 			th:data-group-id="${menu.menuGroup.groupId}">
 			<div class="menu-image-wrapper">
-				<img th:if="${menu.menuImage != null}" th:src="${menu.menuImage}"
-					alt="画像" />
+				<img th:src="@{${menu.menuImage}}" onerror="this.onerror=null;this.src='/images/noimage.jpg'" width="100" height="100" />
 				<button class="info-btn" th:if="${menu.description != null}"
 					th:attr="data-name=${menu.menuName}, data-desc=${menu.description}">
 					i</button>

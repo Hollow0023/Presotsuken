@@ -1,10 +1,8 @@
 package com.order.controller;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -26,6 +24,7 @@ import com.order.repository.MenuRepository;
 import com.order.repository.MenuTimeSlotRepository;
 import com.order.repository.StoreRepository;
 import com.order.repository.TaxRateRepository;
+import com.order.service.ImageUploadService;
 
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -41,6 +40,7 @@ public class MenuController {
     private final MenuGroupRepository menuGroupRepository;
     private final StoreRepository storeRepository;
     private final MenuTimeSlotRepository menuSlotRepository;
+    private final ImageUploadService imageUploadService;
 
     @GetMapping("/add")
     public String showAddMenuForm(HttpServletRequest request, Model model) {
@@ -84,17 +84,10 @@ public class MenuController {
         Optional<Store> optionalStore = storeRepository.findById(storeId);
         if (optionalStore.isEmpty()) return "redirect:/login";
 
+        // ✅ ImageUploadServiceを使って保存処理（拡張子は固定で.jpg）
         if (!imageFile.isEmpty()) {
-            String originalFilename = imageFile.getOriginalFilename();
-            String extension = "";
-            if (originalFilename != null && originalFilename.contains(".")) {
-                extension = originalFilename.substring(originalFilename.lastIndexOf("."));
-            }
-            String filename = UUID.randomUUID().toString() + extension;
-            String saveDir = "src/main/resources/static/images/";
-            File dest = new File(saveDir + filename);
-            imageFile.transferTo(dest);
-            menu.setMenuImage("/images/" + filename);
+            String imagePath = imageUploadService.uploadImage(imageFile, storeId);
+            menu.setMenuImage(imagePath); // DBに保存するのは /images/{storeId}/{uuid}.jpg
         }
 
         menu.setStore(optionalStore.get());
@@ -107,4 +100,5 @@ public class MenuController {
         redirectAttributes.addFlashAttribute("success", "メニューを追加しました！");
         return "redirect:/menu/add";
     }
+
 }

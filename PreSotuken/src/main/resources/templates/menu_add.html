@@ -6,6 +6,7 @@
 </head>
 <body>
 <h2>メニュー追加</h2>
+<a href="/">← トップに戻る</a>
 
 <form th:action="@{/menu/add}" method="post" th:object="${menu}" enctype="multipart/form-data">
     <label>メニュー名: <input type="text" th:field="*{menuName}" required /></label><br>

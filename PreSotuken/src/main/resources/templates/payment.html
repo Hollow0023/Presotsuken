@@ -4,6 +4,7 @@
 <head>
 	<meta charset="UTF-8">
 	<title>会計詳細</title>
+	
 	<style>
 		body {
 			display: flex;
@@ -82,6 +83,7 @@
 
 	<div class="payment-summary">
 		<h3>会計情報</h3>
+		<a href="/">← トップに戻る</a>
 		<p id="errorMessage"></p>
 		<div class="payment-row"><label>人数:</label><span th:text="${visit.numberOfPeople} + '名'"></span></div>
 		<div class="payment-row"><label>小計:</label><span id="subtotal" th:text="${subtotal} + '円'">0円</span></div>

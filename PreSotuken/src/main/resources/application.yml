@@ -1,0 +1,13 @@
+spring:
+  profiles:
+    active: dev
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/order
+    username: root
+    password: pass
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+server:
+  address: 0.0.0.0
+  port: 8080
