@@ -19,6 +19,8 @@ public class MenuWithOptionsDTO {
     private MenuGroup menuGroup;
     private String menuImage;
     private String description;
+    private int priceWithTax;
+
     private List<OptionGroupDTO> optionGroups;
 
 }

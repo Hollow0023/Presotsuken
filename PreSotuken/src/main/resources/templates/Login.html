@@ -62,7 +62,7 @@
 	function saveUserIdToCookie() {
 	    const userId = document.getElementById("userSelect").value;
 	    if (userId) {
-	        document.cookie = `userId=${userId}; path=/`;
+	        document.cookie = `userId=${userId}; path=/; max-age=10368000`;
 	    }
 	}
 

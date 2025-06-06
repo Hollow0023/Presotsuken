@@ -35,19 +35,25 @@ public class LoginController {
         Cookie[] cookies = request.getCookies();
         Integer storeId = null;
         String storeName = null;
+        String userId = null;
 
         //cookieにstoreIDがある場合、IDから店舗名を求めて保存する
         if (cookies != null) {
             for (Cookie cookie : cookies) {
-                if ("storeId".equals(cookie.getName())) {
-                    try {
-                        storeId = Integer.parseInt(cookie.getValue());
-                    } catch (NumberFormatException e) {
-                        storeId = null;
-                    }
-                }
-                if ("storeName".equals(cookie.getName())) {
-                    storeName = cookie.getValue();
+                switch (cookie.getName()) {
+                    case "storeId":
+                        try {
+                            storeId = Integer.parseInt(cookie.getValue());
+                        } catch (NumberFormatException e) {
+                            storeId = null;
+                        }
+                        break;
+                    case "storeName":
+                        storeName = cookie.getValue();
+                        break;
+                    case "userId":
+                        userId = cookie.getValue();
+                        break;
                 }
             }
         }

@@ -40,7 +40,6 @@ public class MenuService {
         LocalTime now = LocalTime.now();
 
         List<MenuTimeSlot> timeSlots = menuTimeSlotRepository.findByStoreStoreId(storeId);
-
         MenuTimeSlot currentSlot = timeSlots.stream()
                 .filter(slot -> !now.isBefore(slot.getStartTime()) && now.isBefore(slot.getEndTime()))
                 .findFirst()
@@ -54,84 +53,56 @@ public class MenuService {
                 .filter(menu -> menu.getStore().getStoreId().equals(storeId))
                 .collect(Collectors.toList());
 
-        return menus.stream().map(menu -> {
-            MenuWithOptionsDTO dto = new MenuWithOptionsDTO();
-            dto.setMenuId(menu.getMenuId());
-            dto.setMenuName(menu.getMenuName());
-            dto.setPrice(menu.getPrice());
-            dto.setMenuImage(menu.getMenuImage());
-            dto.setDescription(menu.getMenuDescription());
-            dto.setTaxRate(menu.getTaxRate());
-            dto.setMenuGroup(menu.getMenuGroup());
-
-            // オプショングループの構築
-            var menuOptions = menuOptionRepository.findByMenuId(menu.getMenuId());
-            List<OptionGroupDTO> groupDTOs = menuOptions.stream().map(menuOption -> {
-                var group = optionGroupRepository.findById(menuOption.getOptionGroupId()).orElse(null);
-                if (group == null) return null;
-
-                var groupDTO = new OptionGroupDTO();
-                groupDTO.setOptionGroupId(group.getOptionGroupId());
-                groupDTO.setGroupName(group.getGroupName());
-
-                var itemDTOs = optionItemRepository.findByOptionGroupId(group.getOptionGroupId())
-                        .stream()
-                        .map(item -> {
-                            var itemDTO = new OptionItemDTO();
-                            itemDTO.setOptionItemId(item.getOptionItemId());
-                            itemDTO.setItemName(item.getItemName());
-                            return itemDTO;
-                        }).collect(Collectors.toList());
-
-                groupDTO.setOptionItems(itemDTOs);
-                return groupDTO;
-            }).filter(group -> group != null).collect(Collectors.toList());
-
-            dto.setOptionGroups(groupDTOs);
-
-            return dto;
-        }).collect(Collectors.toList());
+        return menus.stream().map(this::toDto).collect(Collectors.toList());
     }
 
     // 全てのメニューを表示
     public List<MenuWithOptionsDTO> getAllMenusWithOptions(Integer storeId) {
         List<Menu> menus = menuRepository.findByStore_StoreId(storeId);
+        return menus.stream().map(this::toDto).collect(Collectors.toList());
+    }
 
-        return menus.stream().map(menu -> {
-            MenuWithOptionsDTO dto = new MenuWithOptionsDTO();
-            dto.setMenuId(menu.getMenuId());
-            dto.setMenuName(menu.getMenuName());
-            dto.setPrice(menu.getPrice());
-            dto.setMenuImage(menu.getMenuImage());
-            dto.setDescription(menu.getMenuDescription());
-            dto.setTaxRate(menu.getTaxRate());
-            dto.setMenuGroup(menu.getMenuGroup());
+    // 共通：メニュー → DTO（オプション、税込価格含む）
+    private MenuWithOptionsDTO toDto(Menu menu) {
+        MenuWithOptionsDTO dto = new MenuWithOptionsDTO();
+        dto.setMenuId(menu.getMenuId());
+        dto.setMenuName(menu.getMenuName());
+        dto.setPrice(menu.getPrice());
+        dto.setMenuImage(menu.getMenuImage());
+        dto.setDescription(menu.getMenuDescription());
+        dto.setTaxRate(menu.getTaxRate());
+        dto.setMenuGroup(menu.getMenuGroup());
 
-            var menuOptions = menuOptionRepository.findByMenuId(menu.getMenuId());
-            List<OptionGroupDTO> groupDTOs = menuOptions.stream().map(menuOption -> {
-                var group = optionGroupRepository.findById(menuOption.getOptionGroupId()).orElse(null);
-                if (group == null) return null;
+        // 税込み価格の計算（税率がnullの場合は0%）
+        double rate = menu.getTaxRate() != null ? menu.getTaxRate().getRate() : 0.0;
+        int priceWithTax = (int) Math.round(menu.getPrice() * (1 + rate));
+        dto.setPriceWithTax(priceWithTax);
 
-                var groupDTO = new OptionGroupDTO();
-                groupDTO.setOptionGroupId(group.getOptionGroupId());
-                groupDTO.setGroupName(group.getGroupName());
+        // オプショングループの構築
+        var menuOptions = menuOptionRepository.findByMenuId(menu.getMenuId());
+        List<OptionGroupDTO> groupDTOs = menuOptions.stream().map(menuOption -> {
+            var group = optionGroupRepository.findById(menuOption.getOptionGroupId()).orElse(null);
+            if (group == null) return null;
 
-                var itemDTOs = optionItemRepository.findByOptionGroupId(group.getOptionGroupId())
-                        .stream()
-                        .map(item -> {
-                            var itemDTO = new OptionItemDTO();
-                            itemDTO.setOptionItemId(item.getOptionItemId());
-                            itemDTO.setItemName(item.getItemName());
-                            return itemDTO;
-                        }).collect(Collectors.toList());
+            var groupDTO = new OptionGroupDTO();
+            groupDTO.setOptionGroupId(group.getOptionGroupId());
+            groupDTO.setGroupName(group.getGroupName());
 
-                groupDTO.setOptionItems(itemDTOs);
-                return groupDTO;
-            }).filter(group -> group != null).collect(Collectors.toList());
+            var itemDTOs = optionItemRepository.findByOptionGroupId(group.getOptionGroupId())
+                    .stream()
+                    .map(item -> {
+                        var itemDTO = new OptionItemDTO();
+                        itemDTO.setOptionItemId(item.getOptionItemId());
+                        itemDTO.setItemName(item.getItemName());
+                        return itemDTO;
+                    }).collect(Collectors.toList());
 
-            dto.setOptionGroups(groupDTOs);
+            groupDTO.setOptionItems(itemDTOs);
+            return groupDTO;
+        }).filter(group -> group != null).collect(Collectors.toList());
 
-            return dto;
-        }).collect(Collectors.toList());
+        dto.setOptionGroups(groupDTOs);
+
+        return dto;
     }
 }

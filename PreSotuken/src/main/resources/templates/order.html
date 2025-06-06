@@ -10,7 +10,7 @@
 		<div id="seatInfo"></div>
 		<div>
 			<button class="history-button" onclick="openHistoryModal()" style="margin-right: 8px;">注文履歴</button>
-			<button class="cart-button" onclick="toggleCart()">🛒 カートを見る</button>
+			<button  id="cartToggleButton" class="cart-button" onclick="toggleCart()">🛒 カートを見る</button>
 		</div>
 	</div>
 	
@@ -18,7 +18,7 @@
 	
 		<div class="menu-tabs">
 			<div id="backToSeatList" style="display: none; margin-bottom: 12px;">
-			  <a href="/">← 座席リストに戻る</a>
+			  <a id="backToSeatList" href="/">← 座席リストに戻る</a>
 			</div>
 			<div th:each="group : ${menuGroups}"
 				th:data-group-id="${group.groupId}" th:text="${group.groupName}"
@@ -37,8 +37,8 @@
 	
 				</div>
 				<div class="menu-name" th:text="${menu.menuName}"></div>
-				<div class="menu-price"
-					th:text="${#numbers.formatDecimal(menu.price, 0, 0) + '円（税込）'}"></div>
+				<div class="menu-price" th:text="${menu.priceWithTax + '円（税込）'}"></div>
+
 	
 				<div class="menu-detail">
 					<div
@@ -63,18 +63,28 @@
 	
 		<!-- カート固定枠 -->
 		<div id="cartPanel" class ="cart">
-			<div>
+			<div class = "cartContent">
 				<h4 style="margin-top: 0;">カートの中身</h4>
-				<p id="cartItemCount" style="margin: 0 0 6px; font-size: 0.9em; color: #555;"></p>
-
+				<p id="cartItemCount"></p>
 				
-				<table id="cartMiniList"
-				  style="width: 100%; border-collapse: collapse; margin-bottom: 10px;"></table>
-
+				<table id="cartMiniList"></table>
 				
 			</div>
-			<div>
-				<p id="cartMiniTotal"></p>
+			<div class = "panelFooter">
+				<div class="totalPrice">
+				  <div class="priceContent">
+				    <span>合計点数</span>
+				    <span id="cartMiniCount"></span>
+				  </div>
+				  <div class="priceContent">
+				    <span>合計金額</span>
+				    <span id="cartMiniTotal"></span>
+				  </div>
+
+				  <div id="cartMiniTax"></div>
+				</div>
+
+				
 				<button class="cart-check-button" onclick="submitOrder()">注文確定</button>
 			</div>
 
@@ -102,9 +112,13 @@
 					style="text-align: right; font-weight: bold; margin-top: 10px;"></p>
 			</div>
 		</div>
+
+		
 	
 	</main>
 	
+	
+<!--	カートに入れた通知-->
 	<div id="toast" style="
 	    position: fixed;
 	    bottom: 20px;
@@ -119,7 +133,6 @@
 	    box-shadow: 0 0 8px rgba(0,0,0,0.3);
 	    transition: opacity 0.5s ease;
 	"></div>
-	
 	
 	<script src="/js/order.js"></script>
 	<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>

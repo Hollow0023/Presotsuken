@@ -154,11 +154,40 @@ main{
 	display: block;
 }
 
+.panelFooter{
+	background-color: lightgray;
+	padding: 5px;
+}
+
+.totalPrice{
+	display: flex;
+	flex-direction: column;
+	gap: 4px;;
+	background-color: white;
+	border-radius: 5px;
+	margin:10px 0;
+}
+.cartContent{
+	margin:20px 20px 0 20px;
+}
+.priceContent{
+	display: flex;
+	justify-content: space-between;
+}
+.priceContent span{
+	font-weight: bold;
+}
+#cartMiniTax{
+	text-align: right;
+	font-size: 0.9em;
+	color: #555;
+}
+
 .cart{
-	top: 0; bottom: 0;
+	top: 10dvh; bottom: 0;
 	width: 360px; 
+	height: 90dvh;;
 	background: white; 
-	padding: 10px; 
 	display: flex; 
 	flex-direction: column; 
 	justify-content: space-between;
@@ -170,8 +199,8 @@ main{
 	box-shadow: -2px 0 6px rgba(0, 0, 0, 0.1);
 	transition: right 0.4s ease;
 	z-index: 1000;
-	padding: 20px;
 }
+
 
 .cart.show {
   right: 0;
@@ -197,6 +226,16 @@ font-weight: bold;
 #cartMiniList li{
 	display: flex;
 	justify-content: space-between;
+}
+#cartItemCount{
+	margin: 0 0 6px;
+	font-size: 0.9em;
+	color: #555;;
+}
+#cartMiniList{
+	width: 100%;
+	border-collapse: collapse;
+	margin-bottom: 10px;;
 }
 /* ==== カートモーダル系 ==== */
 #cartModal, #historyModal {

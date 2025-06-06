@@ -1,4 +1,6 @@
 const cart = [];
+let taxRateMap = {};
+
 const seatId = getCookie("seatId"); // もしくは URL から取得
 document.getElementById("seatInfo").innerText = `${seatId}`;
 
@@ -23,27 +25,47 @@ function showToast(message, duration = 2000) {
 
 function toggleCart(show) {
   const cartPanel = document.getElementById("cartPanel");
-  if (!cartPanel) return;
+  const toggleButton = document.getElementById("cartToggleButton");
+  if (!cartPanel || !toggleButton) return;
+
+  let isOpening;
 
   if (show === true) {
     cartPanel.classList.add("show");
+    isOpening = true;
   } else if (show === false) {
     cartPanel.classList.remove("show");
+    isOpening = false;
   } else {
     cartPanel.classList.toggle("show");
+    isOpening = cartPanel.classList.contains("show");
+  }
+
+  // テキスト切り替え
+  if (isOpening) {
+    toggleButton.textContent = "✕ カートを閉じる";
+  } else {
+    toggleButton.textContent = "🛒 カートを見る";
   }
 }
+
 
 // カート以外の部分クリックで閉じる
 window.addEventListener('click', (e) => {
   const cartPanel = document.getElementById("cartPanel");
-  if (!cartPanel) return;
+  const toggleButton = document.getElementById("cartToggleButton");
+  if (!cartPanel || !toggleButton) return;
 
-  const isClickInside = cartPanel.contains(e.target) || e.target.closest('button[onclick="toggleCart()"]');
-  if (!isClickInside) {
+  const isClickInsideCart =
+    cartPanel.contains(e.target) ||
+    e.target.closest('.cart-button');
+
+  if (!isClickInsideCart) {
     cartPanel.classList.remove("show");
+    toggleButton.textContent = "🛒 カートを見る"; // ← テキストも戻す！
   }
 });
+
 
 
 
@@ -105,10 +127,14 @@ function showDescriptionFromData(btn) {
 function updateMiniCart() {
     const list = document.getElementById('cartMiniList');
     const totalEl = document.getElementById('cartMiniTotal');
+    const countEl = document.getElementById('cartMiniCount');
+    const taxEl = document.getElementById('cartMiniTax');
+
     list.innerHTML = '';
     let total = 0;
+    let totalCount = 0;
+    const rateTotals = {}; // { 10: 1000, 8: 2000 }
 
-    // 表のヘッダー行
     const header = document.createElement('tr');
     header.innerHTML = `
         <th style="text-align: left;">商品名</th>
@@ -119,8 +145,14 @@ function updateMiniCart() {
     list.appendChild(header);
 
     cart.forEach((item, index) => {
-        const subtotal = item.price * item.quantity;
+        const taxRate = parseFloat(item.taxRate?.rate || taxRateMap[item.taxRateId] || 0); // 念のため
+        const subtotal = item.priceWithTax * item.quantity; // ← 税込に変更！
         total += subtotal;
+        totalCount += item.quantity;
+
+        // 税率別の税抜き価格合計は維持（明細表示のため）
+        if (!rateTotals[taxRate]) rateTotals[taxRate] = 0;
+        rateTotals[taxRate] += item.price * item.quantity;
 
         const row = document.createElement('tr');
         row.innerHTML = `
@@ -131,13 +163,29 @@ function updateMiniCart() {
                        style="width: 50px;" />
             </td>
             <td style="text-align: right;">${subtotal}円</td>
-            <td><button onclick="removeFromCart(${index})">削除</button></td>
+            <td><button onclick="removeFromCart(${index}, event)">削除</button></td>
         `;
         list.appendChild(row);
     });
 
-    totalEl.textContent = `合計：${total}円`;
+	totalEl.textContent = `${total}円`;
+	countEl.textContent = `${totalCount}点`;
+
+
+	taxEl.innerHTML = ''; // 前の内容クリア
+	
+	Object.entries(rateTotals)
+	  .sort((a, b) => a[0] - b[0])
+	  .forEach(([rate, amount]) => {
+	    const line = document.createElement('div');
+	    line.textContent = `${rate}%対象：¥${amount}`;
+	    taxEl.appendChild(line);
+	  });
+
 }
+
+
+
 
 
 
@@ -162,13 +210,18 @@ function addToCart(button) {
         alert('数量は1以上を入力してください。');
         return;
     }
+	
+	const taxRate = parseFloat(taxRateMap[taxRateId]) / 100; // ← ちゃんと10% → 0.1に直す
+	const priceWithTax = Math.round(price * (1 + taxRate));
+
 
     const existing = cart.find(item => item.menuId === menuId);
     if (existing) {
         existing.quantity += quantity;
     } else {
-        cart.push({ menuId, taxRateId, price, quantity, name });
+        cart.push({ menuId, taxRateId, price, priceWithTax, quantity, name }); // ← 追加！！
     }
+
     showToast("カートに追加しました");
 
     const menuItem = button.closest('.menu-item');
@@ -179,7 +232,9 @@ function addToCart(button) {
     updateMiniCart();
 }
 
+
 function removeFromCart(index) {
+	event.stopPropagation();
     cart.splice(index, 1);
     updateMiniCart();
 }
@@ -194,7 +249,8 @@ function openCartModal() {
         const subtotal = item.price * item.quantity;
         total += subtotal;
         const li = document.createElement('li');
-        li.innerHTML = `${item.name} x ${item.quantity}：${subtotal}円 <button onclick="removeFromCart(${index})">削除</button>`;
+        li.innerHTML = `${item.name} x ${item.quantity}：${subtotal}円 <button onclick="removeFromCart(${index}, event)">削除</button>
+`;
         cartList.appendChild(li);
     });
 
@@ -258,6 +314,17 @@ function submitOrder() {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
+	fetch('/taxrates')
+    .then(res => res.json())
+    .then(data => {
+      data.forEach(rate => {
+        taxRateMap[rate.taxRateId] = Math.round(rate.rate * 100);
+      });
+    })
+    .catch(err => {
+      console.error("税率の取得に失敗しました", err);
+    });
+    
     document.querySelectorAll('.menu-tab').forEach(tab => {
         tab.addEventListener('click', () => switchTab(tab));
     });
@@ -335,6 +402,10 @@ window.addEventListener('click', (e) => {
     }
   });
 });
+
+  document.getElementById("backToSeatList").addEventListener("click", function () {
+    document.cookie = "visitId=; Max-Age=0; path=/";
+  });
 
 window.onload = () => {
 	  const params = new URLSearchParams(window.location.search);

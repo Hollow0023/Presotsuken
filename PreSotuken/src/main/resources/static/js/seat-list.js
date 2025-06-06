@@ -121,6 +121,7 @@ function updateSeatTile(seatId) {
 				totalDiv.innerText = '';
 				elapsedDiv.innerText = '';
 				if (statusDiv) statusDiv.style.display = 'none'; // 非表示
+
 			}
 		});
 }
@@ -130,11 +131,13 @@ function resetSeatTile(seatId) {
 	const peopleSpan = document.getElementById(`people-${seatId}`);
 	const totalDiv = document.getElementById(`total-${seatId}`);
 	const elapsedDiv = document.getElementById(`elapsed-${seatId}`);
+	const statusDiv = document.getElementById(`status-${seatId}`);
 
 	seat.classList.remove('occupied', 'elapsed-yellow', 'elapsed-red');
 	peopleSpan.innerText = '';
 	totalDiv.innerText = '';
 	elapsedDiv.innerText = '';
+	if (statusDiv) statusDiv.style.display = 'none';
 }
 
 function toggleMenu() {
@@ -149,11 +152,22 @@ function toggleMenu() {
 
 document.getElementById("orderBtn").addEventListener("click", () => {
     const seatId = document.getElementById("activeModal").getAttribute("data-seat-id");
-    const visitId = activeSeatId ? activeSeatId : ""; // visitId はここでは使われてるか注意
+	const storeId = getCookie("storeId"); // ← storeId は Cookie から取得
+	
+    // visitId取得
+    fetch(`/api/visit-info?seatId=${seatId}&storeId=${storeId}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.visiting && data.visitId) {
+            // 正しい visitId を cookie に保存
+            document.cookie = `visitId=${data.visitId}; path=/; max-age=3600`;
+        }
 
-    // 遷移
-    window.location.href = `/order?seatId=${seatId}&admin=true&visitId=${visitId}&from=seatlist`;
-});
+        // 遷移（visitId はURLに含めなくてOK）
+        window.location.href = `/order?seatId=${seatId}&admin=true&from=seatlist`;
+      });
+  });
+      
 
 
 setInterval(fetchVisitInfo, 60000);

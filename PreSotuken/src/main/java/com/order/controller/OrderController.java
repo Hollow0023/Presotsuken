@@ -145,7 +145,9 @@ public class OrderController {
             OrderHistoryDto dto = new OrderHistoryDto();
             dto.setMenuName(detail.getMenu().getMenuName());
             dto.setQuantity(detail.getQuantity());
-            dto.setSubtotal(detail.getSubtotal().intValue());
+            double taxRate = detail.getTaxRate().getRate();
+            double subtotalWithTax = detail.getSubtotal() * (1 + taxRate);
+            dto.setSubtotal((int) Math.round(subtotalWithTax)); // ← 税込みにして四捨五入！
             return dto;
         }).collect(Collectors.toList());
     }
