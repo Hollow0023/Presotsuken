@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<title>オプション管理</title>
+<link rel="stylesheet" href="/css/optionManagement.css">
+</head>
+<body>
+	<h1>オプション管理</h1>
+
+	<div class="container">
+		<h2>オプショングループ一覧</h2>
+		<a href="/">← トップに戻る</a>
+		<div class="add-group-form">
+			<h3>新規オプショングループ作成</h3>
+			<input type="text" id="newGroupNameInput" placeholder="新しいグループ名">
+			<button class="primary" onclick="createNewOptionGroup()">作成</button>
+			<input type="hidden" id="currentStoreId" th:value="${storeId}">
+		</div>
+
+		<div id="messageArea" style="margin-bottom: 10px;"></div>
+		<table border="1">
+			<thead>
+				<tr>
+					<th>グループ名</th>
+					<th>アイテム</th>
+					<th>操作</th>
+				</tr>
+			</thead>
+			<tbody id="optionGroupsTableBody">
+				<tr th:each="group : ${optionGroups}" th:data-group-id="${group.optionGroupId}" class="group-row">
+					<td>
+						<span th:id="${'groupNameDisplay-' + group.optionGroupId}" th:text="${group.groupName}">辛さ</span>
+						<input type="text" th:id="${'groupNameInput-' + group.optionGroupId}" th:value="${group.groupName}" style="display: none;" class="edit-input">
+					</td>
+					<td>
+						<div class="item-list">
+							<ul th:id="${'itemList-' + group.optionGroupId}">
+								<li th:each="item : ${itemsByGroup.get(group.optionGroupId)}" th:data-item-id="${item.optionItemId}" class="item-row">
+									<span th:id="${'itemNameDisplay-' + item.optionItemId}" th:text="${item.itemName}">控えめ</span>
+									<input type="text" th:id="${'itemNameInput-' + item.optionItemId}" th:value="${item.itemName}" style="display: none;" class="edit-input">
+									<button class="secondary edit-item-btn" data-mode="display" th:data-item-id="${item.optionItemId}" th:attr="onclick='toggleEditItem(this,' + ${item.optionItemId} + ')'">編集</button>
+									<button class="danger delete-item-btn" th:data-item-id="${item.optionItemId}" th:attr="onclick='deleteOptionItem(' + ${item.optionItemId} + ')'">削除</button>
+								</li>
+							</ul>
+						</div>
+						<div th:id="${'addItemForm-' + group.optionGroupId}" style="display: none;" class="add-item-form">
+							<input type="text" th:id="${'newItemNameInput-' + group.optionGroupId}" placeholder="新しいアイテム名">
+							<button class="primary add-item-btn" th:data-group-id="${group.optionGroupId}" th:attr="onclick='addOptionItem(' + ${group.optionGroupId} + ')'">追加</button>
+							<button class="secondary cancel-add-item-btn" th:data-group-id="${group.optionGroupId}" th:attr="onclick='toggleAddItemForm(this,' + ${group.optionGroupId} + ')'">キャンセル</button>
+						</div>
+						<button class="secondary toggle-add-item-form-btn" th:data-group-id="${group.optionGroupId}" th:attr="onclick='toggleAddItemForm(this,' + ${group.optionGroupId} + ')'" th:id="${'showAddItemBtn-' + group.optionGroupId}">＋ アイテム追加</button>
+					</td>
+					<td>
+						<button class="primary edit-group-btn" data-mode="display" th:data-group-id="${group.optionGroupId}" th:attr="onclick='toggleEditGroup(this,' + ${group.optionGroupId} + ')'">編集</button>
+						<button class="danger delete-group-btn" th:data-group-id="${group.optionGroupId}" th:attr="onclick='deleteOptionGroup(' + ${group.optionGroupId} + ')'">削除</button>
+					</td>
+				</tr>
+			</tbody>
+		</table>
+	</div>
+
+	<script src="/js/option_management.js"></script>
+</body>
+</html>

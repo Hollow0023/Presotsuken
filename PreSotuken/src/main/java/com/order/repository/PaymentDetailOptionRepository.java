@@ -1,13 +1,15 @@
 package com.order.repository;
 
+import java.util.List; // 追加
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import com.order.entity.PaymentDetailOption; // PaymentDetailOption エンティティをインポート
+import com.order.entity.PaymentDetail; // 追加
+import com.order.entity.PaymentDetailOption;
 
-@Repository // Spring Beanとして登録されることを示すアノテーション
+@Repository
 public interface PaymentDetailOptionRepository extends JpaRepository<PaymentDetailOption, Integer> {
-    // JpaRepository を継承することで、PaymentDetailOption エンティティの
-    // CRUD操作（save, findById, findAll, deleteなど）が自動的に提供されます。
-    // 必要に応じて、ここにカスタムクエリメソッドを追加できます。
+    // PaymentDetail に紐づく PaymentDetailOption のリストを取得するメソッド
+    List<PaymentDetailOption> findByPaymentDetail(PaymentDetail paymentDetail);
 }

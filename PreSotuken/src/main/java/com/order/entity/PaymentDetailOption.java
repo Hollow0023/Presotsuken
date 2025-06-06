@@ -4,8 +4,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn; // 新しく追加
-import jakarta.persistence.ManyToOne; // 新しく追加
+import jakarta.persistence.JoinColumn; // 追加
+import jakarta.persistence.ManyToOne; // 追加
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
@@ -30,5 +30,5 @@ public class PaymentDetailOption {
     @JoinColumn(name = "option_item_id") // DBのカラム名を指定
     private OptionItem optionItem;
 
-    // LombokがGetter/Setterを自動生成してくれるので、明示的な記述は不要
+    // Getter / Setter はLombokで自動生成されるため、明示的な記述は不要
 }

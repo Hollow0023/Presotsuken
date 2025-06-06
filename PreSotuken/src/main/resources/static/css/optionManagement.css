@@ -1,0 +1,95 @@
+body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background-color: #f4f7f6; color: #333; }
+    .container { max-width: 900px; margin: 20px auto; padding: 25px; border: 1px solid #e0e0e0; border-radius: 10px; background-color: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+    h1, h2, h3 { color: #2c3e50; margin-bottom: 15px; }
+    h1 { text-align: center; margin-bottom: 30px; font-size: 2.2em; }
+    h2 { font-size: 1.6em; border-bottom: 2px solid #e0e0e0; padding-bottom: 10px; margin-bottom: 20px; }
+    h3 { font-size: 1.3em; margin-bottom: 10px; color: #34495e; }
+
+    /* リンク */
+    a { color: #007bff; text-decoration: none; margin-bottom: 20px; display: inline-block; }
+    a:hover { text-decoration: underline; }
+
+    /* フォームとボタン */
+    .add-group-form, .add-item-form {
+        background-color: #ecf0f1;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        display: flex; /* Flexboxで要素を横並びに */
+        align-items: center; /* 垂直方向中央揃え */
+        gap: 10px; /* 要素間のスペース */
+        flex-wrap: wrap; /* 小さな画面で折り返す */
+    }
+    .add-group-form input[type="text"],
+    .add-item-form input[type="text"] {
+        flex-grow: 1; /* 入力欄が残りのスペースを埋める */
+        padding: 8px 12px;
+        border: 1px solid #bdc3c7;
+        border-radius: 5px;
+        font-size: 1em;
+        min-width: 150px; /* 最小幅 */
+    }
+    button {
+        padding: 8px 15px;
+        margin: 0; /* マージンをリセット */
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 0.95em;
+        transition: background-color 0.2s ease;
+        white-space: nowrap; /* ボタン内のテキストの折り返しを防ぐ */
+    }
+    button.primary { background-color: #28a745; color: white; } /* 作成/保存ボタン */
+    button.primary:hover { background-color: #218838; }
+    button.secondary { background-color: #6c757d; color: white; } /* 編集/キャンセルボタン */
+    button.secondary:hover { background-color: #5a6268; }
+    button.danger { background-color: #dc3545; color: white; } /* 削除ボタン */
+    button.danger:hover { background-color: #c82333; }
+
+    /* メッセージエリア */
+    #messageArea {
+        padding: 10px 15px;
+        margin-bottom: 15px;
+        border-radius: 5px;
+        font-weight: bold;
+        text-align: center;
+        display: none; /* 初期は非表示 */
+        opacity: 0; /* フェードイン/アウトのため */
+        transition: opacity 0.3s ease;
+    }
+    .success-message { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+    .error-message { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    #messageArea.show { opacity: 1; } /* JavaScriptでクラスを追加して表示 */
+
+    /* テーブル */
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #e0e0e0; padding: 10px; text-align: left; vertical-align: top; }
+    th { background-color: #f0f3f5; color: #555; font-weight: bold; }
+    tr:nth-child(even) { background-color: #f9f9f9; } /* 偶数行の背景色 */
+
+    /* オプションアイテムリスト */
+    .item-list ul { list-style: none; padding: 0; margin: 0; }
+    .item-list li {
+        display: flex;
+        align-items: center;
+        padding: 8px 0;
+        border-bottom: 1px dotted #e0e0e0;
+        line-height: 1.4; /* 行の高さ調整 */
+        flex-wrap: wrap; /* 折り返しを許可 */
+        gap: 5px; /* アイテム内の要素間のスペース */
+    }
+    .item-list li:last-child { border-bottom: none; }
+    .item-list li span { flex-grow: 1; min-width: 80px; /* アイテム名の最小幅 */ }
+    .item-list li input { flex-grow: 1; min-width: 120px; /* 入力フィールドの最小幅 */ }
+    .item-list li button { margin-left: 5px; /* ボタン間のスペース */ }
+
+    /* レスポンシブ対応 */
+    @media (max-width: 768px) {
+        th, td { padding: 8px; font-size: 0.9em; }
+        .add-group-form, .add-item-form { flex-direction: column; align-items: stretch; }
+        .add-group-form input, .add-item-form input { width: 100%; margin-bottom: 10px; }
+        .add-group-form button, .add-item-form button { width: 100%; margin-top: 5px; }
+        .item-list li { flex-direction: column; align-items: flex-start; gap: 8px; }
+        .item-list li span, .item-list li input { width: 100%; }
+        .item-list li button { width: auto; /* ボタンは自動幅に戻す */ margin-left: 0; margin-right: 5px; }
+    }

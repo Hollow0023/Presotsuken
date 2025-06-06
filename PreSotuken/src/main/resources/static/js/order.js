@@ -71,19 +71,27 @@ function toggleHistory() {
                 data.forEach(item => {
                     const subtotal = parseInt(item.subtotal) || 0; // 小計
                     const quantity = parseInt(item.quantity) || 0; // 数量
-                    const rate = parseFloat(item.taxRate) || 0; // 税率 (レスポンスにtaxRateを含める必要がある)
+                    // バックエンドから返される税率は0.1や0.08の形なので、そのまま使う
+                    const rate = parseFloat(item.taxRate) || 0; 
 
                     total += subtotal; // 合計金額に加算
                     count += quantity; // 合計点数に加算
 
-                    // 税率ごとの合計を計算
+                    // 税率ごとの合計を計算 (税抜きの価格で計算し直す)
+                    // item.price は税抜きの単価としてバックエンドから返される前提
                     if (!rateTotals[rate]) rateTotals[rate] = 0;
-                    rateTotals[rate] += parseInt(item.price) * quantity; // 税抜き価格 * 数量
+                    rateTotals[rate] += item.price * quantity; 
+
+                    // オプション表示用の文字列を生成
+                    let optionsText = '';
+                    if (item.selectedOptionNames && item.selectedOptionNames.length > 0) {
+                        optionsText = ` (${item.selectedOptionNames.join(', ')})`;
+                    }
 
                     // テーブルに行を追加
                     const row = document.createElement('tr');
                     row.innerHTML = `
-                        <td>${item.menuName}</td>
+                        <td>${item.menuName}${optionsText}</td>
                         <td style="text-align: center;">${quantity}</td>
                         <td style="text-align: right;">${subtotal}円</td>
                     `;
@@ -98,7 +106,8 @@ function toggleHistory() {
                     .sort((a, b) => a[0] - b[0]) // 税率でソート
                     .forEach(([rate, amount]) => {
                         const line = document.createElement('div');
-                        const percent = (parseFloat(rate) * 100).toFixed(0); // 税率をパーセンテージに変換
+                        // 税率をパーセンテージに変換 (例: 0.1 -> 10%)
+                        const percent = (parseFloat(rate) * 100).toFixed(0); 
                         line.textContent = `${percent}%対象：¥${amount}`;
                         line.style.textAlign = "right";
                         taxEl.appendChild(line);
@@ -106,6 +115,11 @@ function toggleHistory() {
 
                 historyModal.classList.add('show'); // モーダルを表示
                 toggleBtn.textContent = "✕ 注文履歴を閉じる"; // ボタンのテキストを「閉じる」に変更
+            })
+            .catch(error => {
+                console.error("注文履歴の取得に失敗しました:", error);
+                const tbody = document.querySelector('#historyTable tbody');
+                tbody.innerHTML = '<tr><td colspan="3">注文履歴の読み込み中にエラーが発生しました。</td></tr>';
             });
     }
 }
@@ -116,6 +130,7 @@ window.toggleHistory = toggleHistory; // グローバルに公開（外部から
  */
 function closeHistoryModal() {
     document.getElementById('historyModal').classList.remove('show');
+    document.getElementById("historyToggleButton").textContent = "注文履歴"; // ボタンのテキストを戻す
 }
 
 /**
@@ -204,6 +219,8 @@ function updateQuantity(index, newVal) {
         updateMiniCart(); // ミニカートの表示も更新
     } else {
         alert("数量は1以上を指定してください");
+        // 不正な値が入力された場合、元の数量に戻すなどしても良い
+        // event.target.value = cart[index].quantity; 
     }
 }
 
@@ -219,7 +236,7 @@ function updateMiniCart() {
     list.innerHTML = ''; // リストをクリア
     let total = 0; // 合計金額
     let totalCount = 0; // 合計点数
-    const rateTotals = {}; // 税率ごとの税抜き合計金額 { 10: 1000, 8: 2000 }
+    const rateTotals = {}; // 税率ごとの税抜き合計金額 { 0.1: 1000, 0.08: 2000 }
 
     // ヘッダー行を追加
     const header = document.createElement('tr');
@@ -233,27 +250,35 @@ function updateMiniCart() {
 
     // カート内の各アイテムを処理
     cart.forEach((item, index) => {
-        // 税率を取得（item.taxRate.rate があればそれ、なければtaxRateMapから、なければ0）
-        const taxRate = parseFloat(item.taxRate?.rate || taxRateMap[item.taxRateId]) / 100;
-        const subtotal = item.priceWithTax * item.quantity; // 税込小計
-        total += subtotal; // 合計金額に加算
+        // taxRateMap は {ID: 率(10, 8)} の形式なので、0.1や0.08に変換して使う
+        const taxRateValue = parseFloat(taxRateMap[item.taxRateId]) / 100;
+        const subtotal = item.price * item.quantity * (1 + taxRateValue); // 税抜き価格から再計算
+        const subtotalRounded = Math.round(subtotal); // 税込小計を四捨五入
+
+        total += subtotalRounded; // 合計金額に加算
         totalCount += item.quantity; // 合計点数に加算
 
         // 税率別の税抜き価格合計を計算 (明細表示のため)
-        if (!rateTotals[taxRate]) rateTotals[taxRate] = 0;
-        rateTotals[taxRate] += item.price * item.quantity;
+        if (!rateTotals[taxRateValue]) rateTotals[taxRateValue] = 0;
+        rateTotals[taxRateValue] += item.price * item.quantity;
+
+        // オプション表示用の文字列を生成
+        let optionsText = '';
+        if (item.selectedOptionNames && item.selectedOptionNames.length > 0) {
+            optionsText = ` (${item.selectedOptionNames.join(', ')})`;
+        }
 
         // 行を作成してリストに追加
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td>${item.name}</td>
+            <td>${item.name}${optionsText}</td>
             <td style="text-align: center;">
                 <input type="number" min="1" value="${item.quantity}" 
                         onchange="updateQuantity(${index}, this.value)" 
                         style="width: 50px;" />
             </td>
-            <td style="text-align: right;">${subtotal}円</td>
-            <td><button onclick="removeFromCart(${index}, event)">削除</button></td>
+            <td style="text-align: right;">${subtotalRounded}円</td>
+            <td><button onclick="removeFromCart(${index})">削除</button></td>
         `;
         list.appendChild(row);
     });
@@ -269,9 +294,17 @@ function updateMiniCart() {
         .forEach(([rate, amount]) => {
             const line = document.createElement('div');
             // 税率をパーセンテージに変換して表示
-            line.textContent = `${(parseFloat(rate) * 100).toFixed(0)}%対象：¥${amount}`;
+            line.textContent = `${(parseFloat(rate) * 100).toFixed(0)}%対象：¥${Math.round(amount)}`; // 金額も丸める
             taxEl.appendChild(line);
         });
+
+    // カートが空の場合の表示
+    if (cart.length === 0) {
+        list.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 10px;">カートは空です</td></tr>`;
+        totalEl.textContent = `0円`;
+        countEl.textContent = `0点`;
+        taxEl.innerHTML = '';
+    }
 }
 
 /**
@@ -297,6 +330,7 @@ function addToCart(button) {
     const optionSelects = menuItem.querySelectorAll('.option-select'); // このメニューアイテム内の全てのオプション選択欄を取得
 
     const selectedOptions = []; // 選択されたオプションアイテムのIDを格納する配列
+    const selectedOptionNames = []; // 選択されたオプションアイテムの名前を格納する配列
     let optionsAllSelected = true; // 全てのオプションが選択されているかどうかのフラグ
 
     optionSelects.forEach(select => {
@@ -305,6 +339,9 @@ function addToCart(button) {
             return; // ループを中断
         }
         selectedOptions.push(parseInt(select.value)); // 選択されたオプションIDを追加
+        // 選択された<option>要素のテキスト（オプション名）を取得
+        const selectedText = select.options[select.selectedIndex].text;
+        selectedOptionNames.push(selectedText); // 選択されたオプション名を追加
     });
 
     if (!optionsAllSelected) {
@@ -312,22 +349,23 @@ function addToCart(button) {
         return; // カート追加処理を中断
     }
 
-    // 税率をマップから取得し、10% -> 0.1 の形式に変換
-    const taxRate = parseFloat(taxRateMap[taxRateId]) / 100;
-    // 税込価格を計算し、四捨五入
-    const priceWithTax = Math.round(price * (1 + taxRate));
+    // 税率をマップから取得し、10 -> 0.1 の形式に変換
+    const taxRateValue = parseFloat(taxRateMap[taxRateId]) / 100;
+    // 税込価格を計算し、四捨五入（これは表示用なので、内部データは税抜き価格と税率で持つ方が柔軟）
+    const priceWithTax = Math.round(price * (1 + taxRateValue));
 
     // 既存の商品がカートにあるか確認（オプションも考慮して識別）
+    // selectedOptionsをソートしてから文字列化して比較することで、順序が異なっても同じオプションセットとして認識
     const existing = cart.find(item =>
         item.menuId === menuId &&
-        JSON.stringify(item.selectedOptions.sort()) === JSON.stringify(selectedOptions.sort()) // オプションも完全に一致する場合
+        JSON.stringify(item.selectedOptions.slice().sort()) === JSON.stringify(selectedOptions.slice().sort()) 
     );
 
     if (existing) {
         existing.quantity += quantity; // 既存の商品があれば数量を加算
     } else {
         // なければ新しい商品としてカートに追加
-        cart.push({ menuId, taxRateId, price, priceWithTax, quantity, name, selectedOptions });
+        cart.push({ menuId, taxRateId, price, priceWithTax, quantity, name, selectedOptions, selectedOptionNames });
     }
 
     showToast("カートに追加しました"); // トーストメッセージを表示
@@ -343,11 +381,12 @@ function addToCart(button) {
 /**
  * カートから商品を削除する関数
  * @param {number} index - 削除する商品のカート配列内のインデックス
- * @param {Event} event - イベントオブジェクト (親要素への伝播を止めるため)
  */
 function removeFromCart(index) {
-    event.stopPropagation(); // 親要素へのイベント伝播を停止
+    // 削除ボタンのクリックイベントがメニューアイテムのクリックイベントに伝播しないように
+    event.stopPropagation(); 
     cart.splice(index, 1); // 指定されたインデックスの要素を削除
+    showToast("カートから削除しました");
     updateMiniCart(); // ミニカートの表示を更新
 }
 
@@ -355,6 +394,11 @@ function removeFromCart(index) {
  * 注文を確定する関数
  */
 function submitOrder() {
+    if (cart.length === 0) {
+        alert('カートに商品がありません。');
+        return;
+    }
+    
     // カートの内容を注文データとして整形
     const orderItems = cart.map(item => ({
         menuId: parseInt(item.menuId),
@@ -377,11 +421,86 @@ function submitOrder() {
             alert('注文を確定しました');
             cart.length = 0; // カートを空にする
             updateMiniCart(); // ミニカートの表示を更新
+            // 注文確定後、注文履歴を再取得して最新の状態にする
+            // toggleHistory(); // historyModalが開いている場合は閉じてしまうので、直接fetchOrderHistoryを呼ぶ
+            // もし注文履歴が自動的に開かれるのが嫌なら、コメントアウトしても良い
+            fetchOrderHistoryForHistoryModal(); // 履歴モーダルを更新する関数を別途作成
         } else {
             alert('注文に失敗しました');
         }
+    }).catch(error => {
+        console.error('注文送信中にエラーが発生しました:', error);
+        alert('注文送信中にエラーが発生しました。ネットワーク接続を確認してください。');
     });
 }
+
+
+/**
+ * 注文履歴モーダル内の表示を更新するためのフェッチ関数
+ * toggleHistory とは独立させて、自動で開閉しないようにする
+ */
+function fetchOrderHistoryForHistoryModal() {
+    fetch('/order/history')
+        .then(res => res.json())
+        .then(data => {
+            const tbody = document.querySelector('#historyTable tbody');
+            const totalEl = document.getElementById('historyTotal');
+            const countEl = document.getElementById('historyCount');
+            const taxEl = document.getElementById('historyTax');
+            tbody.innerHTML = '';
+            taxEl.innerHTML = '';
+
+            let total = 0;
+            let count = 0;
+            const rateTotals = {};
+
+            data.forEach(item => {
+                const subtotal = parseInt(item.subtotal) || 0;
+                const quantity = parseInt(item.quantity) || 0;
+                const rate = parseFloat(item.taxRate) || 0;
+
+                total += subtotal;
+                count += quantity;
+
+                if (!rateTotals[rate]) rateTotals[rate] = 0;
+                rateTotals[rate] += item.price * quantity; 
+
+                let optionsText = '';
+                if (item.selectedOptionNames && item.selectedOptionNames.length > 0) {
+                    optionsText = ` (${item.selectedOptionNames.join(', ')})`;
+                }
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.menuName}${optionsText}</td>
+                    <td style="text-align: center;">${quantity}</td>
+                    <td style="text-align: right;">${subtotal}円</td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            totalEl.textContent = `${total}円`;
+            countEl.textContent = `${count}点`;
+
+            Object.entries(rateTotals)
+                .sort((a, b) => a[0] - b[0])
+                .forEach(([rate, amount]) => {
+                    const line = document.createElement('div');
+                    const percent = (parseFloat(rate) * 100).toFixed(0);
+                    line.textContent = `${percent}%対象：¥${Math.round(amount)}`;
+                    line.style.textAlign = "right";
+                    taxEl.appendChild(line);
+                });
+            
+            // カート確定後の履歴更新なので、モーダルが開いていなければ閉じっぱなし
+            // 開いている場合はそのまま更新される
+        })
+        .catch(error => {
+            console.error("注文履歴の再取得に失敗しました:", error);
+        });
+}
+
+
 // メニュー表示関連処理
 // -----------------------------------------------------------------------------
 
@@ -423,7 +542,8 @@ window.addEventListener('DOMContentLoaded', () => {
         .then(res => res.json())
         .then(data => {
             data.forEach(rate => {
-                taxRateMap[rate.taxRateId] = Math.round(rate.rate * 100); // 10% → 10 の形式で保存
+                // taxRateMapには 10% -> 10 の形式で保存
+                taxRateMap[rate.taxRateId] = Math.round(rate.rate * 100); 
             });
         })
         .catch(err => {
@@ -522,7 +642,8 @@ window.addEventListener('click', (e) => {
             !e.target.closest('.history-button')
         ) {
             closeHistoryModal(); // 履歴モーダルを閉じる
-            historyToggleBtn.textContent = "注文履歴"; // ボタンのテキストを戻す
+            // closeHistoryModal 関数内でボタンテキストを戻すように修正したのでここはいらない
+            // historyToggleBtn.textContent = "注文履歴";
         }
     }
     
@@ -546,4 +667,6 @@ window.onload = () => {
     if (params.get("from") === "seatlist") {
         document.getElementById("backToSeatList").style.display = "block";
     }
+    // ページロード時にミニカートを初期化表示
+    updateMiniCart();
 };
