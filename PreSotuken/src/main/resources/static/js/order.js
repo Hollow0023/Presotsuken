@@ -212,7 +212,11 @@ window.addEventListener('DOMContentLoaded', () => {
                 const body = message.body;
                 if (body === 'LEAVE') {
                     document.cookie = 'visitId=; Max-Age=0; path=/';
+<<<<<<< HEAD
 //                    document.cookie = 'userId=; Max-Age=0; path=/';
+=======
+                    document.cookie = 'userId=; Max-Age=0; path=/';
+>>>>>>> branch 'master' of https://github.com/Hollow0023/Presotsuken.git
                     window.location.href = '/visits/orderwait';
                 }
             });
