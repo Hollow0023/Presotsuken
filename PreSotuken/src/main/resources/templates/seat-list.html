@@ -12,8 +12,8 @@
 	</nav>
 
 	<div style="text-align: right; margin-bottom: 16px;">
-		<form th:action="@{/logout}" method="get">
-			<button type="submit">ログアウト</button>
+		<form th:action="@{/logout}" method="get" onsubmit="clearUserIdCookie()">
+		    <button type="submit">ログアウト</button>
 		</form>
 	</div>
 
@@ -41,8 +41,8 @@
 			<span class="close" onclick="closeModal()">&times;</span>
 			<h3 id="modalSeatName">テーブル名</h3>
 			<form th:action="@{/visits}" method="post">
-				<input type="hidden" name="seat.seatId" id="modalSeatId"> 
-				<input type="hidden" name="store.storeId" value="1" />
+				<input type="hidden" name="seat.seatId" id="modalSeatId">
+	            <input type="hidden" name="store.storeId" value="1" />
 				<label>人数: <input type="number"
 					name="numberOfPeople" min="1" required /></label><br> <br>
 				<button type="submit">入店</button>
@@ -58,9 +58,7 @@
 			<button id="paymentCheckBtn">会計確認</button>
 			<button onclick="closeModal()">キャンセル</button>
 			<button id="deleteVisitBtn">入店情報を削除</button>
-			<a id="orderLink">
-			    <button type="button">注文画面へ</button>
-			</a>
+			<button id="orderBtn" type="button">注文画面へ</button>
 		</div>
 	</div>
 	

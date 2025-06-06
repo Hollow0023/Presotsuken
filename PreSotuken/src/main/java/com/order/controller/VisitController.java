@@ -72,6 +72,7 @@ public class VisitController {
 			payload.put("visitId", savedVisit.getVisitId());
 			payload.put("storeId", storeId);
 			payload.put("seatId", seatId);
+			payload.put("userId", null);
 			messagingTemplate.convertAndSend("/topic/seats/" + seatId, payload);
 
 			redirectAttributes.addFlashAttribute("registerSuccess", true);
@@ -101,7 +102,7 @@ public class VisitController {
 		Integer seatId = terminal.getSeat().getSeatId();
 		model.addAttribute("seatId", seatId);
 		model.addAttribute("storeId", storeId);
-
+		model.addAttribute("userId", null);
 		// Cookie に seatId を保存
 		Cookie seatIdCookie = new Cookie("seatId", String.valueOf(seatId));
 		seatIdCookie.setPath("/");

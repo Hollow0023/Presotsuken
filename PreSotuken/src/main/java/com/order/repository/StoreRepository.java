@@ -7,5 +7,6 @@ import com.order.entity.Store;
 
 @Repository
 public interface StoreRepository extends JpaRepository<Store, Integer> {
+	boolean existsByStoreIdAndStoreName(Integer storeId, String storeName);
 	
 }

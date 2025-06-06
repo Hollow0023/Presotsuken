@@ -1,26 +1,34 @@
 package com.order.controller;
 
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.order.entity.Store;
+import com.order.entity.User;
 import com.order.repository.StoreRepository;
+import com.order.repository.UserRepository;
 
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 
 @Controller
+@RequiredArgsConstructor
+
 public class LoginController {
 
     private final StoreRepository storeRepository;
+    private final UserRepository userRepository;
 
-    public LoginController(StoreRepository storeRepository) {
-        this.storeRepository = storeRepository;
-    }
 
     @GetMapping("/")
     public String showLoginForm(HttpServletRequest request, HttpServletResponse response, Model model) {
@@ -83,5 +91,18 @@ public class LoginController {
             model.addAttribute("error", "店舗情報が一致しません");
             return "login";
         }
+    }
+    
+    @GetMapping("/api/users/by-store")
+    @ResponseBody
+    public List<User> getUsersByStore(@RequestParam Integer storeId) {
+        return userRepository.findByStore_StoreId(storeId);
+    }
+    
+    @GetMapping("/api/stores/check")
+    @ResponseBody
+    public Map<String, Boolean> checkStore(@RequestParam Integer storeId, @RequestParam String storeName) {
+        boolean valid = storeRepository.existsByStoreIdAndStoreName(storeId, storeName);
+        return Map.of("valid", valid);
     }
 }

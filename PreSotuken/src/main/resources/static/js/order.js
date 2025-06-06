@@ -1,4 +1,13 @@
 const cart = [];
+const seatId = getCookie("seatId"); // もしくは URL から取得
+
+function getCookie(name) {
+	const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+	return match ? decodeURIComponent(match[2]) : null;
+}
+
+
+
 
 function toggleDetails(elem) {
 	  const detail = elem.querySelector(".menu-detail");
@@ -152,6 +161,7 @@ function submitOrder() {
     }));
 
     fetch('/order/submit', {
+
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(orderItems)
@@ -208,15 +218,18 @@ window.addEventListener('DOMContentLoaded', () => {
     const stompClient = Stomp.over(socket);
     stompClient.connect({}, function () {
         if (typeof seatId !== 'undefined' && seatId !== null) {
+			// Cookie整理処理をここに追加する
+			const rawUserId = getCookie("userId");
+			if (rawUserId === "null" || rawUserId === "undefined") {
+			  document.cookie = "userId=; Max-Age=0; path=/";
+			}
+
             stompClient.subscribe(`/topic/seats/${seatId}`, function (message) {
                 const body = message.body;
                 if (body === 'LEAVE') {
                     document.cookie = 'visitId=; Max-Age=0; path=/';
-<<<<<<< HEAD
+
 //                    document.cookie = 'userId=; Max-Age=0; path=/';
-=======
-                    document.cookie = 'userId=; Max-Age=0; path=/';
->>>>>>> branch 'master' of https://github.com/Hollow0023/Presotsuken.git
                     window.location.href = '/visits/orderwait';
                 }
             });

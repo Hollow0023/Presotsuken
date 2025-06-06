@@ -80,8 +80,8 @@ public class OrderController {
     	User user = null;
         Payment payment = paymentRepository.findByVisitVisitId(visitId);
         
-        if(userId != null) {
-        	user = userRepository.findById(userId).orElseThrow();
+        if (userId != null) {
+            user = userRepository.findById(userId).orElse(null); // orElseThrow()だと存在しないと落ちるから注意
         }
        
 

@@ -1,5 +1,10 @@
 let activeSeatId = null;
 
+
+function clearUserIdCookie() {
+    document.cookie = "userId=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+}
+
 function getCookie(name) {
 	const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
 	return match ? decodeURIComponent(match[2]) : null;
@@ -20,9 +25,9 @@ function openSeat(elem) {
 				document.getElementById('activeModal').setAttribute("data-seat-id", seatId);
 				document.getElementById('activeModalSeatName').innerText = seatName;
 				
-			    const orderLink = document.getElementById("orderLink");
-			    const visitId = data.visitId;
-			    orderLink.href = `/order?seatId=${seatId}&admin=true&visitId=${visitId}&from=seatlist`;
+//			    const orderLink = document.getElementById("orderLink");
+//			    const visitId = data.visitId;
+//			    orderLink.href = `/order?seatId=${seatId}&admin=true&visitId=${visitId}&from=seatlist`;
 
 			    
 				document.getElementById('activeModal').style.display = 'block';
@@ -137,6 +142,16 @@ function toggleMenu() {
 
 	burger.style.color = drawer.classList.contains("open") ? "white" : "black";
 }
+
+
+document.getElementById("orderBtn").addEventListener("click", () => {
+    const seatId = document.getElementById("activeModal").getAttribute("data-seat-id");
+    const visitId = activeSeatId ? activeSeatId : ""; // visitId はここでは使われてるか注意
+
+    // 遷移
+    window.location.href = `/order?seatId=${seatId}&admin=true&visitId=${visitId}&from=seatlist`;
+});
+
 
 setInterval(fetchVisitInfo, 60000);
 window.onload = fetchVisitInfo;
