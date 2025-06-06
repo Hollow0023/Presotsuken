@@ -1,5 +1,7 @@
 package com.order.entity;
 
+import java.time.LocalDateTime;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -40,4 +42,5 @@ public class PaymentDetail {
     private TaxRate taxRate;
 
     private Double subtotal;
+    private LocalDateTime orderTime;
 }

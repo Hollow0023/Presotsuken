@@ -1,6 +1,5 @@
 let activeSeatId = null;
 
-
 function clearUserIdCookie() {
     document.cookie = "userId=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
 }
@@ -152,7 +151,7 @@ function toggleMenu() {
 
 document.getElementById("orderBtn").addEventListener("click", () => {
     const seatId = document.getElementById("activeModal").getAttribute("data-seat-id");
-	const storeId = getCookie("storeId"); // ← storeId は Cookie から取得
+	const storeId = getCookie("storeId"); 
 	
     // visitId取得
     fetch(`/api/visit-info?seatId=${seatId}&storeId=${storeId}`)
@@ -168,7 +167,34 @@ document.getElementById("orderBtn").addEventListener("click", () => {
       });
   });
       
+// ユーザーIDをCookieに保存する関数
+function setUserIdCookie(userId) {
+    if (userId) {
+        document.cookie = "userId=" + userId + "; path=/; max-age=" + (60 * 60 * 24 * 30); // 30日間有効
+        console.log("CookieにuserIdを保存しました: " + userId);
+    } else {
+        // 未選択の場合はCookieを削除する、など
+        // `currentUserId`を`userId`に修正
+        document.cookie = "userId=; path=/; max-age=0"; // Cookieを即座に期限切れにする
+        console.log("CookieからuserIdを削除しました。");
+    }
+}
 
+// ページロード時に実行する処理を全てこの中にまとめる
+window.onload = function() {
+    // ユーザーIDをCookieから読み込んでプルダウンに反映する処理
+    const userIdCookie = document.cookie.split('; ').find(row => row.startsWith('userId='));
+    if (userIdCookie) {
+        const userId = userIdCookie.split('=')[1];
+        const userSelect = document.getElementById('userSelect');
+        if (userSelect) {
+            userSelect.value = userId;
+        }
+    }
 
-setInterval(fetchVisitInfo, 60000);
-window.onload = fetchVisitInfo;
+    // fetchVisitInfo の実行
+    fetchVisitInfo();
+
+    // setInterval の設定
+    setInterval(fetchVisitInfo, 60000);
+};

@@ -108,7 +108,7 @@ function toggleHistory() {
                         const line = document.createElement('div');
                         // 税率をパーセンテージに変換 (例: 0.1 -> 10%)
                         const percent = (parseFloat(rate) * 100).toFixed(0); 
-                        line.textContent = `${percent}%対象：¥${amount}`;
+                        line.textContent = `${percent}%対象：¥${amount}(税別)`;
                         line.style.textAlign = "right";
                         taxEl.appendChild(line);
                     });
@@ -294,7 +294,7 @@ function updateMiniCart() {
         .forEach(([rate, amount]) => {
             const line = document.createElement('div');
             // 税率をパーセンテージに変換して表示
-            line.textContent = `${(parseFloat(rate) * 100).toFixed(0)}%対象：¥${Math.round(amount)}`; // 金額も丸める
+            line.textContent = `${(parseFloat(rate) * 100).toFixed(0)}%対象：¥${Math.round(amount)}(税別)`; // 金額も丸める
             taxEl.appendChild(line);
         });
 

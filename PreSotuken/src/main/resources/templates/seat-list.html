@@ -8,7 +8,15 @@
 <body>
 	<button class="burger" onclick="toggleMenu()">☰</button>
 	<div class = "title">テーブル一覧</div>
-	
+    <div style="margin: 10px;">
+       <label for="userSelect">担当者:</label>
+       <select id="userSelect" onchange="setUserIdCookie(this.value)">
+           <option value="">ユーザーを選択</option>
+           <option th:each="user : ${users}" th:value="${user.userId}" th:text="${user.userName}"></option>
+       </select>
+    </div>
+    
+    
 	<nav id="menuDrawer" class="menu-drawer">
 		<div>
 			<a href="/menu/add">メニュー追加</a>

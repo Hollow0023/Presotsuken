@@ -1,5 +1,6 @@
 package com.order.controller;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -108,6 +109,7 @@ public class OrderController {
             detail.setTaxRate(taxRate);
             // サブトータルの計算: 税抜き価格 * 数量
             detail.setSubtotal((double) (menu.getPrice() * item.getQuantity())); 
+            detail.setOrderTime(LocalDateTime.now());
             
             // ★ PaymentDetailを保存し、その結果（IDが付与されたエンティティ）を取得
             PaymentDetail savedDetail = paymentDetailRepository.save(detail);
