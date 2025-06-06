@@ -1,0 +1,198 @@
+@charset "UTF-8";
+body {
+	font-family: sans-serif;
+	overflow: hidden;
+	margin:0;
+}
+
+main{
+	display: flex;
+	height: 90dvh;               /* 画面いっぱいの高さ */
+}
+.buttons{
+	background-color: aquamarine;
+	height: 10dvh;;
+}
+
+.menu-tabs {
+	width: 150px;
+	padding: 12px;
+	margin-right: 20px;
+	background-color: rgb(247, 247, 162);
+	
+	overflow-y: auto;
+	overflow-x: hidden;
+}
+
+.menu-tab {
+	padding: 10px;
+	width: 130px;;
+	cursor: pointer;
+	border: 1px solid #ccc;
+	margin-bottom: 5px;
+	background: #f2f2f2;
+	text-align: center;
+}
+
+.menu-tab.active {
+	position: relative;
+	left: 10px;
+	font-weight: bold;
+}
+
+.menu-list {
+	flex: 1;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 20px;
+	background-color: antiquewhite;
+	align-content: flex-start;
+	overflow-y: scroll;
+}
+
+/* ==== メニュータイルレイアウト ==== */
+.menu-item {
+	width: 200px;
+	height: 180px;
+	border: 1px solid #ccc;
+	border-radius: 8px;
+	background: #fff;
+	padding: 0;
+	margin: 0;
+	box-sizing: border-box;
+	overflow: hidden;
+	transition: max-height 0.3s ease, height 0.3s ease;
+	cursor: pointer;
+}
+
+.menu-image-wrapper {
+	height: 100px;
+	background: #f0f0f0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	position: relative;
+}
+
+.menu-image-wrapper img {
+	max-width: 100%;
+	max-height: 100%;
+	object-fit: contain;
+}
+
+.info-btn {
+	position: absolute;
+	top: 6px;
+	right: 6px;
+	border: 1px solid #000;
+	background: white;
+	border-radius: 50%;
+	width: 22px;
+	height: 22px;
+	font-weight: bold;
+	font-size: 14px;
+	line-height: 1;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+}
+
+.menu-name {
+	font-weight: bold;
+	padding: 8px 10px 4px 10px;
+	font-size: 14px;
+}
+
+.menu-price {
+	border-top: 2px solid #ccc;
+	font-size: 13px;
+	font-weight: bold;
+	text-align: center;
+	color: red;
+	padding-bottom: 8px;
+	padding-top: 4px;
+}
+
+.menu-detail {
+	display: none;
+	text-align: center;
+	padding: 12px 8px;
+	overflow: hidden;
+	transition: max-height 0.3s ease;
+	background-color: #f9f9f9; /* 確認用 */
+	border-top: 1px solid #eee; /* 確認用 */
+}
+
+.menu-item.expanded .menu-detail {
+	display: block;
+}
+
+.cart{
+	top: 0; bottom: 0; 
+	right: 0; 
+	width: 260px; 
+	background: white; 
+	border-left: 1px solid #ccc; 
+	padding: 10px; 
+	box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1); 
+	display: flex; 
+	flex-direction: column; 
+	justify-content: space-between;
+	overflow-y: auto;
+}
+
+/* ==== カートモーダル系 ==== */
+#cartModal, #historyModal {
+	display: none;
+	position: fixed;
+	z-index: 20;
+	left: 0;
+	top: 0;
+	width: 100%;
+	height: 100%;
+	background: rgba(0, 0, 0, 0.5);
+}
+
+.cart-modal-content {
+	background: white;
+	padding: 20px;
+	margin: 0 auto;
+	margin-top: 50px;
+	width: 600px;
+	border-radius: 8px;
+}
+
+.close {
+	float: right;
+	cursor: pointer;
+	font-weight: bold;
+}
+
+table {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+th, td {
+	padding: 8px;
+	text-align: left;
+	border-bottom: 1px solid #ddd;
+}
+
+#historyTable {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+#historyTable tbody {
+	display: block;
+	max-height: 300px;
+	overflow-y: auto;
+}
+
+#historyTable thead, #historyTable tbody tr {
+	display: table;
+	width: 100%;
+	table-layout: fixed;
+}
