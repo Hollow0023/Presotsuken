@@ -82,6 +82,7 @@ function updateSeatTile(seatId) {
 	const peopleSpan = document.getElementById(`people-${seatId}`);
 	const totalDiv = document.getElementById(`total-${seatId}`);
 	const elapsedDiv = document.getElementById(`elapsed-${seatId}`);
+	const statusDiv = document.getElementById(`status-${seatId}`); 
 	const storeId = getCookie("storeId");
 
 	seat.classList.remove('elapsed-yellow', 'elapsed-red', 'occupied');
@@ -91,6 +92,7 @@ function updateSeatTile(seatId) {
 		.then(data => {
 			if (data.visiting) {
 				seat.classList.add('occupied');
+				if (statusDiv) statusDiv.style.display = 'block'; // 表示
 				const elapsedMinutes = Math.floor(data.elapsedMinutes);
 
 				if (elapsedMinutes >= 60) {
@@ -106,7 +108,7 @@ function updateSeatTile(seatId) {
 					.then(res => res.json())
 					.then(amountData => {
 						if (amountData.total && amountData.total > 0) {
-							totalDiv.innerText = `合計 ${amountData.total}円`;
+							totalDiv.innerText = `\\ ${amountData.total}`;
 						} else {
 							totalDiv.innerText = '';
 						}
@@ -118,6 +120,7 @@ function updateSeatTile(seatId) {
 				peopleSpan.innerText = '';
 				totalDiv.innerText = '';
 				elapsedDiv.innerText = '';
+				if (statusDiv) statusDiv.style.display = 'none'; // 非表示
 			}
 		});
 }

@@ -7,7 +7,11 @@
 </head>
 <body>
 	<div class="buttons">
-		<button onclick="openHistoryModal()" style="margin-right: 8px;">注文履歴</button>
+		<div id="seatInfo"></div>
+		<div>
+			<button class="history-button" onclick="openHistoryModal()" style="margin-right: 8px;">注文履歴</button>
+			<button class="cart-button" onclick="toggleCart()">🛒 カートを見る</button>
+		</div>
 	</div>
 	
 	<main>
@@ -58,34 +62,31 @@
 		</div>
 	
 		<!-- カート固定枠 -->
-		<div class ="cart">
+		<div id="cartPanel" class ="cart">
 			<div>
 				<h4 style="margin-top: 0;">カートの中身</h4>
-				<ul id="cartMiniList"
-					style="list-style: none; padding-left: 0; margin: 0; overflow-y: auto; max-height: calc(100vh - 160px);"></ul>
-				<p id="cartMiniTotal" style="text-align: right; font-weight: bold;"></p>
-			</div>
-			<div style="text-align: right;">
+				<p id="cartItemCount" style="margin: 0 0 6px; font-size: 0.9em; color: #555;"></p>
+
 				
-				<button onclick="openCartModal()">注文確認</button>
+				<table id="cartMiniList"
+				  style="width: 100%; border-collapse: collapse; margin-bottom: 10px;"></table>
+
+				
 			</div>
-		</div>
-	
-		<!-- モーダル：カート -->
-		<div id="cartModal">
-			<div class="cart-modal-content">
-				<span class="close" onclick="closeCartModal()">&times;</span>
-				<h3>カート内容</h3>
-				<ul id="cartList"></ul>
-				<p id="cartTotal" style="text-align: right; font-weight: bold;"></p>
-				<button onclick="submitOrder()">注文確定</button>
+			<div>
+				<p id="cartMiniTotal"></p>
+				<button class="cart-check-button" onclick="submitOrder()">注文確定</button>
 			</div>
+
+
 		</div>
+
 	
 		<!-- モーダル：履歴 -->
 		<div id="historyModal" class="modal">
 			<div class="cart-modal-content">
-				<span class="close" onclick="closeHistoryModal()">&times;</span>
+
+				<div class="close" onclick="closeHistoryModal()">閉じる</div>
 				<h3>注文履歴</h3>
 				<table id="historyTable">
 					<thead>
@@ -104,10 +105,25 @@
 	
 	</main>
 	
+	<div id="toast" style="
+	    position: fixed;
+	    bottom: 20px;
+	    left: 50%;
+	    transform: translateX(-50%);
+	    background: #333;
+	    color: #fff;
+	    padding: 12px 20px;
+	    border-radius: 4px;
+	    display: none;
+	    z-index: 1000;
+	    box-shadow: 0 0 8px rgba(0,0,0,0.3);
+	    transition: opacity 0.5s ease;
+	"></div>
+	
 	
 	<script src="/js/order.js"></script>
 	<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
 	<script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
-
+	
 </body>
 </html>

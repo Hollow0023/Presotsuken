@@ -1,11 +1,61 @@
 const cart = [];
 const seatId = getCookie("seatId"); // もしくは URL から取得
+document.getElementById("seatInfo").innerText = `${seatId}`;
 
 function getCookie(name) {
 	const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
 	return match ? decodeURIComponent(match[2]) : null;
 }
 
+function showToast(message, duration = 2000) {
+    const toast = document.getElementById("toast");
+    toast.textContent = message;
+    toast.style.display = "block";
+    toast.style.opacity = "1";
+
+    setTimeout(() => {
+        toast.style.opacity = "0";
+        setTimeout(() => {
+            toast.style.display = "none";
+        }, 500); // フェードアウト後に非表示
+    }, duration);
+}
+
+function toggleCart(show) {
+  const cartPanel = document.getElementById("cartPanel");
+  if (!cartPanel) return;
+
+  if (show === true) {
+    cartPanel.classList.add("show");
+  } else if (show === false) {
+    cartPanel.classList.remove("show");
+  } else {
+    cartPanel.classList.toggle("show");
+  }
+}
+
+// カート以外の部分クリックで閉じる
+window.addEventListener('click', (e) => {
+  const cartPanel = document.getElementById("cartPanel");
+  if (!cartPanel) return;
+
+  const isClickInside = cartPanel.contains(e.target) || e.target.closest('button[onclick="toggleCart()"]');
+  if (!isClickInside) {
+    cartPanel.classList.remove("show");
+  }
+});
+
+
+
+function updateQuantity(index, newVal) {
+    const qty = parseInt(newVal);
+    if (!isNaN(qty) && qty > 0) {
+        cart[index].quantity = qty;
+        updateMiniCart(); // 小計・合計も更新される
+    } else {
+        alert("数量は1以上を指定してください");
+    }
+}
 
 
 
@@ -50,22 +100,46 @@ function showDescriptionFromData(btn) {
     alert(`${title}\n\n${desc}`);
 }
 
+
+
 function updateMiniCart() {
     const list = document.getElementById('cartMiniList');
     const totalEl = document.getElementById('cartMiniTotal');
     list.innerHTML = '';
     let total = 0;
 
+    // 表のヘッダー行
+    const header = document.createElement('tr');
+    header.innerHTML = `
+        <th style="text-align: left;">商品名</th>
+        <th style="text-align: center;">数量</th>
+        <th style="text-align: right;">小計</th>
+        <th></th>
+    `;
+    list.appendChild(header);
+
     cart.forEach((item, index) => {
         const subtotal = item.price * item.quantity;
         total += subtotal;
-        const li = document.createElement('li');
-        li.innerHTML = `${item.name}：${subtotal}円 <button onclick="removeFromCart(${index})">削除</button>`;
-        list.appendChild(li);
+
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${item.name}</td>
+            <td style="text-align: center;">
+                <input type="number" min="1" value="${item.quantity}" 
+                       onchange="updateQuantity(${index}, this.value)" 
+                       style="width: 50px;" />
+            </td>
+            <td style="text-align: right;">${subtotal}円</td>
+            <td><button onclick="removeFromCart(${index})">削除</button></td>
+        `;
+        list.appendChild(row);
     });
 
     totalEl.textContent = `合計：${total}円`;
 }
+
+
 
 function switchTab(tabElement) {
     document.querySelectorAll('.menu-tab').forEach(t => t.classList.remove('active'));
@@ -95,8 +169,13 @@ function addToCart(button) {
     } else {
         cart.push({ menuId, taxRateId, price, quantity, name });
     }
+    showToast("カートに追加しました");
 
-    alert(`${name} を ${quantity}個 カートに追加しました。`);
+    const menuItem = button.closest('.menu-item');
+    if (menuItem && menuItem.classList.contains('expanded')) {
+        toggleDetails(menuItem);
+    }
+
     updateMiniCart();
 }
 
@@ -159,6 +238,7 @@ function submitOrder() {
         taxRateId: parseInt(item.taxRateId),
         quantity: parseInt(item.quantity)
     }));
+    cartPanel.classList.remove("show")
 
     fetch('/order/submit', {
 
@@ -208,6 +288,7 @@ window.addEventListener('DOMContentLoaded', () => {
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
             addToCart(btn);
+            
         });
     });
 
@@ -235,6 +316,24 @@ window.addEventListener('DOMContentLoaded', () => {
             });
         }
     });
+});
+
+window.addEventListener('click', (e) => {
+  const historyModal = document.getElementById('historyModal');
+  // 履歴モーダルの外側クリックで閉じる
+  if (
+    historyModal &&
+    historyModal.style.display === 'block' &&
+    !e.target.closest('.cart-modal-content') &&
+    historyModal.contains(e.target)
+  ) {
+    closeHistoryModal();
+  }
+  document.querySelectorAll('.menu-item.expanded').forEach(item => {
+    if (!item.contains(e.target)) {
+      toggleDetails(item); // 閉じる
+    }
+  });
 });
 
 window.onload = () => {

@@ -7,31 +7,36 @@
 </head>
 <body>
 	<button class="burger" onclick="toggleMenu()">☰</button>
+	<div class = "title">テーブル一覧</div>
+	
 	<nav id="menuDrawer" class="menu-drawer">
-		<a href="/menu/add">メニュー追加</a> <a href="/menu/group/add">メニューグループ追加</a>
-	</nav>
-
-	<div style="text-align: right; margin-bottom: 16px;">
+		<div>
+			<a href="/menu/add">メニュー追加</a>
+			<a href="/menu/group/add">メニューグループ追加</a>
+		</div>
+		
 		<form th:action="@{/logout}" method="get" onsubmit="clearUserIdCookie()">
 		    <button type="submit">ログアウト</button>
 		</form>
-	</div>
+	</nav>
 
-	<div th:each="entry : ${groupedSeats}" class="group">
-		<h3 th:text="${entry.key.seatGroupName}">グループ名</h3>
+
+	<div  th:each="entry : ${groupedSeats}" class="group">
+		<h3 class="groupTitle" th:text="${entry.key.seatGroupName}">グループ名</h3>
 
 		<div th:each="seat : ${entry.value}" class="seat"
 			th:attr="data-seat-id=${seat.seatId}, data-seat-name=${seat.seatName}"
 			onclick="openSeat(this)">
 
 			<div class="seat-header">
-				<span th:text="${seat.seatName}" class="seat-name"></span> <span
-					class="seat-people" th:id="'people-' + ${seat.seatId}"></span>
+				<div class="seat-elapsed" th:id="'elapsed-' + ${seat.seatId}"></div>
+				<span class="seat-people" th:id="'people-' + ${seat.seatId}"></span>
 			</div>
 
-			<div class="seat-center">注文受付中</div>
+			<div class="seat-center" th:id="'status-' + ${seat.seatId}">注文受付中</div>
 			<div class="seat-total" th:id="'total-' + ${seat.seatId}"></div>
-			<div class="seat-footer" th:id="'elapsed-' + ${seat.seatId}"></div>
+			
+			<span th:text="${seat.seatName}" class="seat-footer"></span> 
 		</div>
 	</div>
 
