@@ -28,6 +28,10 @@ public class Menu {
     @ManyToOne
     @JoinColumn(name = "menu_group_id")
     private MenuGroup menuGroup;
+    
+    @ManyToOne
+    @JoinColumn(name = "time_slot_id")
+    private MenuTimeSlot timeSlot;
 
     private String menuName;
     private String menuImage;

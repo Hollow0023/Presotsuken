@@ -9,9 +9,8 @@ function openSeat(elem) {
 	const seatId = elem.getAttribute('data-seat-id');
 	const seatName = elem.getAttribute('data-seat-name');
 	activeSeatId = seatId;
+	
 	const storeId = getCookie("storeId");
-	console.log("seatId =", seatId);
-	console.log("storeId =", storeId);
 	
 	
 	fetch(`/api/visit-info?seatId=${seatId}&storeId=${storeId}`)
@@ -20,6 +19,12 @@ function openSeat(elem) {
 			if (data.visiting) {
 				document.getElementById('activeModal').setAttribute("data-seat-id", seatId);
 				document.getElementById('activeModalSeatName').innerText = seatName;
+				
+			    const orderLink = document.getElementById("orderLink");
+			    const visitId = data.visitId;
+			    orderLink.href = `/order?seatId=${seatId}&admin=true&visitId=${visitId}&from=seatlist`;
+
+			    
 				document.getElementById('activeModal').style.display = 'block';
 
 				document.getElementById('paymentCheckBtn').onclick = () => {

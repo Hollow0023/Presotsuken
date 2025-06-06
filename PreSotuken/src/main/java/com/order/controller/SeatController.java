@@ -13,36 +13,23 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import com.order.entity.SeatGroup;
-import com.order.entity.User;
 import com.order.entity.Visit;
 import com.order.repository.SeatGroupRepository;
 import com.order.repository.SeatRepository;
-import com.order.repository.UserRepository;
 import com.order.repository.VisitRepository;
 
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 
 @Controller
+@RequiredArgsConstructor
 @RequestMapping("/seats")
 public class SeatController {
 
     private final SeatGroupRepository seatGroupRepository;
     private final SeatRepository seatRepository;
     private final VisitRepository visitRepository;
-    private final UserRepository userRepository;
-
-
-    public SeatController(SeatGroupRepository seatGroupRepository,
-            SeatRepository seatRepository,
-            VisitRepository visitRepository,
-            UserRepository userRepository) {
-		this.seatGroupRepository = seatGroupRepository;
-		this.seatRepository = seatRepository;
-		this.visitRepository = visitRepository;
-		this.userRepository = userRepository;
-	}
-
 
     @GetMapping
     public String showSeatsByGroup(HttpServletRequest request, Model model) {
@@ -82,10 +69,6 @@ public class SeatController {
     	    visitMap = visits.stream()
     	        .collect(Collectors.toMap(v -> v.getSeat().getSeatId(), Function.identity()));
     	}
-    	
-    	List<User> users = userRepository.findByStore_StoreId(storeId);
-    	model.addAttribute("users", users);
-
 
     	model.addAttribute("visitMap", visitMap);
         model.addAttribute("activeVisits", visits);

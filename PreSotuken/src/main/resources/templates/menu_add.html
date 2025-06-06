@@ -6,6 +6,7 @@
 </head>
 <body>
 <h2>メニュー追加</h2>
+<a href="/">← トップに戻る</a>
 
 <form th:action="@{/menu/add}" method="post" th:object="${menu}" enctype="multipart/form-data">
     <label>メニュー名: <input type="text" th:field="*{menuName}" required /></label><br>
@@ -13,6 +14,20 @@
     <label>価格: <input type="number" th:field="*{price}" required /></label><br>
     <label>メニュー説明: <input type="text" th:field="*{menuDescription}" /></label><br>
     <label>レシート表記名: <input type="text" th:field="*{receiptLabel}" /></label><br>
+	
+	<br><br>
+	<label>表示時間帯:
+	    <select name="timeSlot.timeSlotId" required>
+	        <option value="" disabled selected>選択してください</option>
+	        <option th:each="slot : ${timeSlots}"
+	                th:value="${slot.timeSlotId}"
+	                th:text="${slot.name + '（' + slot.startTime + '〜' + slot.endTime + '）'}">
+	        </option>
+	    </select>
+	</label>
+
+    <br><br>
+
 
     <label>税率:
         <select th:field="*{taxRate.taxRateId}">
@@ -25,10 +40,59 @@
             <option th:each="group : ${menuGroups}" th:value="${group.groupId}" th:text="${group.groupName}"></option>
         </select>
     </label><br>
+    
+    <label>オプション選択:</label>
+	<div id="optionContainer">
+	    <select name="optionGroupIds" onchange="addOptionSelect(this)">
+	        <option value="">選択してください</option>
+	        <option th:each="opt : ${optionGroups}" th:value="${opt.optionGroupId}" th:text="${opt.groupName}"></option>
+	    </select>
+	</div>
+    
 
     <button type="submit">追加</button>
 </form>
 
 <div th:if="${success}" style="color: green;" th:text="${success}"></div>
+
+<script>
+	function addOptionSelect(selectElem) {
+	    if (!selectElem.value) return;
+	
+	    // すでに選ばれてるオプション値を全部取得
+	    const selectedValues = Array.from(document.querySelectorAll('select[name="optionGroupIds"]'))
+	        .map(s => s.value)
+	        .filter(v => v); // 空を除外
+	
+	    // 次の選択肢用のselectを作成
+	    const newSelect = selectElem.cloneNode(true);
+	    newSelect.selectedIndex = 0;
+	    newSelect.onchange = function () {
+	        addOptionSelect(this);
+	        updateDisabledOptions(); // 選択肢の更新
+	    };
+	
+	    // 追加
+	    document.getElementById("optionContainer").appendChild(document.createElement("br"));
+	    document.getElementById("optionContainer").appendChild(newSelect);
+	
+	    updateDisabledOptions();
+	}
+	
+	// 現在選ばれてるoptionを他のselectから非表示にする
+	function updateDisabledOptions() {
+	    const selectedValues = Array.from(document.querySelectorAll('select[name="optionGroupIds"]'))
+	        .map(s => s.value)
+	        .filter(v => v);
+	
+	    document.querySelectorAll('select[name="optionGroupIds"]').forEach(select => {
+	        Array.from(select.options).forEach(option => {
+	            option.hidden = selectedValues.includes(option.value) && option.value !== select.value;
+	        });
+	    });
+	}
+
+</script>
+
 </body>
 </html>

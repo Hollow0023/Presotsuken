@@ -1,10 +1,8 @@
 package com.order.controller;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -18,17 +16,25 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.order.entity.Menu;
 import com.order.entity.MenuGroup;
+import com.order.entity.MenuOption;
+import com.order.entity.MenuTimeSlot;
 import com.order.entity.Store;
 import com.order.entity.TaxRate;
 import com.order.repository.MenuGroupRepository;
+import com.order.repository.MenuOptionRepository;
 import com.order.repository.MenuRepository;
+import com.order.repository.MenuTimeSlotRepository;
+import com.order.repository.OptionGroupRepository;
 import com.order.repository.StoreRepository;
 import com.order.repository.TaxRateRepository;
+import com.order.service.ImageUploadService;
 
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 
 @Controller
+@RequiredArgsConstructor
 @RequestMapping("/menu")
 public class MenuController {
 
@@ -36,16 +42,10 @@ public class MenuController {
     private final TaxRateRepository taxRateRepository;
     private final MenuGroupRepository menuGroupRepository;
     private final StoreRepository storeRepository;
-
-    public MenuController(MenuRepository menuRepository,
-                          TaxRateRepository taxRateRepository,
-                          MenuGroupRepository menuGroupRepository,
-                          StoreRepository storeRepository) {
-        this.menuRepository = menuRepository;
-        this.taxRateRepository = taxRateRepository;
-        this.menuGroupRepository = menuGroupRepository;
-        this.storeRepository = storeRepository;
-    }
+    private final MenuTimeSlotRepository menuSlotRepository;
+    private final ImageUploadService imageUploadService;
+    private final OptionGroupRepository optionGroupRepository;
+    private final MenuOptionRepository  menuOptionRepository;
 
     @GetMapping("/add")
     public String showAddMenuForm(HttpServletRequest request, Model model) {
@@ -61,10 +61,13 @@ public class MenuController {
 
         List<TaxRate> taxRates = taxRateRepository.findByStore_StoreId(storeId);
         List<MenuGroup> menuGroups = menuGroupRepository.findByStore_StoreId(storeId);
-
+        List<MenuTimeSlot> timeSlots = menuSlotRepository.findByStoreStoreId(storeId);
+        
+        model.addAttribute("optionGroups", optionGroupRepository.findByStoreId(storeId));
         model.addAttribute("menu", new Menu());
         model.addAttribute("taxRates", taxRates);
         model.addAttribute("menuGroups", menuGroups);
+        model.addAttribute("timeSlots",timeSlots);
 
         return "menu_add";
     }
@@ -72,6 +75,7 @@ public class MenuController {
     @PostMapping("/add")
     public String addMenu(@ModelAttribute Menu menu,
                           @RequestParam("imageFile") MultipartFile imageFile,
+                          @RequestParam(required = false) List<Integer> optionGroupIds,
                           HttpServletRequest request,
                           RedirectAttributes redirectAttributes) throws IOException {
 
@@ -87,17 +91,10 @@ public class MenuController {
         Optional<Store> optionalStore = storeRepository.findById(storeId);
         if (optionalStore.isEmpty()) return "redirect:/login";
 
+        // ✅ ImageUploadServiceを使って保存処理（拡張子は固定で.jpg）
         if (!imageFile.isEmpty()) {
-            String originalFilename = imageFile.getOriginalFilename();
-            String extension = "";
-            if (originalFilename != null && originalFilename.contains(".")) {
-                extension = originalFilename.substring(originalFilename.lastIndexOf("."));
-            }
-            String filename = UUID.randomUUID().toString() + extension;
-            String saveDir = "src/main/resources/static/images/";
-            File dest = new File(saveDir + filename);
-            imageFile.transferTo(dest);
-            menu.setMenuImage("/images/" + filename);
+            String imagePath = imageUploadService.uploadImage(imageFile, storeId);
+            menu.setMenuImage(imagePath); // DBに保存するのは /images/{storeId}/{uuid}.jpg
         }
 
         menu.setStore(optionalStore.get());
@@ -107,7 +104,21 @@ public class MenuController {
         }
 
         menuRepository.save(menu);
+        
+        if (optionGroupIds != null) {
+            for (Integer groupId : optionGroupIds) {
+            	if (groupId == null) continue;
+                MenuOption mog = new MenuOption();
+                mog.setMenuId(menu.getMenuId());
+                mog.setOptionGroupId(groupId);
+                menuOptionRepository.save(mog);
+            }
+        }
+        
+        
+        
         redirectAttributes.addFlashAttribute("success", "メニューを追加しました！");
         return "redirect:/menu/add";
     }
+
 }

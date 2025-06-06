@@ -12,8 +12,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import com.order.dto.MenuWithOptionsDTO;
 import com.order.dto.OrderHistoryDto;
 import com.order.entity.Menu;
 import com.order.entity.Payment;
@@ -28,10 +30,17 @@ import com.order.repository.PaymentRepository;
 import com.order.repository.TaxRateRepository;
 import com.order.repository.UserRepository;
 import com.order.repository.VisitRepository;
+import com.order.service.MenuService;
+
+import lombok.RequiredArgsConstructor;
 
 @Controller
+@RequiredArgsConstructor
 @RequestMapping("/order")
 public class OrderController {
+	
+    @Autowired
+    private MenuService menuService;
 
     private final MenuGroupRepository menuGroupRepository;
     private final MenuRepository menuRepository;
@@ -41,36 +50,24 @@ public class OrderController {
     private final VisitRepository visitRepository;
     private final UserRepository userRepository;
 
-    @Autowired
-    public OrderController(MenuGroupRepository menuGroupRepository,
-                           MenuRepository menuRepository,
-                           PaymentRepository paymentRepository,
-                           PaymentDetailRepository paymentDetailRepository,
-                           TaxRateRepository taxRateRepository,
-                           VisitRepository visitRepository,
-                           UserRepository userRepository) 
-    	{
-    	this.visitRepository = visitRepository;
-    	this.menuGroupRepository = menuGroupRepository;
-        this.menuRepository = menuRepository;
-        this.paymentRepository = paymentRepository;
-        this.paymentDetailRepository = paymentDetailRepository;
-        this.taxRateRepository = taxRateRepository;
-        this.userRepository = userRepository;
-    }
-
-    @GetMapping("")
+    @GetMapping
     public String showOrderPage(@CookieValue("seatId") Integer seatId,
                                 @CookieValue("storeId") Integer storeId,
+                                @RequestParam(name = "admin", required = false, defaultValue = "false") boolean showAll,
                                 Model model) {
+
         model.addAttribute("seatId", seatId);
         model.addAttribute("storeId", storeId);
 
-        var menuGroups = menuGroupRepository.findByStore_StoreId(storeId);
-        var menus = menuRepository.findByStore_StoreId(storeId);
+        List<MenuWithOptionsDTO> menusWithOptions;
+        if (showAll) {
+            menusWithOptions = menuService.getAllMenusWithOptions(storeId); // ★ 全表示用メソッド
+        } else {
+            menusWithOptions = menuService.getMenusWithOptions(storeId); // ★ 時間帯絞り込みあり
+        }
 
-        model.addAttribute("menuGroups", menuGroups);
-        model.addAttribute("menus", menus);
+        model.addAttribute("menus", menusWithOptions);
+        model.addAttribute("menuGroups", menuGroupRepository.findByStore_StoreId(storeId));
 
         return "order";
     }
@@ -79,9 +76,14 @@ public class OrderController {
     public ResponseEntity<Void> submitOrder(@RequestBody List<OrderItemDto> items,
                                             @CookieValue("visitId") Integer visitId,
                                             @CookieValue("storeId") Integer storeId,
-                                            @CookieValue("userId") Integer userId) {
+                                            @CookieValue(name = "userId", required = false) Integer userId) {
+    	User user = null;
         Payment payment = paymentRepository.findByVisitVisitId(visitId);
-        User user = userRepository.findById(userId).orElseThrow();
+        
+        if(userId != null) {
+        	user = userRepository.findById(userId).orElseThrow();
+        }
+       
 
         for (OrderItemDto item : items) {
             Menu menu = menuRepository.findById(item.getMenuId()).orElseThrow();

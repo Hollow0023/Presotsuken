@@ -16,5 +16,7 @@ public class PaymentFinalizeRequest {
     private Double total;
     private LocalDateTime paymentTime;
     private Integer paymentTypeId;
+    private Double deposit;
+    private Integer staffId;
 
 }

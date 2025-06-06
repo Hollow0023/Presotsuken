@@ -31,7 +31,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 
 @Controller
-@RequiredArgsConstructor //コンストラクタ作ってくれる(final付き変数に対して)
+@RequiredArgsConstructor
 @RequestMapping("/visits")
 public class VisitController {
 
@@ -45,11 +45,10 @@ public class VisitController {
 	@PostMapping
 	public String createVisit(@RequestParam("seat.seatId") Integer seatId,
 			@RequestParam("store.storeId") Integer storeId,
-			@RequestParam("user.userId") Integer userId,
 			@RequestParam("numberOfPeople") Integer numberOfPeople,
 			RedirectAttributes redirectAttributes) {
 
-		// 店舗・座席・ユーザーを取得
+		// 店舗・座席を取得
 		Store store = storeRepository.findById(storeId).orElseThrow();
 		Seat seat = seatRepository.findById(seatId).orElseThrow();
 
@@ -72,7 +71,6 @@ public class VisitController {
 			Map<String, Object> payload = new HashMap<>();
 			payload.put("visitId", savedVisit.getVisitId());
 			payload.put("storeId", storeId);
-			payload.put("userId", userId);
 			payload.put("seatId", seatId);
 			messagingTemplate.convertAndSend("/topic/seats/" + seatId, payload);
 
