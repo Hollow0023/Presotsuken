@@ -9,37 +9,42 @@
 	<div class="buttons">
 		<div id="seatInfo"></div>
 		<div>
-			<button class="history-button" onclick="openHistoryModal()" style="margin-right: 8px;">注文履歴</button>
-			<button  id="cartToggleButton" class="cart-button" onclick="toggleCart()">🛒 カートを見る</button>
+			<!--			<button class="history-button" onclick="openHistoryModal()" style="margin-right: 8px;">注文履歴</button>-->
+			<button id="historyToggleButton" class="history-button"
+				onclick="toggleHistory()">注文履歴</button>
+
+			<button id="cartToggleButton" class="cart-button"
+				onclick="toggleCart()">🛒 カートを見る</button>
 		</div>
 	</div>
-	
+
 	<main>
-	
+
 		<div class="menu-tabs">
 			<div id="backToSeatList" style="display: none; margin-bottom: 12px;">
-			  <a id="backToSeatList" href="/">← 座席リストに戻る</a>
+				<a id="backToSeatList" href="/">← 座席リストに戻る</a>
 			</div>
 			<div th:each="group : ${menuGroups}"
 				th:data-group-id="${group.groupId}" th:text="${group.groupName}"
-				class="menu-tab">
-			</div>
+				class="menu-tab"></div>
 		</div>
-	
+
 		<div class="menu-list" id="menuList">
 			<div th:each="menu : ${menus}" class="menu-item"
 				th:data-group-id="${menu.menuGroup.groupId}">
 				<div class="menu-image-wrapper">
-					<img th:src="@{${menu.menuImage}}" onerror="this.onerror=null;this.src='/images/noimage.jpg'" width="100" height="100" />
+					<img th:src="@{${menu.menuImage}}"
+						onerror="this.onerror=null;this.src='/images/noimage.jpg'"
+						width="100" height="100" />
 					<button class="info-btn" th:if="${menu.description != null}"
 						th:attr="data-name=${menu.menuName}, data-desc=${menu.description}">
 						i</button>
-	
+
 				</div>
 				<div class="menu-name" th:text="${menu.menuName}"></div>
 				<div class="menu-price" th:text="${menu.priceWithTax + '円（税込）'}"></div>
 
-	
+
 				<div class="menu-detail">
 					<div
 						th:if="${menu.optionGroups != null and !#lists.isEmpty(menu.optionGroups)}"
@@ -52,91 +57,106 @@
 								th:value="${item.optionItemId}" th:text="${item.itemName}"></option>
 						</select>
 					</div>
-	
-					<input type="number" class="quantity-input" min="1" value="1">
+
+					数量:<input type="number" class="quantity-input" min="1" value="1">
 					<button class="add-cart-btn"
 						th:attr="data-menu-id=${menu.menuId}, data-tax-rate-id=${menu.taxRate.taxRateId}, data-price=${menu.price}, data-name=${menu.menuName}">
 						カートに追加</button>
 				</div>
 			</div>
 		</div>
-	
+
 		<!-- カート固定枠 -->
-		<div id="cartPanel" class ="cart">
-			<div class = "cartContent">
+		<div id="cartPanel" class="cart">
+			<div class="cartContent">
 				<h4 style="margin-top: 0;">カートの中身</h4>
 				<p id="cartItemCount"></p>
-				
-				<table id="cartMiniList"></table>
-				
-			</div>
-			<div class = "panelFooter">
-				<div class="totalPrice">
-				  <div class="priceContent">
-				    <span>合計点数</span>
-				    <span id="cartMiniCount"></span>
-				  </div>
-				  <div class="priceContent">
-				    <span>合計金額</span>
-				    <span id="cartMiniTotal"></span>
-				  </div>
 
-				  <div id="cartMiniTax"></div>
+				<table id="cartMiniList"></table>
+
+			</div>
+			<div class="panelFooter">
+				<div class="totalPrice">
+					<div class="priceContent">
+						<span>合計点数</span> <span id="cartMiniCount"></span>
+					</div>
+					<div class="priceContent">
+						<span>合計金額</span> <span id="cartMiniTotal"></span>
+					</div>
+
+					<div id="cartMiniTax"></div>
 				</div>
 
-				
+
 				<button class="cart-check-button" onclick="submitOrder()">注文確定</button>
 			</div>
 
 
 		</div>
 
-	
-		<!-- モーダル：履歴 -->
-		<div id="historyModal" class="modal">
-			<div class="cart-modal-content">
 
-				<div class="close" onclick="closeHistoryModal()">閉じる</div>
-				<h3>注文履歴</h3>
+		<!-- モーダル：履歴 -->
+		<!--		<div id="historyModal" class="modal">-->
+		<!--			<div class="cart-modal-content">-->
+
+		<!--				<div class="close" onclick="closeHistoryModal()">閉じる</div>-->
+		<!--				<h3>注文履歴</h3>-->
+		<!--				<table id="historyTable">-->
+		<!--					<thead>-->
+		<!--						<tr>-->
+		<!--							<th>商品名</th>-->
+		<!--							<th>数量</th>-->
+		<!--							<th>小計</th>-->
+		<!--						</tr>-->
+		<!--					</thead>-->
+		<!--					<tbody></tbody>-->
+		<!--				</table>-->
+		<!--				<p id="historyTotal"-->
+		<!--					style="text-align: right; font-weight: bold; margin-top: 10px;"></p>-->
+		<!--			</div>-->
+		<!--		</div>-->
+		<div id="historyModal" class="cart">
+			<div class="cartContent">
+				<h4 style="margin-top: 0;">注文履歴</h4>
 				<table id="historyTable">
 					<thead>
 						<tr>
-							<th>商品名</th>
-							<th>数量</th>
-							<th>小計</th>
+							<th style="text-align: left;">商品名</th>
+							<th style="text-align: center;">数量</th>
+							<th style="text-align: right;">小計</th>
 						</tr>
 					</thead>
 					<tbody></tbody>
 				</table>
-				<p id="historyTotal"
-					style="text-align: right; font-weight: bold; margin-top: 10px;"></p>
+			</div>
+			<div class="panelFooter">
+				<div class="totalPrice">
+					<div class="priceContent">
+						<span>合計点数</span> <span id="historyCount"></span>
+					</div>
+					<div class="priceContent">
+						<span>合計金額</span> <span id="historyTotal"></span>
+					</div>
+					<div id="historyTax"></div>
+				</div>
 			</div>
 		</div>
 
-		
-	
+
+
+
 	</main>
-	
-	
-<!--	カートに入れた通知-->
-	<div id="toast" style="
-	    position: fixed;
-	    bottom: 20px;
-	    left: 50%;
-	    transform: translateX(-50%);
-	    background: #333;
-	    color: #fff;
-	    padding: 12px 20px;
-	    border-radius: 4px;
-	    display: none;
-	    z-index: 1000;
-	    box-shadow: 0 0 8px rgba(0,0,0,0.3);
-	    transition: opacity 0.5s ease;
-	"></div>
-	
+
+
+	<!--	カートに入れた通知-->
+	<div id="toast"
+		style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 12px 20px; border-radius: 4px; display: none; z-index: 1000; box-shadow: 0 0 8px rgba(0, 0, 0, 0.3); transition: opacity 0.5s ease;"></div>
+
 	<script src="/js/order.js"></script>
-	<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
-	<script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
-	
+	<script
+		src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+	<script
+		src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+
 </body>
 </html>

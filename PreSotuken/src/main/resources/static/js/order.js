@@ -1,140 +1,227 @@
-const cart = [];
-let taxRateMap = {};
+// グローバル変数と初期設定
+// -----------------------------------------------------------------------------
+const cart = []; // カートの中身を保持する配列
+let taxRateMap = {}; // 税率IDと税率をマッピングするオブジェクト
 
-const seatId = getCookie("seatId"); // もしくは URL から取得
-document.getElementById("seatInfo").innerText = `${seatId}`;
+// 座席情報の表示
+// CookieからseatIdを取得、なければURLから取得することも想定
+const seatId = getCookie("seatId"); 
+document.getElementById("seatInfo").innerText = `${seatId}`; // 取得したseatIdを画面に表示
 
+/**
+ * 指定された名前のCookieの値を取得する関数
+ * @param {string} name - 取得したいCookieの名前
+ * @returns {string|null} Cookieの値、またはnull
+ */
 function getCookie(name) {
-	const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
-	return match ? decodeURIComponent(match[2]) : null;
+    const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+    return match ? decodeURIComponent(match[2]) : null;
 }
 
+/**
+ * トーストメッセージを表示する関数
+ * @param {string} message - 表示するメッセージ
+ * @param {number} [duration=2000] - 表示時間 (ミリ秒)
+ */
 function showToast(message, duration = 2000) {
     const toast = document.getElementById("toast");
     toast.textContent = message;
-    toast.style.display = "block";
-    toast.style.opacity = "1";
+    toast.style.display = "block"; // 表示
+    toast.style.opacity = "1"; // フェードイン
 
     setTimeout(() => {
-        toast.style.opacity = "0";
+        toast.style.opacity = "0"; // フェードアウト
         setTimeout(() => {
-            toast.style.display = "none";
+            toast.style.display = "none"; // 非表示
         }, 500); // フェードアウト後に非表示
     }, duration);
 }
 
-function toggleCart(show) {
-  const cartPanel = document.getElementById("cartPanel");
-  const toggleButton = document.getElementById("cartToggleButton");
-  if (!cartPanel || !toggleButton) return;
+// モーダル・パネルの開閉処理
+// -----------------------------------------------------------------------------
 
-  let isOpening;
+/**
+ * 注文履歴モーダルを開閉する関数
+ */
+function toggleHistory() {
+    const historyModal = document.getElementById("historyModal");
+    const toggleBtn = document.getElementById("historyToggleButton");
 
-  if (show === true) {
-    cartPanel.classList.add("show");
-    isOpening = true;
-  } else if (show === false) {
-    cartPanel.classList.remove("show");
-    isOpening = false;
-  } else {
-    cartPanel.classList.toggle("show");
-    isOpening = cartPanel.classList.contains("show");
-  }
+    // モーダルが表示されている場合は閉じる
+    if (historyModal.classList.contains("show")) {
+        historyModal.classList.remove("show");
+        toggleBtn.textContent = "注文履歴"; // ボタンのテキストを「注文履歴」に戻す
+    } else {
+        // モーダルが閉じている場合は、履歴を取得して表示
+        fetch('/order/history')
+            .then(res => res.json())
+            .then(data => {
+                const tbody = document.querySelector('#historyTable tbody');
+                const totalEl = document.getElementById('historyTotal');
+                const countEl = document.getElementById('historyCount');
+                const taxEl = document.getElementById('historyTax'); // 税率ごとの合計表示エリア
+                tbody.innerHTML = ''; // テーブルの中身をクリア
+                taxEl.innerHTML = ''; // 税率ごとの合計表示エリアをクリア
 
-  // テキスト切り替え
-  if (isOpening) {
-    toggleButton.textContent = "✕ カートを閉じる";
-  } else {
-    toggleButton.textContent = "🛒 カートを見る";
-  }
+                let total = 0; // 合計金額
+                let count = 0; // 合計点数
+                const rateTotals = {}; // 税率ごとの合計金額を保持 { 10: 1000, 8: 500 } の形式
+
+                // 取得した履歴データをループして表示を生成
+                data.forEach(item => {
+                    const subtotal = parseInt(item.subtotal) || 0; // 小計
+                    const quantity = parseInt(item.quantity) || 0; // 数量
+                    const rate = parseFloat(item.taxRate) || 0; // 税率 (レスポンスにtaxRateを含める必要がある)
+
+                    total += subtotal; // 合計金額に加算
+                    count += quantity; // 合計点数に加算
+
+                    // 税率ごとの合計を計算
+                    if (!rateTotals[rate]) rateTotals[rate] = 0;
+                    rateTotals[rate] += parseInt(item.price) * quantity; // 税抜き価格 * 数量
+
+                    // テーブルに行を追加
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${item.menuName}</td>
+                        <td style="text-align: center;">${quantity}</td>
+                        <td style="text-align: right;">${subtotal}円</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+
+                totalEl.textContent = `${total}円`; // 合計金額を表示
+                countEl.textContent = `${count}点`; // 合計点数を表示
+
+                // 税率ごとの合計を表示
+                Object.entries(rateTotals)
+                    .sort((a, b) => a[0] - b[0]) // 税率でソート
+                    .forEach(([rate, amount]) => {
+                        const line = document.createElement('div');
+                        const percent = (parseFloat(rate) * 100).toFixed(0); // 税率をパーセンテージに変換
+                        line.textContent = `${percent}%対象：¥${amount}`;
+                        line.style.textAlign = "right";
+                        taxEl.appendChild(line);
+                    });
+
+                historyModal.classList.add('show'); // モーダルを表示
+                toggleBtn.textContent = "✕ 注文履歴を閉じる"; // ボタンのテキストを「閉じる」に変更
+            });
+    }
+}
+window.toggleHistory = toggleHistory; // グローバルに公開（外部からの呼び出し用）
+
+/**
+ * 注文履歴モーダルを閉じる関数
+ */
+function closeHistoryModal() {
+    document.getElementById('historyModal').classList.remove('show');
 }
 
+/**
+ * カートパネルを開閉する関数
+ * @param {boolean} [show] - trueで開く、falseで閉じる。指定なしでトグル。
+ */
+function toggleCart(show) {
+    const cartPanel = document.getElementById("cartPanel");
+    const toggleButton = document.getElementById("cartToggleButton");
+    if (!cartPanel || !toggleButton) return;
 
-// カート以外の部分クリックで閉じる
-window.addEventListener('click', (e) => {
-  const cartPanel = document.getElementById("cartPanel");
-  const toggleButton = document.getElementById("cartToggleButton");
-  if (!cartPanel || !toggleButton) return;
+    let isOpening;
 
-  const isClickInsideCart =
-    cartPanel.contains(e.target) ||
-    e.target.closest('.cart-button');
+    // show引数によって開閉を制御
+    if (show === true) {
+        cartPanel.classList.add("show");
+        isOpening = true;
+    } else if (show === false) {
+        cartPanel.classList.remove("show");
+        isOpening = false;
+    } else {
+        cartPanel.classList.toggle("show"); // showが指定されない場合はトグル
+        isOpening = cartPanel.classList.contains("show");
+    }
 
-  if (!isClickInsideCart) {
-    cartPanel.classList.remove("show");
-    toggleButton.textContent = "🛒 カートを見る"; // ← テキストも戻す！
-  }
-});
+    // ボタンのテキストを切り替える
+    if (isOpening) {
+        toggleButton.textContent = "✕ カートを閉じる";
+    } else {
+        toggleButton.textContent = "🛒 カートを見る";
+    }
+}
 
+/**
+ * メニューアイテムの詳細表示をトグルする関数
+ * @param {HTMLElement} elem - メニューアイテムの要素
+ */
+function toggleDetails(elem) {
+    const detail = elem.querySelector(".menu-detail");
+    const isExpanded = elem.classList.contains("expanded");
 
+    // 閉じる処理
+    if (isExpanded) {
+        elem.style.height = elem.offsetHeight + "px"; // 現在の高さを設定
+        elem.classList.remove("expanded");
 
+        const onTransitionEnd = () => {
+            detail.style.display = 'none'; // 詳細を非表示
+            elem.removeEventListener('transitionend', onTransitionEnd);
+            elem.style.height = ''; // アニメーション後にheightをクリア
+        };
+        elem.addEventListener('transitionend', onTransitionEnd);
 
+        requestAnimationFrame(() => {
+            elem.style.height = '180px'; // 閉じた時の初期の高さに戻す
+        });
+
+    } else {
+        // 開く処理
+        elem.classList.add("expanded");
+        detail.style.display = 'block'; // 詳細を表示
+
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => { // ネストされたRAFで確実性を高める
+                let fullHeight = elem.scrollHeight; // コンテンツ全体の高さを取得
+
+                elem.style.height = fullHeight + "px"; // 全体の高さに設定して展開
+            });
+        });
+    }
+}
+
+// カート関連処理
+// -----------------------------------------------------------------------------
+
+/**
+ * カート内の商品の数量を更新する関数
+ * @param {number} index - カート配列内の商品のインデックス
+ * @param {string} newVal - 新しい数量の文字列
+ */
 function updateQuantity(index, newVal) {
     const qty = parseInt(newVal);
+    // 数量が有効な数値で1以上の場合のみ更新
     if (!isNaN(qty) && qty > 0) {
         cart[index].quantity = qty;
-        updateMiniCart(); // 小計・合計も更新される
+        updateMiniCart(); // ミニカートの表示も更新
     } else {
         alert("数量は1以上を指定してください");
     }
 }
 
-
-
-function toggleDetails(elem) {
-	  const detail = elem.querySelector(".menu-detail");
-	  const isExpanded = elem.classList.contains("expanded");
-
-	  // 閉じる処理
-	  if (isExpanded) {
-	    elem.style.height = elem.offsetHeight + "px"; // 現在の高さを設定
-	    elem.classList.remove("expanded");
-
-	    const onTransitionEnd = () => {
-	      detail.style.display = 'none';
-	      elem.removeEventListener('transitionend', onTransitionEnd);
-	      elem.style.height = ''; // アニメーション後に height をクリア
-	    };
-	    elem.addEventListener('transitionend', onTransitionEnd);
-
-	    requestAnimationFrame(() => {
-	      elem.style.height = '180px'; // 閉じた時の初期の高さ
-	    });
-
-	  } else {
-	    // 開く処理
-	    elem.classList.add("expanded");
-	    detail.style.display = 'block'; // detail を表示
-
-	    requestAnimationFrame(() => {
-	      requestAnimationFrame(() => { // ネストされた RAF で確実性を高める
-	        let fullHeight = elem.scrollHeight;
-
-	        elem.style.height = fullHeight + "px";
-	      });
-	    });
-	  }
-	}
-
-function showDescriptionFromData(btn) {
-    const title = btn.getAttribute('data-name');
-    const desc = btn.getAttribute('data-desc');
-    alert(`${title}\n\n${desc}`);
-}
-
-
-
+/**
+ * ミニカートの表示を更新する関数
+ */
 function updateMiniCart() {
     const list = document.getElementById('cartMiniList');
     const totalEl = document.getElementById('cartMiniTotal');
     const countEl = document.getElementById('cartMiniCount');
     const taxEl = document.getElementById('cartMiniTax');
 
-    list.innerHTML = '';
-    let total = 0;
-    let totalCount = 0;
-    const rateTotals = {}; // { 10: 1000, 8: 2000 }
+    list.innerHTML = ''; // リストをクリア
+    let total = 0; // 合計金額
+    let totalCount = 0; // 合計点数
+    const rateTotals = {}; // 税率ごとの税抜き合計金額 { 10: 1000, 8: 2000 }
 
+    // ヘッダー行を追加
     const header = document.createElement('tr');
     header.innerHTML = `
         <th style="text-align: left;">商品名</th>
@@ -144,23 +231,26 @@ function updateMiniCart() {
     `;
     list.appendChild(header);
 
+    // カート内の各アイテムを処理
     cart.forEach((item, index) => {
-        const taxRate = parseFloat(item.taxRate?.rate || taxRateMap[item.taxRateId] || 0); // 念のため
-        const subtotal = item.priceWithTax * item.quantity; // ← 税込に変更！
-        total += subtotal;
-        totalCount += item.quantity;
+        // 税率を取得（item.taxRate.rate があればそれ、なければtaxRateMapから、なければ0）
+        const taxRate = parseFloat(item.taxRate?.rate || taxRateMap[item.taxRateId]) / 100;
+        const subtotal = item.priceWithTax * item.quantity; // 税込小計
+        total += subtotal; // 合計金額に加算
+        totalCount += item.quantity; // 合計点数に加算
 
-        // 税率別の税抜き価格合計は維持（明細表示のため）
+        // 税率別の税抜き価格合計を計算 (明細表示のため)
         if (!rateTotals[taxRate]) rateTotals[taxRate] = 0;
         rateTotals[taxRate] += item.price * item.quantity;
 
+        // 行を作成してリストに追加
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>${item.name}</td>
             <td style="text-align: center;">
                 <input type="number" min="1" value="${item.quantity}" 
-                       onchange="updateQuantity(${index}, this.value)" 
-                       style="width: 50px;" />
+                        onchange="updateQuantity(${index}, this.value)" 
+                        style="width: 50px;" />
             </td>
             <td style="text-align: right;">${subtotal}円</td>
             <td><button onclick="removeFromCart(${index}, event)">削除</button></td>
@@ -168,178 +258,197 @@ function updateMiniCart() {
         list.appendChild(row);
     });
 
-	totalEl.textContent = `${total}円`;
-	countEl.textContent = `${totalCount}点`;
+    totalEl.textContent = `${total}円`; // 合計金額を表示
+    countEl.textContent = `${totalCount}点`; // 合計点数を表示
 
-
-	taxEl.innerHTML = ''; // 前の内容クリア
-	
-	Object.entries(rateTotals)
-	  .sort((a, b) => a[0] - b[0])
-	  .forEach(([rate, amount]) => {
-	    const line = document.createElement('div');
-	    line.textContent = `${rate}%対象：¥${amount}`;
-	    taxEl.appendChild(line);
-	  });
-
+    taxEl.innerHTML = ''; // 税率ごとの表示エリアをクリア
+    
+    // 税率ごとの合計を表示
+    Object.entries(rateTotals)
+        .sort((a, b) => a[0] - b[0]) // 税率でソート
+        .forEach(([rate, amount]) => {
+            const line = document.createElement('div');
+            // 税率をパーセンテージに変換して表示
+            line.textContent = `${(parseFloat(rate) * 100).toFixed(0)}%対象：¥${amount}`;
+            taxEl.appendChild(line);
+        });
 }
 
-
-
-
-
-
-function switchTab(tabElement) {
-    document.querySelectorAll('.menu-tab').forEach(t => t.classList.remove('active'));
-    tabElement.classList.add('active');
-    const groupId = tabElement.getAttribute('data-group-id');
-    document.querySelectorAll('.menu-item').forEach(item => {
-        item.style.display = (item.getAttribute('data-group-id') === groupId) ? 'block' : 'none';
-    });
-}
-
+/**
+ * 商品をカートに追加する関数
+ * @param {HTMLElement} button - 「カートに追加」ボタン要素
+ */
 function addToCart(button) {
     const menuId = button.getAttribute('data-menu-id');
     const taxRateId = button.getAttribute('data-tax-rate-id');
     const price = parseFloat(button.getAttribute('data-price'));
     const name = button.getAttribute('data-name');
-    const quantityInput = button.previousElementSibling;
+    const quantityInput = button.previousElementSibling; // 数量入力欄はボタンの直前にある
     const quantity = parseInt(quantityInput.value);
 
+    // 数量のバリデーション
     if (isNaN(quantity) || quantity <= 0) {
         alert('数量は1以上を入力してください。');
         return;
     }
-	
-	const taxRate = parseFloat(taxRateMap[taxRateId]) / 100; // ← ちゃんと10% → 0.1に直す
-	const priceWithTax = Math.round(price * (1 + taxRate));
 
+    // オプションの選択状態をチェックする処理を追加
+    const menuItem = button.closest('.menu-item');
+    const optionSelects = menuItem.querySelectorAll('.option-select'); // このメニューアイテム内の全てのオプション選択欄を取得
 
-    const existing = cart.find(item => item.menuId === menuId);
-    if (existing) {
-        existing.quantity += quantity;
-    } else {
-        cart.push({ menuId, taxRateId, price, priceWithTax, quantity, name }); // ← 追加！！
+    const selectedOptions = []; // 選択されたオプションアイテムのIDを格納する配列
+    let optionsAllSelected = true; // 全てのオプションが選択されているかどうかのフラグ
+
+    optionSelects.forEach(select => {
+        if (select.value === "") { // 選択されていないオプションがある場合
+            optionsAllSelected = false;
+            return; // ループを中断
+        }
+        selectedOptions.push(parseInt(select.value)); // 選択されたオプションIDを追加
+    });
+
+    if (!optionsAllSelected) {
+        alert('全てのオプションを選択してください。');
+        return; // カート追加処理を中断
     }
 
-    showToast("カートに追加しました");
+    // 税率をマップから取得し、10% -> 0.1 の形式に変換
+    const taxRate = parseFloat(taxRateMap[taxRateId]) / 100;
+    // 税込価格を計算し、四捨五入
+    const priceWithTax = Math.round(price * (1 + taxRate));
 
-    const menuItem = button.closest('.menu-item');
+    // 既存の商品がカートにあるか確認（オプションも考慮して識別）
+    const existing = cart.find(item =>
+        item.menuId === menuId &&
+        JSON.stringify(item.selectedOptions.sort()) === JSON.stringify(selectedOptions.sort()) // オプションも完全に一致する場合
+    );
+
+    if (existing) {
+        existing.quantity += quantity; // 既存の商品があれば数量を加算
+    } else {
+        // なければ新しい商品としてカートに追加
+        cart.push({ menuId, taxRateId, price, priceWithTax, quantity, name, selectedOptions });
+    }
+
+    showToast("カートに追加しました"); // トーストメッセージを表示
+
+    // メニューアイテムが展開状態であれば閉じる
     if (menuItem && menuItem.classList.contains('expanded')) {
         toggleDetails(menuItem);
     }
 
-    updateMiniCart();
+    updateMiniCart(); // ミニカートの表示を更新
 }
 
-
+/**
+ * カートから商品を削除する関数
+ * @param {number} index - 削除する商品のカート配列内のインデックス
+ * @param {Event} event - イベントオブジェクト (親要素への伝播を止めるため)
+ */
 function removeFromCart(index) {
-	event.stopPropagation();
-    cart.splice(index, 1);
-    updateMiniCart();
+    event.stopPropagation(); // 親要素へのイベント伝播を停止
+    cart.splice(index, 1); // 指定されたインデックスの要素を削除
+    updateMiniCart(); // ミニカートの表示を更新
 }
 
-function openCartModal() {
-    const cartList = document.getElementById('cartList');
-    const cartTotal = document.getElementById('cartTotal');
-    cartList.innerHTML = '';
-    let total = 0;
-
-    cart.forEach((item, index) => {
-        const subtotal = item.price * item.quantity;
-        total += subtotal;
-        const li = document.createElement('li');
-        li.innerHTML = `${item.name} x ${item.quantity}：${subtotal}円 <button onclick="removeFromCart(${index}, event)">削除</button>
-`;
-        cartList.appendChild(li);
-    });
-
-    cartTotal.textContent = `合計：${total}円`;
-    document.getElementById('cartModal').style.display = 'block';
-}
-
-function closeCartModal() {
-    document.getElementById('cartModal').style.display = 'none';
-}
-
-function openHistoryModal() {
-    fetch('/order/history')
-        .then(res => res.json())
-        .then(data => {
-            const tbody = document.querySelector('#historyTable tbody');
-            const totalEl = document.getElementById('historyTotal');
-            tbody.innerHTML = '';
-            let total = 0;
-
-            data.forEach(item => {
-                const subtotal = parseInt(item.subtotal) || 0;
-                total += subtotal;
-                const row = document.createElement('tr');
-                row.innerHTML = `<td>${item.menuName}</td><td>${item.quantity}</td><td>${subtotal}円</td>`;
-                tbody.appendChild(row);
-            });
-
-            totalEl.textContent = `合計金額：${total}円`;
-            document.getElementById('historyModal').style.display = 'block';
-        });
-}
-
-function closeHistoryModal() {
-    document.getElementById('historyModal').style.display = 'none';
-}
-
+/**
+ * 注文を確定する関数
+ */
 function submitOrder() {
+    // カートの内容を注文データとして整形
     const orderItems = cart.map(item => ({
         menuId: parseInt(item.menuId),
         taxRateId: parseInt(item.taxRateId),
-        quantity: parseInt(item.quantity)
+        quantity: parseInt(item.quantity),
+        // ここで選択されたオプションを追加する
+        optionItemIds: item.selectedOptions || [] // オプションがない場合は空の配列
     }));
-    cartPanel.classList.remove("show")
+    
+    // toggleCart(false) を呼び出してカートパネルを閉じ、ボタンテキストを戻す
+    toggleCart(false); 
 
+    // 注文データをサーバーにPOST送信
     fetch('/order/submit', {
-
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(orderItems)
     }).then(res => {
         if (res.ok) {
             alert('注文を確定しました');
-            cart.length = 0;
-            updateMiniCart();
-            closeCartModal();
+            cart.length = 0; // カートを空にする
+            updateMiniCart(); // ミニカートの表示を更新
         } else {
             alert('注文に失敗しました');
         }
     });
 }
+// メニュー表示関連処理
+// -----------------------------------------------------------------------------
 
-window.addEventListener('DOMContentLoaded', () => {
-	fetch('/taxrates')
-    .then(res => res.json())
-    .then(data => {
-      data.forEach(rate => {
-        taxRateMap[rate.taxRateId] = Math.round(rate.rate * 100);
-      });
-    })
-    .catch(err => {
-      console.error("税率の取得に失敗しました", err);
-    });
+/**
+ * データ属性から商品説明をアラートで表示する関数
+ * @param {HTMLElement} btn - クリックされたボタン要素
+ */
+function showDescriptionFromData(btn) {
+    const title = btn.getAttribute('data-name');
+    const desc = btn.getAttribute('data-desc');
+    alert(`${title}\n\n${desc}`);
+}
+
+/**
+ * タブを切り替える関数
+ * @param {HTMLElement} tabElement - クリックされたタブ要素
+ */
+function switchTab(tabElement) {
+    // 全てのタブからactiveクラスを削除
+    document.querySelectorAll('.menu-tab').forEach(t => t.classList.remove('active'));
+    tabElement.classList.add('active'); // クリックされたタブにactiveクラスを追加
     
+    const groupId = tabElement.getAttribute('data-group-id'); // タブのgroup-idを取得
+    
+    // 関連するメニューアイテムのみ表示し、他は非表示にする
+    document.querySelectorAll('.menu-item').forEach(item => {
+        item.style.display = (item.getAttribute('data-group-id') === groupId) ? 'block' : 'none';
+    });
+}
+
+
+// イベントリスナーと初期化
+// -----------------------------------------------------------------------------
+
+// DOMコンテンツが完全にロードされた後に実行される処理
+window.addEventListener('DOMContentLoaded', () => {
+    // 税率情報をサーバーから取得してtaxRateMapに格納
+    fetch('/taxrates')
+        .then(res => res.json())
+        .then(data => {
+            data.forEach(rate => {
+                taxRateMap[rate.taxRateId] = Math.round(rate.rate * 100); // 10% → 10 の形式で保存
+            });
+        })
+        .catch(err => {
+            console.error("税率の取得に失敗しました", err);
+        });
+        
+    // メニュータブにクリックイベントリスナーを設定
     document.querySelectorAll('.menu-tab').forEach(tab => {
         tab.addEventListener('click', () => switchTab(tab));
     });
 
+    // 詳細情報ボタンにクリックイベントリスナーを設定
     document.querySelectorAll('.info-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
-            e.stopPropagation();
+            e.stopPropagation(); // 親要素へのイベント伝播を停止
             showDescriptionFromData(btn);
         });
     });
 
+    // メニューアイテムのクリックで詳細をトグルするイベントリスナーを設定
     document.querySelectorAll('.menu-item').forEach(item => {
         item.addEventListener('click', (e) => {
             const clicked = e.target;
 
+            // クリックされた場所が画像、名前、価格のいずれかであれば詳細をトグル
             const isToggleTarget =
                 clicked.closest('.menu-image-wrapper') ||
                 clicked.closest('.menu-name') ||
@@ -351,65 +460,90 @@ window.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // カートに追加ボタンにクリックイベントリスナーを設定
     document.querySelectorAll('.add-cart-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
-            e.stopPropagation();
+            e.stopPropagation(); // 親要素へのイベント伝播を停止
             addToCart(btn);
-            
         });
     });
 
+    // 最初のタブを自動的にクリックして表示
     const firstTab = document.querySelector('.menu-tab');
     if (firstTab) firstTab.click();
 
+    // WebSocket接続の確立と購読
     const socket = new SockJS('/ws-endpoint');
     const stompClient = Stomp.over(socket);
     stompClient.connect({}, function () {
         if (typeof seatId !== 'undefined' && seatId !== null) {
-			// Cookie整理処理をここに追加する
-			const rawUserId = getCookie("userId");
-			if (rawUserId === "null" || rawUserId === "undefined") {
-			  document.cookie = "userId=; Max-Age=0; path=/";
-			}
+            // Cookie整理処理
+            const rawUserId = getCookie("userId");
+            if (rawUserId === "null" || rawUserId === "undefined") {
+              document.cookie = "userId=; Max-Age=0; path=/"; // userIdが不正な値なら削除
+            }
 
+            // 指定された座席のトピックを購読
             stompClient.subscribe(`/topic/seats/${seatId}`, function (message) {
                 const body = message.body;
                 if (body === 'LEAVE') {
-                    document.cookie = 'visitId=; Max-Age=0; path=/';
-
-//                    document.cookie = 'userId=; Max-Age=0; path=/';
-                    window.location.href = '/visits/orderwait';
+                    // 座席から離席指示が来た場合
+                    document.cookie = 'visitId=; Max-Age=0; path=/'; // visitIdを削除
+                    window.location.href = '/visits/orderwait'; // 注文待ちページへリダイレクト
                 }
             });
         }
     });
 });
 
+// ウィンドウ全体のクリックイベントリスナー
 window.addEventListener('click', (e) => {
-  const historyModal = document.getElementById('historyModal');
-  // 履歴モーダルの外側クリックで閉じる
-  if (
-    historyModal &&
-    historyModal.style.display === 'block' &&
-    !e.target.closest('.cart-modal-content') &&
-    historyModal.contains(e.target)
-  ) {
-    closeHistoryModal();
-  }
-  document.querySelectorAll('.menu-item.expanded').forEach(item => {
-    if (!item.contains(e.target)) {
-      toggleDetails(item); // 閉じる
+    // カートパネル以外の部分をクリックしたら閉じる
+    const cartPanel = document.getElementById("cartPanel");
+    const toggleButton = document.getElementById("cartToggleButton");
+    if (cartPanel && toggleButton) { // 要素が存在するかチェック
+        const isClickInsideCart =
+            cartPanel.contains(e.target) ||
+            e.target.closest('.cart-button');
+
+        if (cartPanel.classList.contains('show') && !isClickInsideCart) {
+            // toggleCart(false) を呼び出してカートパネルを閉じ、ボタンテキストを戻す
+            toggleCart(false);
+        }
     }
-  });
+
+    // 履歴モーダル以外の部分をクリックしたら閉じる
+    const historyModal = document.getElementById('historyModal');
+    const historyToggleBtn = document.getElementById("historyToggleButton");
+    if (historyModal && historyToggleBtn) { // 要素が存在するかチェック
+        if (
+            historyModal.classList.contains('show') &&
+            !historyModal.contains(e.target) &&
+            !e.target.closest('.history-button')
+        ) {
+            closeHistoryModal(); // 履歴モーダルを閉じる
+            historyToggleBtn.textContent = "注文履歴"; // ボタンのテキストを戻す
+        }
+    }
+    
+    // 展開されているメニューアイテムがクリックされた場所以外なら閉じる
+    document.querySelectorAll('.menu-item.expanded').forEach(item => {
+        if (!item.contains(e.target)) {
+            toggleDetails(item); // 閉じる
+        }
+    });
 });
 
-  document.getElementById("backToSeatList").addEventListener("click", function () {
-    document.cookie = "visitId=; Max-Age=0; path=/";
-  });
+// 「座席選択に戻る」ボタンのイベントリスナー
+document.getElementById("backToSeatList").addEventListener("click", function () {
+    document.cookie = "visitId=; Max-Age=0; path=/"; // visitIdを削除
+});
 
+// ページロード時の処理
 window.onload = () => {
-	  const params = new URLSearchParams(window.location.search);
-	  if (params.get("from") === "seatlist") {
-	    document.getElementById("backToSeatList").style.display = "block";
-	  }
-	};
+    const params = new URLSearchParams(window.location.search);
+    // URLパラメータに "from=seatlist" があれば、「座席選択に戻る」ボタンを表示
+    if (params.get("from") === "seatlist") {
+        document.getElementById("backToSeatList").style.display = "block";
+    }
+};

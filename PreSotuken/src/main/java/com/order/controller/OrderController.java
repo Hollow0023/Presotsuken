@@ -3,7 +3,7 @@ package com.order.controller;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Autowired; // @Autowired は残しておく場合
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -18,13 +18,18 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import com.order.dto.MenuWithOptionsDTO;
 import com.order.dto.OrderHistoryDto;
 import com.order.entity.Menu;
+// ★ 新しくインポートするクラスを追加
+import com.order.entity.OptionItem;
 import com.order.entity.Payment;
 import com.order.entity.PaymentDetail;
+import com.order.entity.PaymentDetailOption;
 import com.order.entity.TaxRate;
 import com.order.entity.User;
 import com.order.entity.Visit;
 import com.order.repository.MenuGroupRepository;
 import com.order.repository.MenuRepository;
+import com.order.repository.OptionItemRepository;
+import com.order.repository.PaymentDetailOptionRepository;
 import com.order.repository.PaymentDetailRepository;
 import com.order.repository.PaymentRepository;
 import com.order.repository.TaxRateRepository;
@@ -39,9 +44,11 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/order")
 public class OrderController {
 	
+    // @Autowired は残しておく場合 (LombokのRequiredArgsConstructorと併用するなら、finalにする方が推奨)
     @Autowired
-    private MenuService menuService;
+    private MenuService menuService; 
 
+    // final フィールドとして追加
     private final MenuGroupRepository menuGroupRepository;
     private final MenuRepository menuRepository;
     private final PaymentRepository paymentRepository;
@@ -49,6 +56,10 @@ public class OrderController {
     private final TaxRateRepository taxRateRepository;
     private final VisitRepository visitRepository;
     private final UserRepository userRepository;
+    
+    // ★ 新しく追加するリポジトリ
+    private final OptionItemRepository optionItemRepository; 
+    private final PaymentDetailOptionRepository paymentDetailOptionRepository; 
 
     @GetMapping
     public String showOrderPage(@CookieValue("seatId") Integer seatId,
@@ -84,10 +95,10 @@ public class OrderController {
             user = userRepository.findById(userId).orElse(null); // orElseThrow()だと存在しないと落ちるから注意
         }
        
-
         for (OrderItemDto item : items) {
             Menu menu = menuRepository.findById(item.getMenuId()).orElseThrow();
             TaxRate taxRate = taxRateRepository.findById(item.getTaxRateId()).orElseThrow();
+            
             PaymentDetail detail = new PaymentDetail();
             detail.setPayment(payment);
             detail.setStore(menu.getStore());
@@ -96,7 +107,23 @@ public class OrderController {
             detail.setUser(user);
             detail.setTaxRate(taxRate);
             detail.setSubtotal((double) (menu.getPrice().intValue() * item.getQuantity()));
-            paymentDetailRepository.save(detail);
+            
+            // ★ PaymentDetailを保存し、その結果を取得する
+            PaymentDetail savedDetail = paymentDetailRepository.save(detail);
+
+            // ★ オプション情報を保存する処理を追加
+            if (item.getOptionItemIds() != null && !item.getOptionItemIds().isEmpty()) {
+                for (Integer optionItemId : item.getOptionItemIds()) {
+                    OptionItem optionItem = optionItemRepository.findById(optionItemId)
+                            .orElseThrow(() -> new RuntimeException("OptionItem not found with ID: " + optionItemId));
+                    
+                    PaymentDetailOption paymentDetailOption = new PaymentDetailOption();
+                    paymentDetailOption.setPaymentDetail(savedDetail); // 保存したPaymentDetailのIDを設定
+                    paymentDetailOption.setOptionItem(optionItem); // OptionItemを設定
+                    
+                    paymentDetailOptionRepository.save(paymentDetailOption); // PaymentDetailOptionを保存
+                }
+            }
         }
 
         return ResponseEntity.ok().build();
@@ -106,6 +133,7 @@ public class OrderController {
         private Integer menuId;
         private Integer taxRateId;
         private Integer quantity;
+        private List<Integer> optionItemIds; // ★ オプションIDのリストを追加
 
         public Integer getMenuId() {
             return menuId;
@@ -124,6 +152,13 @@ public class OrderController {
         }
         public void setQuantity(Integer quantity) {
             this.quantity = quantity;
+        }
+        // ★ optionItemIds の getter/setterを追加
+        public List<Integer> getOptionItemIds() {
+            return optionItemIds;
+        }
+        public void setOptionItemIds(List<Integer> optionItemIds) {
+            this.optionItemIds = optionItemIds;
         }
     }
     
@@ -145,11 +180,13 @@ public class OrderController {
             OrderHistoryDto dto = new OrderHistoryDto();
             dto.setMenuName(detail.getMenu().getMenuName());
             dto.setQuantity(detail.getQuantity());
-            double taxRate = detail.getTaxRate().getRate();
-            double subtotalWithTax = detail.getSubtotal() * (1 + taxRate);
-            dto.setSubtotal((int) Math.round(subtotalWithTax)); // ← 税込みにして四捨五入！
+            dto.setPrice(detail.getMenu().getPrice());
+            dto.setTaxRate(detail.getTaxRate().getRate());
+
+            double subtotal = detail.getMenu().getPrice() * detail.getQuantity();
+            dto.setSubtotal((int) Math.round(subtotal * (1 + dto.getTaxRate())));
+
             return dto;
         }).collect(Collectors.toList());
     }
-
 }

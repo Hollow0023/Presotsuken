@@ -1,94 +1,128 @@
+/* 基本設定と全体レイアウト */
+/* ----------------------------------------------------------------------------- */
 @charset "UTF-8";
 body {
 	font-family: sans-serif;
-	overflow: hidden;
-	margin:0;
+	overflow: hidden; /* body全体のスクロールは禁止 */
+	margin: 0;
 }
 
-main{
+main {
 	display: flex;
-	height: 90dvh;               /* 画面いっぱいの高さ */
+	height: 90dvh; /* 画面いっぱいの高さからボタン部分を引いた高さ */
 }
-.buttons{
+
+/* ヘッダー部分 (ボタン類) */
+/* ----------------------------------------------------------------------------- */
+.buttons {
 	display: flex;
-	background-color:rgb(77, 166, 180);
-	height: 10dvh;;
+	background-color: rgb(77, 166, 180);
+	height: 10dvh; /* 画面高さの10% */
 	align-items: center;
 	justify-content: space-between;
-	padding-right:10px;
+	padding-right: 10px;
 }
 
-#seatInfo{
+#seatInfo {
 	margin-left: 15px;
 	font-size: 25px;
 	font-weight: 800;
-	color: white;;	
+	color: white;
 }
 
-.cart-button, .history-button{
+.cart-button, .history-button {
 	color: rgb(255, 255, 255);
 	width: 200px;
-	height:35px;
+	height: 35px;
 	font-weight: 600;
+	border: none; /* ボタンの枠線をなくす */
+	cursor: pointer; /* カーソルをポインターにする */
 }
-.history-button{
+
+.history-button {
 	background-color: rgb(65, 114, 228);
+	margin-right: 8px; /* 右側に少し余白 */
 }
-.cart-button{
+
+.cart-button {
 	background-color: rgb(134, 203, 59);
 }
 
-
-
+/* メニュータブとリスト */
+/* ----------------------------------------------------------------------------- */
 .menu-tabs {
 	width: 150px;
 	padding: 12px;
 	background-color: rgb(247, 247, 162);
-	
-	overflow-y: auto;
+	overflow-y: auto; /* タブが多い場合にスクロールできるようにする */
 	overflow-x: hidden;
 }
 
+#backToSeatList {
+    margin-bottom: 12px;
+}
+#backToSeatList a {
+    color: #007bff; /* リンクの色 */
+    text-decoration: none; /* 下線なし */
+    font-weight: bold;
+}
+#backToSeatList a:hover {
+    text-decoration: underline; /* ホバーで下線 */
+}
+
+
 .menu-tab {
 	padding: 10px;
-	width: 130px;;
+	width: 130px;
 	cursor: pointer;
 	border: 1px solid #ccc;
 	margin-bottom: 5px;
 	background: #f2f2f2;
 	text-align: center;
+	border-radius: 4px; /* 角を丸くする */
+	transition: all 0.2s ease; /* ホバー時のアニメーション */
+}
+
+.menu-tab:hover {
+    background-color: #e0e0e0;
+    border-color: #aaa;
 }
 
 .menu-tab.active {
 	position: relative;
-	left: 10px;
+	left: 10px; /* アクティブなタブを少し右にずらす */
 	font-weight: bold;
+	background-color: #fff; /* アクティブなタブの背景色 */
+	border-color: #888;
+	box-shadow: 1px 1px 3px rgba(0,0,0,0.1); /* 影をつけて立体感を出す */
 }
 
 .menu-list {
-	flex: 1;
+	flex: 1; /* 残りのスペースを全て占める */
 	display: flex;
-	flex-wrap: wrap;
-	gap: 20px;
+	flex-wrap: wrap; /* アイテムを折り返して配置 */
+	gap: 20px; /* アイテム間の隙間 */
 	background-color: antiquewhite;
-	align-content: flex-start;
-	overflow-y: scroll;
+	align-content: flex-start; /* アイテムを上から順に配置 */
+	overflow-y: scroll; /* アイテムが多い場合にスクロールできるようにする */
 	padding: 15px;
 }
 
-/* ==== メニュータイルレイアウト ==== */
+/* メニューアイテム (カード表示) */
+/* ----------------------------------------------------------------------------- */
 .menu-item {
 	width: 200px;
-	height: 180px;
+	height: 180px; /* 閉じた時の初期高さ */
 	border: 1px solid #ccc;
 	border-radius: 8px;
 	background: #fff;
 	padding: 0;
 	margin: 0;
 	box-sizing: border-box;
-	overflow: hidden;
-	transition: max-height 0.3s ease, height 0.3s ease;
+	overflow: hidden; /* 詳細がはみ出さないように隠す */
+	transition: max-height 0.3s ease, height 0.3s ease; /* 開閉アニメーション */
 	cursor: pointer;
+	box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* 影をつけて立体感を出す */
 }
 
 .menu-image-wrapper {
@@ -103,7 +137,7 @@ main{
 .menu-image-wrapper img {
 	max-width: 100%;
 	max-height: 100%;
-	object-fit: contain;
+	object-fit: contain; /* 画像をアスペクト比を保ちつつ表示 */
 }
 
 .info-btn {
@@ -117,17 +151,21 @@ main{
 	height: 22px;
 	font-weight: bold;
 	font-size: 14px;
-	line-height: 1;
+	line-height: 1; /* テキストの縦位置調整 */
 	display: flex;
 	align-items: center;
 	justify-content: center;
 	cursor: pointer;
+	box-shadow: 0 1px 3px rgba(0,0,0,0.2); /* 影を追加 */
 }
 
 .menu-name {
 	font-weight: bold;
 	padding: 8px 10px 4px 10px;
 	font-size: 14px;
+	white-space: nowrap; /* テキストの折り返しを防ぐ */
+    overflow: hidden; /* はみ出したテキストを隠す */
+    text-overflow: ellipsis; /* はみ出したテキストを三点リーダーで表示 */
 }
 
 .menu-price {
@@ -141,116 +179,237 @@ main{
 }
 
 .menu-detail {
-	display: none;
+	display: none; /* 初期状態では非表示 */
 	text-align: center;
 	padding: 12px 8px;
-	overflow: hidden;
-	transition: max-height 0.3s ease;
+	overflow: hidden; /* 詳細内容がはみ出さないように隠す */
+	transition: max-height 0.3s ease; /* 開閉アニメーション */
 	background-color: #f9f9f9; /* 確認用 */
 	border-top: 1px solid #eee; /* 確認用 */
+	box-sizing: border-box; /* paddingを含めて幅を計算 */
 }
 
 .menu-item.expanded .menu-detail {
-	display: block;
+	display: block; /* expandedクラスが付いたら表示 */
 }
 
-.panelFooter{
-	background-color: lightgray;
-	padding: 5px;
+.menu-detail .option-select {
+    width: calc(100% - 16px); /* paddingを考慮した幅 */
+    margin-bottom: 10px;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
 }
 
-.totalPrice{
+.menu-detail .quantity-input {
+    width: 60px;
+    padding: 8px;
+    margin-right: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    text-align: center;
+}
+
+.menu-detail .add-cart-btn {
+    padding: 8px 15px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.2s ease;
+    margin-top: 15px;
+}
+
+.menu-detail .add-cart-btn:hover {
+    background-color: #45a049;
+}
+
+
+/* カートパネル (固定表示) */
+/* ----------------------------------------------------------------------------- */
+.cart {
+	top: 10dvh;
+	bottom: 0;
+	width: 360px;
+	height: 90dvh;
+	background: white;
 	display: flex;
 	flex-direction: column;
-	gap: 4px;;
-	background-color: white;
-	border-radius: 5px;
-	margin:10px 0;
-}
-.cartContent{
-	margin:20px 20px 0 20px;
-}
-.priceContent{
-	display: flex;
 	justify-content: space-between;
-}
-.priceContent span{
-	font-weight: bold;
-}
-#cartMiniTax{
-	text-align: right;
-	font-size: 0.9em;
-	color: #555;
-}
-
-.cart{
-	top: 10dvh; bottom: 0;
-	width: 360px; 
-	height: 90dvh;;
-	background: white; 
-	display: flex; 
-	flex-direction: column; 
-	justify-content: space-between;
-	overflow-y: auto;
+	overflow-y: auto; /* カートの中身が多い場合にスクロール */
 		
 	position: fixed;
-	right: -400px;
+	right: -400px; /* 画面外に隠す */
 	border-left: 2px solid #ccc;
 	box-shadow: -2px 0 6px rgba(0, 0, 0, 0.1);
-	transition: right 0.4s ease;
+	transition: right 0.4s ease; /* スライドイン/アウトのアニメーション */
 	z-index: 1000;
 }
 
-
 .cart.show {
-  right: 0;
-}
-.close-btn {
-	position: absolute;
-	top: 10px;
-	left: 10px;
-	font-size: 20px;
-	background: none;
-	border: none;
-	cursor: pointer;
+  right: 0; /* showクラスが付いたら画面内に表示 */
 }
 
-.cart-check-button{
-	width:100%;
-	padding: 5px 0;
+.cartContent {
+	margin: 20px 20px 0 20px; /* 上右左の余白 */
+	flex-grow: 1; /* 内容が領域を埋めるようにする */
 }
-#cartMiniTotal{
-text-align: right;
-font-weight: bold;
+
+.cartContent h4 {
+	margin-top: 0;
 }
-#cartMiniList li{
+
+#cartMiniList {
+	width: 100%;
+	border-collapse: collapse;
+	margin-bottom: 10px;
+}
+
+#cartMiniList th, #cartMiniList td {
+	padding: 8px;
+	text-align: left;
+	border-bottom: 1px solid #eee;
+}
+
+#cartMiniList input[type="number"] {
+    width: 50px;
+    text-align: center;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 4px;
+}
+
+#cartMiniList button {
+    background-color: #f44336; /* 赤色の削除ボタン */
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8em;
+    transition: background-color 0.2s ease;
+}
+
+#cartMiniList button:hover {
+    background-color: #da190b;
+}
+
+.panelFooter {
+	background-color: lightgray;
+	padding: 15px 20px; /* 上下のpaddingを調整 */
+	border-top: 1px solid #ccc; /* 上部に境界線 */
+}
+
+.totalPrice {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	background-color: white;
+	border-radius: 5px;
+	margin: 10px 0;
+	padding: 10px; /* 内側の余白 */
+	box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.priceContent {
 	display: flex;
 	justify-content: space-between;
 }
-#cartItemCount{
-	margin: 0 0 6px;
+
+.priceContent span {
+	font-weight: bold;
+}
+
+#cartMiniTotal, #historyTotal {
+	text-align: right;
+	font-weight: bold;
+	color: #d32f2f; /* 目立つ色 */
+	font-size: 1.2em;
+}
+
+#cartMiniCount, #historyCount {
+    font-weight: bold;
+}
+
+#cartMiniTax, #historyTax {
+	text-align: right;
 	font-size: 0.9em;
-	color: #555;;
+	color: #555;
+	border-top: 1px dashed #eee; /* 税率情報の区切り線 */
+	padding-top: 5px;
+	margin-top: 5px;
 }
-#cartMiniList{
+
+.cart-check-button {
 	width: 100%;
-	border-collapse: collapse;
-	margin-bottom: 10px;;
+	padding: 12px 0; /* ボタンのサイズを大きく */
+	background-color: #4CAF50;
+	color: white;
+	border: none;
+	border-radius: 5px;
+	font-size: 1.2em;
+	font-weight: bold;
+	cursor: pointer;
+	transition: background-color 0.2s ease;
 }
-/* ==== カートモーダル系 ==== */
-#cartModal, #historyModal {
-	display: none;
+
+.cart-check-button:hover {
+	background-color: #45a049;
+}
+
+/* トースト通知 */
+/* ----------------------------------------------------------------------------- */
+#toast {
 	position: fixed;
-	z-index: 20;
-	left: 0;
-	top: 0;
-	width: 100%;
-	height: 100%;
-	background: rgba(0, 0, 0, 0.5);
+	bottom: 20px;
+	left: 50%;
+	transform: translateX(-50%);
+	background: #333;
+	color: #fff;
+	padding: 12px 20px;
+	border-radius: 4px;
+	display: none; /* 初期状態は非表示 */
+	z-index: 1000;
+	box-shadow: 0 0 8px rgba(0,0,0,0.3);
+	transition: opacity 0.5s ease;
 }
 
 
+/* 注文履歴モーダル (現在はcartクラスを再利用) */
+/* ----------------------------------------------------------------------------- */
+/* #historyModal は .cart クラスを共有しているため、個別のスタイルはほぼ不要 */
+/* ただし、テーブルのスクロール設定はここで行う */
+#historyTable tbody {
+	display: block; /* スクロール可能にするために必要 */
+	max-height: 300px; /* 最大の高さ */
+	overflow-y: auto; /* 縦スクロール */
+}
 
+#historyTable thead, #historyTable tbody tr {
+	display: table; /* 固定レイアウトのために必要 */
+	width: 100%;
+	table-layout: fixed; /* テーブルの列幅を固定 */
+}
+
+/* 使われていない、またはコメントアウトされたCSS */
+/* ----------------------------------------------------------------------------- */
+
+/* HTML側でコメントアウトされている .modal 用のスタイル */
+/* #cartModal, #historyModal { */
+/* display: none; */
+/* position: fixed; */
+/* z-index: 20; */
+/* left: 0; */
+/* top: 0; */
+/* width: 100%; */
+/* height: 100%; */
+/* background: rgba(0, 0, 0, 0.5); */
+/* } */
+
+/* 旧式のモーダルコンテンツスタイル */
+/* .cart-modal-content は現在 #historyModal で使われていない */
 .cart-modal-content {
 	background: white;
 	padding: 20px;
@@ -260,39 +419,330 @@ font-weight: bold;
 	border-radius: 8px;
 }
 
-.close {
-	float: right;
-	cursor: pointer;
-	font-weight: bold;
-	border: 2px solid #000;
-	background-color: rgb(231, 231, 231);
-	padding:2px 10px;
-}
+/* 旧式の閉じるボタン (toggleHistory/toggleCartが使われているため不要) */
+/* .close { */
+/* float: right; */
+/* cursor: pointer; */
+/* font-weight: bold; */
+/* border: 2px solid #000; */
+/* background-color: rgb(231, 231, 231); */
+/* padding:2px 10px; */
+/* } */
 
-table {
-	width: 100%;
-	border-collapse: collapse;
-}
+/* 旧式のカートアイテム数表示 (現在はJSで直接textContentを変更) */
+/* #cartItemCount { */
+/* margin: 0 0 6px; */
+/* font-size: 0.9em; */
+/* color: #555; */
+/* } */
 
-th, td {
-	padding: 8px;
-	text-align: left;
-	border-bottom: 1px solid #ddd;
-}
+/* 使われていない close-btn クラス */
+/* .close-btn { */
+/* position: absolute; */
+/* top: 10px; */
+/* left: 10px; */
+/* font-size: 20px; */
+/* background: none; */
+/* border: none; */
+/* cursor: pointer; */
+/* } */
 
-#historyTable {
-	width: 100%;
-	border-collapse: collapse;
-}
+/*@charset "UTF-8";*/
+/*body {*/
+/*	font-family: sans-serif;*/
+/*	overflow: hidden;*/
+/*	margin:0;*/
+/*}*/
 
-#historyTable tbody {
-	display: block;
-	max-height: 300px;
-	overflow-y: auto;
-}
+/*main{*/
+/*	display: flex;*/
+/*	height: 90dvh;                画面いっぱいの高さ */
+/*}*/
+/*.buttons{*/
+/*	display: flex;*/
+/*	background-color:rgb(77, 166, 180);*/
+/*	height: 10dvh;;*/
+/*	align-items: center;*/
+/*	justify-content: space-between;*/
+/*	padding-right:10px;*/
+/*}*/
 
-#historyTable thead, #historyTable tbody tr {
-	display: table;
-	width: 100%;
-	table-layout: fixed;
-}
+/*#seatInfo{*/
+/*	margin-left: 15px;*/
+/*	font-size: 25px;*/
+/*	font-weight: 800;*/
+/*	color: white;;	*/
+/*}*/
+
+/*.cart-button, .history-button{*/
+/*	color: rgb(255, 255, 255);*/
+/*	width: 200px;*/
+/*	height:35px;*/
+/*	font-weight: 600;*/
+/*}*/
+/*.history-button{*/
+/*	background-color: rgb(65, 114, 228);*/
+/*}*/
+/*.cart-button{*/
+/*	background-color: rgb(134, 203, 59);*/
+/*}*/
+
+
+
+/*.menu-tabs {*/
+/*	width: 150px;*/
+/*	padding: 12px;*/
+/*	background-color: rgb(247, 247, 162);*/
+	
+/*	overflow-y: auto;*/
+/*	overflow-x: hidden;*/
+/*}*/
+
+/*.menu-tab {*/
+/*	padding: 10px;*/
+/*	width: 130px;;*/
+/*	cursor: pointer;*/
+/*	border: 1px solid #ccc;*/
+/*	margin-bottom: 5px;*/
+/*	background: #f2f2f2;*/
+/*	text-align: center;*/
+/*}*/
+
+/*.menu-tab.active {*/
+/*	position: relative;*/
+/*	left: 10px;*/
+/*	font-weight: bold;*/
+/*}*/
+
+/*.menu-list {*/
+/*	flex: 1;*/
+/*	display: flex;*/
+/*	flex-wrap: wrap;*/
+/*	gap: 20px;*/
+/*	background-color: antiquewhite;*/
+/*	align-content: flex-start;*/
+/*	overflow-y: scroll;*/
+/*	padding: 15px;*/
+/*}*/
+
+/* ==== メニュータイルレイアウト ==== */
+/*.menu-item {*/
+/*	width: 200px;*/
+/*	height: 180px;*/
+/*	border: 1px solid #ccc;*/
+/*	border-radius: 8px;*/
+/*	background: #fff;*/
+/*	padding: 0;*/
+/*	margin: 0;*/
+/*	box-sizing: border-box;*/
+/*	overflow: hidden;*/
+/*	transition: max-height 0.3s ease, height 0.3s ease;*/
+/*	cursor: pointer;*/
+/*}*/
+
+/*.menu-image-wrapper {*/
+/*	height: 100px;*/
+/*	background: #f0f0f0;*/
+/*	display: flex;*/
+/*	align-items: center;*/
+/*	justify-content: center;*/
+/*	position: relative;*/
+/*}*/
+
+/*.menu-image-wrapper img {*/
+/*	max-width: 100%;*/
+/*	max-height: 100%;*/
+/*	object-fit: contain;*/
+/*}*/
+
+/*.info-btn {*/
+/*	position: absolute;*/
+/*	top: 6px;*/
+/*	right: 6px;*/
+/*	border: 1px solid #000;*/
+/*	background: white;*/
+/*	border-radius: 50%;*/
+/*	width: 22px;*/
+/*	height: 22px;*/
+/*	font-weight: bold;*/
+/*	font-size: 14px;*/
+/*	line-height: 1;*/
+/*	display: flex;*/
+/*	align-items: center;*/
+/*	justify-content: center;*/
+/*	cursor: pointer;*/
+/*}*/
+
+/*.menu-name {*/
+/*	font-weight: bold;*/
+/*	padding: 8px 10px 4px 10px;*/
+/*	font-size: 14px;*/
+/*}*/
+
+/*.menu-price {*/
+/*	border-top: 2px solid #ccc;*/
+/*	font-size: 13px;*/
+/*	font-weight: bold;*/
+/*	text-align: center;*/
+/*	color: red;*/
+/*	padding-bottom: 8px;*/
+/*	padding-top: 4px;*/
+/*}*/
+
+/*.menu-detail {*/
+/*	display: none;*/
+/*	text-align: center;*/
+/*	padding: 12px 8px;*/
+/*	overflow: hidden;*/
+/*	transition: max-height 0.3s ease;*/
+/*	background-color: #f9f9f9;  確認用 */
+/*	border-top: 1px solid #eee;  確認用 */
+/*}*/
+
+/*.menu-item.expanded .menu-detail {*/
+/*	display: block;*/
+/*}*/
+
+/*.panelFooter{*/
+/*	background-color: lightgray;*/
+/*	padding: 5px;*/
+/*}*/
+
+/*.totalPrice{*/
+/*	display: flex;*/
+/*	flex-direction: column;*/
+/*	gap: 4px;;*/
+/*	background-color: white;*/
+/*	border-radius: 5px;*/
+/*	margin:10px 0;*/
+/*}*/
+/*.cartContent{*/
+/*	margin:20px 20px 0 20px;*/
+/*}*/
+/*.priceContent{*/
+/*	display: flex;*/
+/*	justify-content: space-between;*/
+/*}*/
+/*.priceContent span{*/
+/*	font-weight: bold;*/
+/*}*/
+/*#cartMiniTax{*/
+/*	text-align: right;*/
+/*	font-size: 0.9em;*/
+/*	color: #555;*/
+/*}*/
+
+/*.cart{*/
+/*	top: 10dvh; bottom: 0;*/
+/*	width: 360px; */
+/*	height: 90dvh;;*/
+/*	background: white; */
+/*	display: flex; */
+/*	flex-direction: column; */
+/*	justify-content: space-between;*/
+/*	overflow-y: auto;*/
+		
+/*	position: fixed;*/
+/*	right: -400px;*/
+/*	border-left: 2px solid #ccc;*/
+/*	box-shadow: -2px 0 6px rgba(0, 0, 0, 0.1);*/
+/*	transition: right 0.4s ease;*/
+/*	z-index: 1000;*/
+/*}*/
+
+
+/*.cart.show {*/
+/*  right: 0;*/
+/*}*/
+/*.close-btn {*/
+/*	position: absolute;*/
+/*	top: 10px;*/
+/*	left: 10px;*/
+/*	font-size: 20px;*/
+/*	background: none;*/
+/*	border: none;*/
+/*	cursor: pointer;*/
+/*}*/
+
+/*.cart-check-button{*/
+/*	width:100%;*/
+/*	padding: 5px 0;*/
+/*}*/
+/*#cartMiniTotal{*/
+/*text-align: right;*/
+/*font-weight: bold;*/
+/*}*/
+/*#cartMiniList li{*/
+/*	display: flex;*/
+/*	justify-content: space-between;*/
+/*}*/
+/*#cartItemCount{*/
+/*	margin: 0 0 6px;*/
+/*	font-size: 0.9em;*/
+/*	color: #555;;*/
+/*}*/
+/*#cartMiniList{*/
+/*	width: 100%;*/
+/*	border-collapse: collapse;*/
+/*	margin-bottom: 10px;;*/
+/*}*/
+/* ==== カートモーダル系 ==== */
+/*#cartModal, #historyModal {*/
+/*	display: none;*/
+/*	position: fixed;*/
+/*	z-index: 20;*/
+/*	left: 0;*/
+/*	top: 0;*/
+/*	width: 100%;*/
+/*	height: 100%;*/
+/*	background: rgba(0, 0, 0, 0.5);*/
+/*}*/
+
+
+
+
+/*.cart-modal-content {*/
+/*	background: white;*/
+/*	padding: 20px;*/
+/*	margin: 0 auto;*/
+/*	margin-top: 50px;*/
+/*	width: 600px;*/
+/*	border-radius: 8px;*/
+/*}*/
+
+/*.close {*/
+/*	float: right;*/
+/*	cursor: pointer;*/
+/*	font-weight: bold;*/
+/*	border: 2px solid #000;*/
+/*	background-color: rgb(231, 231, 231);*/
+/*	padding:2px 10px;*/
+/*}*/
+
+/*table {*/
+/*	width: 100%;*/
+/*	border-collapse: collapse;*/
+/*}*/
+
+/*th, td {*/
+/*	padding: 8px;*/
+/*	text-align: left;*/
+/*	border-bottom: 1px solid #ddd;*/
+/*}*/
+
+/*#historyTable {*/
+/*	width: 100%;*/
+/*	border-collapse: collapse;*/
+/*}*/
+
+/*#historyTable tbody {*/
+/*	display: block;*/
+/*	max-height: 300px;*/
+/*	overflow-y: auto;*/
+/*}*/
+
+/*#historyTable thead, #historyTable tbody tr {*/
+/*	display: table;*/
+/*	width: 100%;*/
+/*	table-layout: fixed;*/
+/*}*/
