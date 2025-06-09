@@ -20,6 +20,7 @@ public class MenuWithOptionsDTO {
     private String menuImage;
     private String description;
     private int priceWithTax;
+    private Boolean isSoldOut;
 
     private List<OptionGroupDTO> optionGroups;
 

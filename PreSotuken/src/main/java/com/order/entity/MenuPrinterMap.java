@@ -1,5 +1,7 @@
 package com.order.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference; // 追加
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -20,17 +22,17 @@ public class MenuPrinterMap {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id; // menu_printer_mapテーブルのPK
+    private Integer id;
 
     @ManyToOne
     @JoinColumn(name = "menu_id", nullable = false)
-    private Menu menu; // メニューエンティティへの参照
+    @JsonBackReference // Menu側で@JsonManagedReferenceがあるため、こちらで無限ループを防ぐ
+    private Menu menu;
 
     @ManyToOne
     @JoinColumn(name = "printer_id", nullable = false)
-    private PrinterConfig printer; // プリンターエンティティへの参照
+    private PrinterConfig printer;
 
-    // コンビニエンスコンストラクタ（特定のMenuとPrinterConfigで作成する場合）
     public MenuPrinterMap(Menu menu, PrinterConfig printer) {
         this.menu = menu;
         this.printer = printer;

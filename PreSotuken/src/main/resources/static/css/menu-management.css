@@ -1,0 +1,250 @@
+body {
+    font-family: sans-serif;
+    padding: 20px;
+}
+
+.container {
+    display: flex;
+    width: 90%;
+    max-width: 1200px;
+    gap: 30px;
+    margin-top: 20px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.menu-list-section {
+    flex: 1;
+    min-width: 300px;
+    border-right: 1px solid #eee;
+    padding-right: 20px;
+}
+
+.menu-edit-form-section {
+    flex: 2;
+    min-width: 600px;
+    padding-left: 30px;
+}
+
+h1,
+h2 {
+    color: #333;
+}
+
+a {
+    text-decoration: none;
+    color: #007bff;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* メッセージ表示 */
+.message {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+    padding: 10px;
+    margin-bottom: 15px;
+    border-radius: 4px;
+}
+
+.error-message {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+    padding: 10px;
+    margin-bottom: 15px;
+    border-radius: 4px;
+}
+
+/* メニューリストのスタイル (階層構造用) */
+.menu-group-header {
+    border: 1px solid #ddd;
+    padding: 10px 15px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    font-weight: bold;
+    display: flex; /* 追加: グループ名と件数を横並びにする */
+    justify-content: space-between; /* 追加: 両端揃えにする */
+    align-items: center; /* 追加: 縦方向中央揃え */
+}
+
+.menu-group-header:hover {
+    background-color: #f9f9f9;
+}
+
+.menu-group-header.expanded {
+    background-color: #e6f2ff;
+    border-color: #007bff;
+}
+
+.menu-group-header::after {
+    content: '▼'; /* 初期状態のアイコン */
+    font-size: 0.8em;
+    color: #666;
+    transition: transform 0.2s;
+}
+
+.menu-group-header.expanded::after {
+    transform: rotate(180deg); /* 開いたときのアイコン */
+}
+
+.menu-group-items {
+    display: none; /* 初期状態では非表示 */
+    padding-left: 15px;
+    border-left: 1px solid #eee;
+    margin-left: 10px;
+}
+
+.menu-group-items.expanded {
+    display: block; /* expandedクラスが付与されると表示 */
+}
+
+.menu-item {
+    border: 1px solid #ddd;
+    padding: 10px 15px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.menu-item:hover {
+    background-color: #f9f9f9;
+}
+
+.menu-item.selected {
+    background-color: #e6f2ff;
+    border-color: #007bff;
+}
+
+.menu-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: bold;
+}
+
+.menu-item-details {
+    display: none;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #eee;
+    font-size: 0.9em;
+}
+
+.menu-item-details img {
+    max-width: 100px;
+    height: auto;
+    margin-right: 10px;
+    vertical-align: middle;
+}
+
+/* フォームのスタイル (変更なし) */
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.form-group input[type="text"],
+.form-group input[type="number"],
+.form-group select,
+.form-group textarea {
+    width: calc(100% - 18px);
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.form-group input[type="file"] {
+    padding: 5px 0;
+}
+
+.checkbox-group label {
+    display: inline-block;
+    margin-right: 15px;
+    font-weight: normal;
+}
+
+.btn {
+    padding: 8px 15px;
+    border-radius: 4px;
+    text-decoration: none;
+    display: inline-block;
+    cursor: pointer;
+    border: 1px solid #ccc;
+    margin-right: 10px;
+}
+
+.btn-primary {
+    background-color: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+.btn-primary:hover {
+    background-color: #0056b3;
+    border-color: #0056b3;
+}
+
+.btn-danger {
+    background-color: #dc3545;
+    color: white;
+    border-color: #dc3545;
+}
+
+.btn-danger:hover {
+    background-color: #c82333;
+    border-color: #bd2130;
+}
+
+.btn-secondary {
+    background-color: #6c757d;
+    color: white;
+    border-color: #6c757d;
+}
+
+.btn-secondary:hover {
+    background-color: #5a6268;
+    border-color: #545b62;
+}
+
+.form-buttons {
+    margin-top: 20px;
+}
+
+#imagePreview {
+    max-width: 200px;
+    max-height: 200px;
+    margin-top: 10px;
+    border: 1px solid #ddd;
+    display: block;
+}
+
+#imageContainer {
+    margin-bottom: 15px;
+}
+
+/* 新規登録・編集フォームの切り替え */
+#editFormContainer {
+    display: none;
+    /* 初期は非表示 */
+}
+
+/* オプション・プリンター選択の動的追加用 */
+.dynamic-select-group select {
+    margin-bottom: 8px;
+}
+
+.dynamic-select-group label {
+    margin-bottom: 5px;
+}

@@ -12,5 +12,7 @@ public interface MenuGroupRepository extends JpaRepository<MenuGroup, Integer> {
     Optional<MenuGroup> findByStoreAndGroupName(Store store, String groupName);
 
     List<MenuGroup> findByStore(Store store);
+//    List<MenuGroup> findByStore_StoreId(Integer storeId);
+    List<MenuGroup> findByStore_StoreIdAndForAdminOnlyFalseOrForAdminOnlyIsNull(Integer storeId);
     List<MenuGroup> findByStore_StoreId(Integer storeId);
 }

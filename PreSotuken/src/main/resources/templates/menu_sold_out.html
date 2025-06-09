@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>メニュー品切れ登録</title>
+    <link rel="stylesheet" href="/css/sold_out.css"> </head>
+<body>
+    <div class="container">
+        <h1>メニュー品切れ登録</h1>
+        <p>ここでメニューの品切れ状態を切り替えることができます。</p>
+        <a href="/">← トップに戻る</a>
+
+        <div class="action-buttons">
+            <button id="bulkSoldOutBtn">選択したメニューを品切れにする</button>
+            <button id="bulkAvailableBtn">選択したメニューを品切れ解除する</button>
+        </div>
+
+        <table id="menuTable">
+            <thead>
+                <tr>
+                    <th><input type="checkbox" id="selectAllCheckbox"></th>
+                    <th>メニューID</th>
+                    <th>メニュー名</th>
+                    <th>価格</th>
+                    <th>品切れ中</th>
+                    <th>個別操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                </tbody>
+        </table>
+    </div>
+
+    <script src="/js/sold_out.js"></script> </body>
+</html>

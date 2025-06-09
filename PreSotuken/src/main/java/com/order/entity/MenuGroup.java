@@ -22,4 +22,5 @@ public class MenuGroup {
     private Store store;
 
     private String groupName;
+    private Boolean forAdminOnly;
 }

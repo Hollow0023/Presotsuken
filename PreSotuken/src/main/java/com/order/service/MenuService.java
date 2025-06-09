@@ -51,6 +51,7 @@ public class MenuService {
 
         List<Menu> menus = menuRepository.findMenusAvailableAt(now).stream()
                 .filter(menu -> menu.getStore().getStoreId().equals(storeId))
+                .filter(menu -> !Boolean.TRUE.equals(menu.getIsSoldOut()))
                 .collect(Collectors.toList());
 
         return menus.stream().map(this::toDto).collect(Collectors.toList());
@@ -63,7 +64,7 @@ public class MenuService {
     }
 
     // 共通：メニュー → DTO（オプション、税込価格含む）
-    private MenuWithOptionsDTO toDto(Menu menu) {
+    public MenuWithOptionsDTO toDto(Menu menu) {
         MenuWithOptionsDTO dto = new MenuWithOptionsDTO();
         dto.setMenuId(menu.getMenuId());
         dto.setMenuName(menu.getMenuName());
@@ -72,6 +73,7 @@ public class MenuService {
         dto.setDescription(menu.getMenuDescription());
         dto.setTaxRate(menu.getTaxRate());
         dto.setMenuGroup(menu.getMenuGroup());
+        dto.setIsSoldOut(menu.getIsSoldOut());
 
         // 税込み価格の計算（税率がnullの場合は0%）
         double rate = menu.getTaxRate() != null ? menu.getTaxRate().getRate() : 0.0;
@@ -79,7 +81,7 @@ public class MenuService {
         dto.setPriceWithTax(priceWithTax);
 
         // オプショングループの構築
-        var menuOptions = menuOptionRepository.findByMenuId(menu.getMenuId());
+        var menuOptions = menuOptionRepository.findByMenu_MenuId(menu.getMenuId());
         List<OptionGroupDTO> groupDTOs = menuOptions.stream().map(menuOption -> {
             var group = optionGroupRepository.findById(menuOption.getOptionGroupId()).orElse(null);
             if (group == null) return null;
@@ -104,5 +106,35 @@ public class MenuService {
         dto.setOptionGroups(groupDTOs);
 
         return dto;
+    }
+    /**
+     * 指定されたIDのメニューの品切れ状態を更新する
+     * @param menuId 更新対象のメニューID
+     * @param isSoldOut 品切れ状態 (true:品切れ中, false:品切れ解除)
+     * @return 更新されたメニュー、または見つからない場合はnull
+     */
+    public Menu updateMenuSoldOutStatus(Integer menuId, Boolean isSoldOut) {
+        // menuRepositoryは@Autowiredで注入済みなのでそのまま使える
+        return menuRepository.findById(menuId).map(menu -> {
+            menu.setIsSoldOut(isSoldOut);
+            return menuRepository.save(menu);
+        }).orElse(null); // Optional.map() と orElse() を使うとスッキリ書けるよ
+    }
+ // MenuService.java (既存のMenuServiceに追記)
+
+    /**
+     * 指定された複数のメニューIDの品切れ状態を一括で更新する
+     * @param menuIds 更新対象のメニューIDのリスト
+     * @param isSoldOut 品切れ状態 (true:品切れ中, false:品切れ解除)
+     * @return 更新されたメニューのリスト
+     */
+    public List<Menu> updateMultipleMenuSoldOutStatus(List<Integer> menuIds, Boolean isSoldOut) {
+        List<Menu> menusToUpdate = menuRepository.findAllById(menuIds);
+
+        for (Menu menu : menusToUpdate) {
+            menu.setIsSoldOut(isSoldOut);
+        }
+        
+        return menuRepository.saveAll(menusToUpdate);
     }
 }

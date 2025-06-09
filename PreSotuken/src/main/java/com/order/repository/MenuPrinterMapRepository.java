@@ -14,5 +14,5 @@ public interface MenuPrinterMapRepository extends JpaRepository<MenuPrinterMap, 
     
     void deleteByMenu_MenuId(Integer menuId);
     List<MenuPrinterMap> findByMenu_MenuId(Integer menuId);
-
+    
 }

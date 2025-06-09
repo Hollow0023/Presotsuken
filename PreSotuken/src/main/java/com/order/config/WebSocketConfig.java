@@ -1,4 +1,6 @@
-package com.order.config;
+// src/main/java/com/order/config/WebSocketConfig.java (例: クラス名は異なるかも)
+
+package com.order.config; // configパッケージにあることが多い
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
@@ -7,23 +9,19 @@ import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 
 @Configuration
-@EnableWebSocketMessageBroker
+@EnableWebSocketMessageBroker // ★ これが付いているか確認！
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
-        // クライアントが購読するプレフィックス（/topicなど）
-        config.enableSimpleBroker("/topic");
-
-        // コントローラーでメッセージを受け取るプレフィックス（今回は未使用）
+        // SimpleBrokerのプレフィックスを設定（これがないとSimpMessagingTemplateが正しく動作しない可能性）
+        config.enableSimpleBroker("/topic"); // ★ "/topic" など、利用するプレフィックスがあるか確認！
         config.setApplicationDestinationPrefixes("/app");
     }
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        // WebSocketの接続エンドポイント
-        registry.addEndpoint("/ws-endpoint")
-                .setAllowedOriginPatterns("*")  // フロントエンドとポートが違う場合はここを調整
-                .withSockJS();  // SockJSを有効にすることで、古いブラウザでも対応可能
+        // WebSocketエンドポイント
+        registry.addEndpoint("/ws-endpoint").withSockJS(); // ★ これが付いているか確認！
     }
 }
