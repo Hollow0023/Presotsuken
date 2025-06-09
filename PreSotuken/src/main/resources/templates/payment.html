@@ -234,9 +234,22 @@
 		function closeDetailModal() { document.getElementById('detailModal').style.display = 'none'; }
 		window.onclick = e => ['discountModal', 'receivedModal', 'detailModal'].forEach(id => { if (e.target === document.getElementById(id)) document.getElementById(id).style.display = 'none'; });
 		window.onload = () => {
-			subtotal = parseFloat(document.getElementById("subtotal").innerText.replace('円', '')) || 0;
-			discount = 0;
-			calculateTotals();
+		    // subtotal の初期化をここで行う
+		    // 金額詳細モーダル内の各商品の税込み小計を合計する
+		    const detailRows = document.querySelectorAll('#detailBody tr');
+		    let calculatedSubtotal = 0;
+		    detailRows.forEach(row => {
+		        // 5番目のtd（インデックスは4）に税込み小計が入っている
+		        const subtotalText = row.children[4].innerText;
+		        // '円' を取り除いて数値に変換して加算
+		        calculatedSubtotal += parseFloat(subtotalText.replace('円', '')) || 0;
+		    });
+
+		    subtotal = calculatedSubtotal;
+		    document.getElementById("subtotal").innerText = subtotal + '円'; // ここで表示を更新
+
+		    discount = 0; // 割引は初期値0
+		    calculateTotals(); // 合計と釣りを計算
 		};
 		function updateReceived() {
 			received = parseFloat(document.getElementById("receivedInput").value) || 0;

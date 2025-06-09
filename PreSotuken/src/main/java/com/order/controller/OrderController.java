@@ -1,6 +1,7 @@
 package com.order.controller;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -23,6 +24,7 @@ import com.order.entity.OptionItem;
 import com.order.entity.Payment;
 import com.order.entity.PaymentDetail;
 import com.order.entity.PaymentDetailOption; // これを修正
+import com.order.entity.Seat;
 import com.order.entity.TaxRate;
 import com.order.entity.User;
 import com.order.entity.Visit;
@@ -36,6 +38,7 @@ import com.order.repository.TaxRateRepository;
 import com.order.repository.UserRepository;
 import com.order.repository.VisitRepository;
 import com.order.service.MenuService;
+import com.order.service.PrintService;
 
 import lombok.RequiredArgsConstructor; // Lombokのアノテーション
 
@@ -55,6 +58,7 @@ public class OrderController {
     private final TaxRateRepository taxRateRepository;
     private final VisitRepository visitRepository;
     private final UserRepository userRepository;
+    private final PrintService printService;
     
     // ★ 追加するリポジトリ
     private final OptionItemRepository optionItemRepository; 
@@ -89,11 +93,18 @@ public class OrderController {
                                             @CookieValue(name = "userId", required = false) Integer userId) {
     	User user = null;
         Payment payment = paymentRepository.findByVisitVisitId(visitId); // 既存のPaymentを取得
+        List<PaymentDetail> submitDetails = new ArrayList<>();
         
         if (userId != null) {
             user = userRepository.findById(userId).orElse(null); // ユーザーが存在しない場合はnull
         }
+        Integer seatId = visitRepository.findById(visitId)
+                .map(Visit::getSeat)
+                .map(Seat::getSeatId)
+                .orElseThrow(() -> new IllegalArgumentException("無効なvisitId: " + visitId));
+
        
+        
         for (OrderItemDto item : items) {
             Menu menu = menuRepository.findById(item.getMenuId())
                                       .orElseThrow(() -> new RuntimeException("Menu not found with ID: " + item.getMenuId()));
@@ -113,6 +124,7 @@ public class OrderController {
             
             // ★ PaymentDetailを保存し、その結果（IDが付与されたエンティティ）を取得
             PaymentDetail savedDetail = paymentDetailRepository.save(detail);
+            submitDetails.add(savedDetail);
 
             // ★ オプション情報を保存する処理
             if (item.getOptionItemIds() != null && !item.getOptionItemIds().isEmpty()) {
@@ -128,6 +140,7 @@ public class OrderController {
                     paymentDetailOptionRepository.save(paymentDetailOption);
                 }
             }
+            printService.printLabelsForOrder(submitDetails, seatId);
         }
 
         return ResponseEntity.ok().build();

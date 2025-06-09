@@ -10,4 +10,5 @@ import com.order.entity.MenuOption;
 @Repository
 public interface MenuOptionRepository extends JpaRepository<MenuOption, Integer> {
     List<MenuOption> findByMenuId(int menuId);
+    void deleteByMenuId(Integer menuId);
 }

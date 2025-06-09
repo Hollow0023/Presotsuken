@@ -11,6 +11,8 @@ import org.springframework.web.method.HandlerMethod;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
+	
+
 
 	@ExceptionHandler(Exception.class)
     public String handleAll(Exception ex, Model model, HandlerMethod handlerMethod) {

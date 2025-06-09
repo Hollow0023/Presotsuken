@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>プリンタ設定</title>
+
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        .container { display: flex; gap: 40px; }
+        .form-section { width: 400px; }
+        .list-section { flex: 1; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        .message { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; padding: 10px; margin-bottom: 15px; border-radius: 4px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; }
+        .form-group input[type="text"] { width: 100%; padding: 8px; box-sizing: border-box; }
+        .btn { padding: 8px 12px; border-radius: 4px; text-decoration: none; display: inline-block; cursor: pointer; border: 1px solid #ccc; }
+        .btn-primary { background-color: #007bff; color: white; }
+        .btn-danger { background-color: #dc3545; color: white; }
+    </style>
+</head>
+<body>
+
+    <h1>プリンタ設定</h1>
+   	<div class="back-to-top">
+        <a href="/" class="btn">トップに戻る</a>
+    </div>
+	
+    <div th:if="${message}" th:text="${message}" class="message"></div>
+
+    <div class="container">
+        <div class="form-section">
+            <h2 th:text="${printerForm.printerId == null} ? '新規登録' : '編集'"></h2>
+            <form th:action="@{/admin/printers/save}" th:object="${printerForm}" method="post">
+                <input type="hidden" th:field="*{printerId}" />
+                <input type="hidden" th:field="*{storeId}" />
+
+                <div class="form-group">
+                    <label for="printerName">プリンタ名</label>
+                    <input type="text" id="printerName" th:field="*{printerName}" required>
+                </div>
+                <div class="form-group">
+                    <label for="printerIp">プリンタIPアドレス</label>
+                    <input type="text" id="printerIp" th:field="*{printerIp}" required>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" th:field="*{receiptOutput}" />
+                        レシート出力用として使用する
+                    </label>
+                </div>
+
+                <button type="submit" class="btn btn-primary" th:text="${printerForm.printerId == null} ? '登録する' : '更新する'"></button>
+                <a th:href="@{/admin/printers}" class="btn">キャンセル</a>
+            </form>
+        </div>
+
+        <div class="list-section">
+            <h2>登録済みプリンタ一覧</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>プリンタ名</th>
+                        <th>IPアドレス</th>
+                        <th>レシート出力</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="p : ${printers}">
+                        <td th:text="${p.printerName}">Kitchen Printer</td>
+                        <td th:text="${p.printerIp}">192.168.1.100</td>
+                        <td th:text="${p.receiptOutput} ? 'はい' : 'いいえ'">はい</td>
+                        <td>
+                            <a th:href="@{/admin/printers(editId=${p.printerId})}" class="btn">編集</a>
+                            <a th:href="@{/admin/printers/delete/{id}(id=${p.printerId})}" 
+                               class="btn btn-danger"
+                               onclick="return confirm('本当に削除しますか？');">削除</a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+
+</body>
+</html>

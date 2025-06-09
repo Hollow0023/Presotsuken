@@ -49,48 +49,82 @@
 	    </select>
 	</div>
     
-
+    <br><br>
+    <label>印刷プリンター選択:</label>
+    <div id="printerContainer">
+        <select name="printerIds" onchange="addPrinterSelect(this)">
+            <option value="">選択してください</option>
+            <option th:each="printer : ${printers}"
+                    th:value="${printer.printerId}"
+                    th:text="${printer.printerName + ' (' + printer.printerIp + ')'}">
+            </option>
+        </select>
+    </div>
     <button type="submit">追加</button>
 </form>
 
 <div th:if="${success}" style="color: green;" th:text="${success}"></div>
 
 <script>
+    // オプション選択のスクリプト（既存）
 	function addOptionSelect(selectElem) {
 	    if (!selectElem.value) return;
 	
-	    // すでに選ばれてるオプション値を全部取得
-	    const selectedValues = Array.from(document.querySelectorAll('select[name="optionGroupIds"]'))
-	        .map(s => s.value)
-	        .filter(v => v); // 空を除外
-	
-	    // 次の選択肢用のselectを作成
-	    const newSelect = selectElem.cloneNode(true);
-	    newSelect.selectedIndex = 0;
-	    newSelect.onchange = function () {
-	        addOptionSelect(this);
-	        updateDisabledOptions(); // 選択肢の更新
-	    };
-	
-	    // 追加
-	    document.getElementById("optionContainer").appendChild(document.createElement("br"));
-	    document.getElementById("optionContainer").appendChild(newSelect);
-	
-	    updateDisabledOptions();
-	}
-	
-	// 現在選ばれてるoptionを他のselectから非表示にする
-	function updateDisabledOptions() {
 	    const selectedValues = Array.from(document.querySelectorAll('select[name="optionGroupIds"]'))
 	        .map(s => s.value)
 	        .filter(v => v);
 	
-	    document.querySelectorAll('select[name="optionGroupIds"]').forEach(select => {
+	    const newSelect = selectElem.cloneNode(true);
+	    newSelect.selectedIndex = 0;
+	    newSelect.onchange = function () {
+	        addOptionSelect(this);
+	        updateDisabledOptions('optionGroupIds');
+	    };
+	
+	    document.getElementById("optionContainer").appendChild(document.createElement("br"));
+	    document.getElementById("optionContainer").appendChild(newSelect);
+	
+	    updateDisabledOptions('optionGroupIds');
+	}
+	
+	function updateDisabledOptions(selectName) {
+	    const selectedValues = Array.from(document.querySelectorAll(`select[name="${selectName}"]`))
+	        .map(s => s.value)
+	        .filter(v => v);
+	
+	    document.querySelectorAll(`select[name="${selectName}"]`).forEach(select => {
 	        Array.from(select.options).forEach(option => {
 	            option.hidden = selectedValues.includes(option.value) && option.value !== select.value;
 	        });
 	    });
 	}
+
+    // プリンター選択のスクリプト（新しく追加）
+    function addPrinterSelect(selectElem) {
+        if (!selectElem.value) return;
+
+        const selectedValues = Array.from(document.querySelectorAll('select[name="printerIds"]'))
+            .map(s => s.value)
+            .filter(v => v);
+
+        const newSelect = selectElem.cloneNode(true);
+        newSelect.selectedIndex = 0;
+        newSelect.onchange = function () {
+            addPrinterSelect(this);
+            updateDisabledOptions('printerIds'); // プリンター用
+        };
+
+        document.getElementById("printerContainer").appendChild(document.createElement("br"));
+        document.getElementById("printerContainer").appendChild(newSelect);
+
+        updateDisabledOptions('printerIds'); // プリンター用
+    }
+
+    // ページロード時に既存のオプションとプリンターの選択肢を更新
+    document.addEventListener('DOMContentLoaded', () => {
+        updateDisabledOptions('optionGroupIds');
+        updateDisabledOptions('printerIds'); // プリンター用
+    });
 
 </script>
 
