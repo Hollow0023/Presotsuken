@@ -50,6 +50,18 @@ main {
 
 /* メニュータブとリスト */
 /* ----------------------------------------------------------------------------- */
+
+/* ★追加：isPlanTargetがtrueのメニューグループを初期状態で非表示にするCSS */
+.menu-tab[data-is-plan-target="true"],
+.menu-item[data-is-plan-target="true"] {
+    display: none; /* 初期は非表示 */
+}
+/* ★追加：JavaScriptで表示を切り替える際のクラス */
+.menu-tab.active-plan-group,
+.menu-item.active-plan-menu {
+    display: block !important; /* JavaScriptで表示する際に強制的に表示 */
+}
+
 .menu-tabs {
 	width: 150px;
 	padding: 12px;

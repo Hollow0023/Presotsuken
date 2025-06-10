@@ -17,4 +17,7 @@ public interface PaymentDetailRepository extends JpaRepository<PaymentDetail, In
     @Modifying
     @Query("DELETE FROM PaymentDetail pd WHERE pd.payment.paymentId = :paymentId")
     void deleteByPaymentPaymentId(Integer paymentId);
+    
+    List<PaymentDetail> findByPaymentPaymentIdAndMenuIsPlanStarterTrue(Integer paymentId);
+
 }

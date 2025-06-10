@@ -1,5 +1,6 @@
 package com.order.entity;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -32,6 +33,12 @@ public class Menu {
     @ManyToOne
     @JoinColumn(name = "time_slot_id")
     private MenuTimeSlot timeSlot;
+    
+    @Column(name = "is_plan_starter") // DBのカラム名とマッピング
+    private Boolean isPlanStarter; // 追加！
+
+    @Column(name = "plan_id") // DBのカラム名とマッピング
+    private Integer planId; // 追加！ (Planエンティティへの参照ID)
 
     private String menuName;
     private String menuImage;

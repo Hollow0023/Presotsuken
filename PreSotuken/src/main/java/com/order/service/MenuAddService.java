@@ -1,26 +1,37 @@
 package com.order.service;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.order.dto.MenuWithOptionsDTO;
 import com.order.entity.Menu;
 import com.order.entity.MenuGroup;
 import com.order.entity.MenuOption;
 import com.order.entity.MenuPrinterMap;
+import com.order.entity.Payment;
+import com.order.entity.PaymentDetail;
 import com.order.entity.PrinterConfig;
 import com.order.entity.Store;
+import com.order.entity.Visit;
 import com.order.repository.MenuGroupRepository;
 import com.order.repository.MenuOptionRepository;
 import com.order.repository.MenuPrinterMapRepository;
 import com.order.repository.MenuRepository;
+import com.order.repository.PaymentDetailRepository;
+import com.order.repository.PaymentRepository;
+import com.order.repository.PlanMenuGroupMapRepository;
+import com.order.repository.PlanRepository;
 import com.order.repository.PrinterConfigRepository;
 import com.order.repository.StoreRepository;
+import com.order.repository.VisitRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -35,89 +46,136 @@ public class MenuAddService {
     private final PrinterConfigRepository printerConfigRepository;
     private final MenuOptionRepository menuOptionRepository;
     private final MenuGroupRepository menuGroupRepository;
+
+    private final PaymentDetailRepository paymentDetailRepository;
+    private final PaymentRepository paymentRepository;
+    private final VisitRepository visitRepository;
+    private final PlanRepository planRepository;
+    private final PlanMenuGroupMapRepository planMenuGroupMapRepository;
     
-    // ★ 顧客向け注文画面に表示するメニューグループを取得するメソッド
+    // ★ 顧客向け注文画面に表示するメニューグループを取得するメソッド (ソート順適用)
     public List<MenuGroup> getCustomerMenuGroups(Integer storeId) {
-        // forAdminOnlyがfalseまたはnullのメニューグループのみを返す
-        return menuGroupRepository.findByStore_StoreIdAndForAdminOnlyFalseOrForAdminOnlyIsNull(storeId);
+        // forAdminOnlyがfalseまたはnull、かつ isPlanTargetがfalseのメニューグループのみを返す
+        // ※このメソッド名だと、`findByStore_StoreIdAndForAdminOnlyFalseOrForAdminOnlyIsNullAndIsPlanTargetFalseOrderBySortOrderAsc`
+        //   のような長い名前のメソッドが必要になる可能性があるので、リポジトリに合わせて適切なものを選択
+        return menuGroupRepository.findByStore_StoreIdAndIsPlanTargetFalseAndForAdminOnlyFalseOrForAdminOnlyIsNullOrderBySortOrderAsc(storeId);
     }
 
-    // ★ 管理者向け注文画面に表示するメニューグループを取得するメソッド
+    // ★ 管理者向け注文画面に表示するメニューグループを取得するメソッド (ソート順適用)
     public List<MenuGroup> getAdminMenuGroups(Integer storeId) {
-        // 全てのメニューグループを返す（既存のfindByStore_StoreIdと同じ）
-        return menuGroupRepository.findByStore_StoreId(storeId);
+        // 全てのメニューグループをsort_orderでソートして返す
+        return menuGroupRepository.findByStore_StoreIdOrderBySortOrderAsc(storeId);
     }
 
-    // 全メニューを取得するメソッド
-    public List<Menu> getMenusByStoreId(Integer storeId) {
-        // Eager LoadingまたはFetch Joinが必要な場合、Repositoryに専用メソッドを追加する
-        // return menuRepository.findByStore_StoreId(storeId);
-        // ★関連エンティティも取得したい場合、Fetch Joinを使う
-        // 例: return menuRepository.findByStore_StoreIdWithDetails(storeId);
-        // MenuOptionとMenuPrinterMapをEager Loadingに設定した場合、単にfindByStore_StoreIdでOK
-        return menuRepository.findByStore_StoreId(storeId);
+    // ★ 追加：飲み放題がアクティブな場合に表示する顧客向けメニューグループを取得 (ソート順適用)
+    public List<MenuGroup> getPlanActivatedCustomerMenuGroups(Integer storeId, Integer seatId) {
+        Set<MenuGroup> combinedGroups = new HashSet<>();
+
+        // 1. 通常の顧客向けメニューグループ（isPlanTarget=false）を追加 (ソート順適用)
+        combinedGroups.addAll(getCustomerMenuGroups(storeId)); // このメソッドがソート済みを返すのでOK
+
+        // 2. 現在アクティブな飲み放題プランがあるかチェックし、そのplanIdを取得
+        Integer activePlanId = getActivePlanIdForSeat(seatId, storeId);
+
+        if (activePlanId != null) {
+            List<Integer> planTargetMenuGroupIds = planMenuGroupMapRepository.findByPlanId(activePlanId).stream()
+                .map(map -> map.getMenuGroupId())
+                .collect(Collectors.toList());
+            
+            // 取得したMenuGroupIdリストを使ってMenuGroupエンティティを取得 (ソート順適用)
+            List<MenuGroup> planTargetGroups = menuGroupRepository.findByGroupIdInAndIsPlanTargetTrueOrderBySortOrderAsc(planTargetMenuGroupIds);
+            combinedGroups.addAll(planTargetGroups);
+        }
+
+        // SetからListに変換後、最終的なソート順を保証するために再度ソート（もし必要なら）
+        // ただし、個々のリストがソートされていれば、HashSetに入れても順序は失われるので
+        // 最終的なリストをソートする方が確実
+        return combinedGroups.stream()
+                             .sorted( (g1, g2) -> {
+                                 // sortOrderがnullの場合を考慮する
+                                 Integer order1 = g1.getSortOrder() != null ? g1.getSortOrder() : Integer.MAX_VALUE;
+                                 Integer order2 = g2.getSortOrder() != null ? g2.getSortOrder() : Integer.MAX_VALUE;
+                                 return order1.compareTo(order2);
+                             })
+                             .collect(Collectors.toList());
     }
+
+    // ヘルパーメソッド: 特定のシートでアクティブな飲み放題プランのIDを取得する
+    public Integer getActivePlanIdForSeat(Integer seatId, Integer storeId) {
+        Visit currentVisit = visitRepository.findTopByStore_StoreIdAndSeat_SeatIdOrderByVisitTimeDesc(storeId, seatId);
+        if (currentVisit == null) {
+            return null;
+        }
+
+        Payment payment = paymentRepository.findByVisitVisitId(currentVisit.getVisitId());
+        if (payment == null) {
+            return null;
+        }
+
+        List<PaymentDetail> planStarterOrders = paymentDetailRepository.findByPaymentPaymentIdAndMenuIsPlanStarterTrue(payment.getPaymentId());
+
+        if (!planStarterOrders.isEmpty()) {
+            return planStarterOrders.get(0).getMenu().getPlanId();
+        }
+        return null;
+    }
+
+
+    // 全メニューを取得するメソッド (menu_nameでソート適用)
+    public List<Menu> getMenusByStoreId(Integer storeId) {
+        return menuRepository.findByStore_StoreIdOrderByMenuNameAsc(storeId);
+    }
+    // ...getMenusWithOptions (品切れ表示しない場合)
+       public List<MenuWithOptionsDTO> getMenusWithOptions(Integer storeId) {
+           List<Menu> menus = menuRepository.findByStore_StoreIdAndIsSoldOutFalseOrderByMenuNameAsc(storeId);
+           // DTOへの変換ロジック
+           return menus.stream()
+               .map(menu -> new MenuWithOptionsDTO(menu)) // コンストラクタでDTOに変換
+               .collect(Collectors.toList());
+       }
+
+    // ...getAllMenusWithOptions (品切れも表示する場合)
+    //   public List<MenuWithOptionsDTO> getAllMenusWithOptions(Integer storeId) {
+    //       List<Menu> menus = menuRepository.findByStore_StoreIdOrderByMenuNameAsc(storeId);
+    //       // DTOへの変換ロジック
+    //       return menus.stream()
+    //           .map(menu -> new MenuWithOptionsDTO(menu))
+    //           .collect(Collectors.toList());
+    //   }
+
 
     // 特定のメニューを取得するメソッド (関連データもフェッチされるようにエンティティを調整)
     public Optional<Menu> getMenuById(Integer menuId) {
-        // ここでも関連データ（オプションやプリンター）が取得されるように設定が必要
-        // Menuエンティティの@OneToManyにFetchType.EAGERを設定するか、
-        // Repositoryにfetch joinのクエリメソッドを追加する
-        // 例: return menuRepository.findByIdWithDetails(menuId);
-        return menuRepository.findById(menuId); // Eager Loading前提
+        return menuRepository.findById(menuId);
     }
     
-    // 特定のメニューに紐づくオプションIDを取得するメソッド
     public List<Integer> getMenuOptionIdsByMenuId(Integer menuId) {
-        // MenuエンティティにList<MenuOption>があれば、menu.getMenuOptions()で取得できるので、
-        // このメソッドは不要になる可能性もある。
-        // もしMenuOptionがMenuへの参照(ManyToOne)を持たない（menuIdを直接持つ）なら、このメソッドは必要
         return menuOptionRepository.findByMenu_MenuId(menuId).stream()
             .map(MenuOption::getOptionGroupId)
             .collect(Collectors.toList());
     }
 
-    // 特定のメニューに紐づくプリンターIDを取得するメソッド
     public List<Integer> getMenuPrinterIdsByMenuId(Integer menuId) {
-        // MenuエンティティにList<MenuPrinterMap>があれば、menu.getMenuPrinterMaps()で取得できる
-        // その場合、このメソッドは不要になる。
         return menuPrinterMapRepository.findByMenu_MenuId(menuId).stream()
             .map(mpm -> mpm.getPrinter().getPrinterId())
             .collect(Collectors.toList());
     }
 
 
-    /**
-     * 新しいメニューを追加し、画像、プリンター、オプションとの紐付けを行う。
-     * @param menu メニューエンティティ
-     * @param imageFile アップロードされた画像ファイル
-     * @param existingMenuImage 既存の画像パス (新規作成時はnull)
-     * @param optionGroupIds オプショングループIDのリスト
-     * @param printerIds プリンターIDのリスト
-     * @param storeId 店舗ID
-     * @return 保存されたMenuエンティティ
-     * @throws IOException
-     * @throws IllegalArgumentException
-     */
     @Transactional
-    public Menu addNewMenu(Menu menu, MultipartFile imageFile, String existingMenuImage, // ★existingMenuImage引数を追加
-                           List<Integer> optionGroupIds, List<Integer> printerIds, Integer storeId) throws IOException {
+    public Menu addNewMenu(Menu menu, MultipartFile imageFile, String existingMenuImage,
+                            List<Integer> optionGroupIds, List<Integer> printerIds, Integer storeId) throws IOException {
 
         Optional<Store> optionalStore = storeRepository.findById(storeId);
         if (optionalStore.isEmpty()) {
             throw new IllegalArgumentException("店舗情報が見つかりませんでした。");
         }
-
-        // 画像の処理
         if (!imageFile.isEmpty()) {
-            // 新しい画像がアップロードされた場合
             String imagePath = imageUploadService.uploadImage(imageFile, storeId);
             menu.setMenuImage(imagePath);
         } else if (existingMenuImage != null && !existingMenuImage.isEmpty()) {
-            // 新しい画像はなく、既存の画像パスがある場合（＝変更なし）
             menu.setMenuImage(existingMenuImage);
         } else {
-            // 画像が削除された場合（または元々ない場合）
             menu.setMenuImage(null);
         }
 
@@ -127,9 +185,13 @@ public class MenuAddService {
             menu.setReceiptLabel(menu.getMenuName());
         }
 
+        // ★新規メニューのsortOrder初期値設定（管理画面で設定しない場合）
+        //   例: 現在の最大値+1にするか、0などデフォルト値にする
+        //   もし管理画面で設定するならここでの設定は不要
+        // menu.setSortOrder(0); // 仮の初期値
+
         Menu savedMenu = menuRepository.save(menu);
         
-        // プリンターの紐付け
         menuPrinterMapRepository.deleteByMenu_MenuId(savedMenu.getMenuId()); 
         if (printerIds != null && !printerIds.isEmpty()) {
             List<MenuPrinterMap> mapsToSave = printerIds.stream()
@@ -151,14 +213,12 @@ public class MenuAddService {
             }
         }
         
-        // オプションの紐付け
         menuOptionRepository.deleteByMenu_MenuId(savedMenu.getMenuId()); 
         if (optionGroupIds != null) {
             for (Integer groupId : optionGroupIds) {
                 if (groupId == null) continue;
                 MenuOption mog = new MenuOption();
-                // mog.setMenuId(savedMenu.getMenuId()); // ★この行を削除
-                mog.setMenu(savedMenu); // ★この行を追加：Menuエンティティを設定
+                mog.setMenu(savedMenu);
                 mog.setOptionGroupId(groupId);
                 menuOptionRepository.save(mog);
             }
@@ -168,21 +228,9 @@ public class MenuAddService {
     }
 
 
-    /**
-     * 既存のメニューを更新し、画像、プリンター、オプションとの紐付けを行う。
-     * @param menu 更新するメニューエンティティ（menuIdがセットされていること）
-     * @param imageFile 新しいメニュー画像ファイル（空の場合、既存の画像は保持）
-     * @param existingMenuImage 既存の画像パス (imageFileが空でこれが渡された場合)
-     * @param optionGroupIds 選択されたオプショングループIDのリスト
-     * @param printerIds 選択されたプリンターIDのリスト
-     * @param storeId 店舗ID
-     * @return 更新されたMenuエンティティ
-     * @throws IOException
-     * @throws IllegalArgumentException
-     */
     @Transactional
-    public Menu updateExistingMenu(Menu menu, MultipartFile imageFile, String existingMenuImage, // ★existingMenuImage引数を追加
-                                   List<Integer> optionGroupIds, List<Integer> printerIds, Integer storeId) throws IOException {
+    public Menu updateExistingMenu(Menu menu, MultipartFile imageFile, String existingMenuImage,
+                                    List<Integer> optionGroupIds, List<Integer> printerIds, Integer storeId) throws IOException {
 
         if (menu.getMenuId() == null) {
             throw new IllegalArgumentException("更新対象のメニューIDが指定されていません。");
@@ -198,48 +246,36 @@ public class MenuAddService {
             throw new IllegalArgumentException("指定されたメニューは現在の店舗に属していません。");
         }
 
-        // 画像の処理
         if (!imageFile.isEmpty()) {
-            // 新しい画像ファイルがアップロードされた場合
-            // 古い画像を削除
             if (existingMenu.getMenuImage() != null && !existingMenu.getMenuImage().isEmpty()) {
                 imageUploadService.deleteImage(existingMenu.getMenuImage());
             }
             String newImagePath = imageUploadService.uploadImage(imageFile, storeId);
             existingMenu.setMenuImage(newImagePath);
         } else if (existingMenuImage != null && !existingMenuImage.isEmpty()) {
-            // 新しい画像はないが、既存の画像パスがある場合（＝変更なし）
             existingMenu.setMenuImage(existingMenuImage);
         } else {
-            // 画像が削除された場合 (existingMenuImageがnullまたは空)
-            // 古い画像を削除
             if (existingMenu.getMenuImage() != null && !existingMenu.getMenuImage().isEmpty()) {
                 imageUploadService.deleteImage(existingMenu.getMenuImage());
             }
             existingMenu.setMenuImage(null);
         }
 
-        // その他のプロパティを更新
         existingMenu.setMenuName(menu.getMenuName());
         existingMenu.setPrice(menu.getPrice());
         existingMenu.setMenuDescription(menu.getMenuDescription());
         existingMenu.setIsSoldOut(menu.getIsSoldOut());
         existingMenu.setReceiptLabel(menu.getReceiptLabel());
         
-        // 関連エンティティはIDがセットされていれば自動でマッピングされる
-        // ただし、完全に新しいTaxRate/MenuGroup/MenuTimeSlotのインスタンスを渡すのではなく、
-        // 既存のDBからのインスタンス（またはIDのみセットされた参照）を設定する必要がある。
-        // そうしないと、意図せず新しいレコードが作成されたり、TransientObjectExceptionが発生する可能性あり。
-        // コントローラからのmenuオブジェクトの関連エンティティにはIDのみがセットされていると想定。
-        // もし必要なら、RepositoryからTaxRateなどをfindByIdで取得してセットし直す。
         existingMenu.setTaxRate(menu.getTaxRate()); 
         existingMenu.setMenuGroup(menu.getMenuGroup());
         existingMenu.setTimeSlot(menu.getTimeSlot());
 
+        // sortOrderは管理者画面からのみ設定されることを想定し、ここでは変更しない
+        // existingMenu.setSortOrder(menu.getSortOrder()); // 必要なら追加
 
-        Menu updatedMenu = menuRepository.save(existingMenu); // saveで更新
-
-        // プリンターの紐付け
+        Menu updatedMenu = menuRepository.save(existingMenu);
+        
         menuPrinterMapRepository.deleteByMenu_MenuId(updatedMenu.getMenuId()); 
         if (printerIds != null && !printerIds.isEmpty()) {
             List<MenuPrinterMap> mapsToSave = printerIds.stream()
@@ -261,7 +297,6 @@ public class MenuAddService {
             }
         }
         
-        // オプションの紐付け
         menuOptionRepository.deleteByMenu_MenuId(updatedMenu.getMenuId()); 
         if (optionGroupIds != null) {
             for (Integer groupId : optionGroupIds) {
@@ -276,7 +311,6 @@ public class MenuAddService {
         return updatedMenu;
     }
 
-    // メニュー削除メソッド (変更なし)
     @Transactional
     public void deleteMenu(Integer menuId, Integer storeId) {
         Optional<Menu> menuOpt = menuRepository.findById(menuId);

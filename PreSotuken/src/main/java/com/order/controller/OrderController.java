@@ -4,9 +4,9 @@ package com.order.controller;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.HashMap; // HashMapを使うのでimport
+import java.util.HashMap;
 import java.util.List;
-import java.util.Map; // Mapを使うのでimport
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.http.ResponseEntity;
@@ -20,13 +20,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes; // createVisitで使われていたので残す
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-// ★ 新しくインポートするクラスを追加
 import com.order.dto.MenuWithOptionsDTO;
 import com.order.dto.OrderHistoryDto;
 import com.order.entity.Menu;
-import com.order.entity.MenuGroup; // ★ 追加：MenuGroupをインポート
+import com.order.entity.MenuGroup;
 import com.order.entity.OptionItem;
 import com.order.entity.Payment;
 import com.order.entity.PaymentDetail;
@@ -41,27 +40,27 @@ import com.order.repository.OptionItemRepository;
 import com.order.repository.PaymentDetailOptionRepository;
 import com.order.repository.PaymentDetailRepository;
 import com.order.repository.PaymentRepository;
+import com.order.repository.PlanMenuGroupMapRepository; // PlanMenuGroupMapRepositoryを追加
+// ★ 新しくインポートするリポジトリ
+import com.order.repository.PlanRepository; // PlanRepositoryを追加 - 今回のロジックでは直接使わないけど、注入自体はOK
 import com.order.repository.SeatRepository;
 import com.order.repository.StoreRepository;
 import com.order.repository.TaxRateRepository;
 import com.order.repository.UserRepository;
 import com.order.repository.VisitRepository;
-import com.order.service.MenuAddService; // ★ 追加：MenuAddServiceをインポート
+import com.order.service.MenuAddService;
 import com.order.service.MenuService;
 import com.order.service.PrintService;
 
-import lombok.RequiredArgsConstructor; // Lombokのアノテーション
+import lombok.RequiredArgsConstructor;
 
 @Controller
-@RequiredArgsConstructor // finalフィールドのコンストラクタを自動生成
+@RequiredArgsConstructor
 @RequestMapping("/order")
 public class OrderController {
 
-	// フィールドインジェクションではなく、コンストラクタインジェクションに統一するために全てfinalにする
-	// @Autowired は不要になる
-
 	private final MenuService menuService;
-	private final MenuAddService menuAddService; // ★ 追加：MenuAddServiceを注入
+	private final MenuAddService menuAddService;
 
 	private final MenuRepository menuRepository;
 	private final PaymentRepository paymentRepository;
@@ -69,7 +68,7 @@ public class OrderController {
 	private final TaxRateRepository taxRateRepository;
 	private final VisitRepository visitRepository;
 	private final UserRepository userRepository;
-	private final PrintService printService; // ★ 追加するリポジトリ
+	private final PrintService printService;
 
 	private final OptionItemRepository optionItemRepository;
 	private final PaymentDetailOptionRepository paymentDetailOptionRepository;
@@ -77,7 +76,12 @@ public class OrderController {
 	private final SeatRepository seatRepository;
 	private final SimpMessagingTemplate messagingTemplate;
 
-	@GetMapping // 注文画面の表示
+	// ★ 新しく注入するリポジトリ
+	private final PlanRepository planRepository; // PlanRepositoryはOrderControllerでは直接使用しないが、依存関係としては問題なし
+	private final PlanMenuGroupMapRepository planMenuGroupMapRepository;
+
+
+	@GetMapping
 	public String showOrderPage(@CookieValue("seatId") Integer seatId,
 			@CookieValue("storeId") Integer storeId,
 			@RequestParam(name = "admin", required = false, defaultValue = "false") boolean showAll,
@@ -87,21 +91,27 @@ public class OrderController {
 		model.addAttribute("storeId", storeId);
 
 		List<MenuWithOptionsDTO> menusWithOptions;
-		List<MenuGroup> menuGroups; // メニューグループのリスト
+		List<MenuGroup> menuGroups;
 
-		// showAll パラメータ（admin=true）によって、メニューとメニューグループの取得ロジックを切り替える
-		if (showAll) { // 管理者向け表示の場合
-			menusWithOptions = menuService.getAllMenusWithOptions(storeId); // 品切れも表示する
-			menuGroups = menuAddService.getAdminMenuGroups(storeId); // ★ 管理者向け（全ての）メニューグループを取得
-		} else { // 通常の顧客向け表示の場合
-			menusWithOptions = menuService.getMenusWithOptions(storeId); // 品切れは表示しない
-			menuGroups = menuAddService.getCustomerMenuGroups(storeId); // ★ 顧客向け（管理者専用でない）メニューグループを取得
+		if (showAll) {
+			menusWithOptions = menuService.getAllMenusWithOptions(storeId);
+			// ★ 管理者向けはisPlanTargetに関わらず全て表示
+			menuGroups = menuAddService.getAdminMenuGroups(storeId);
+		} else {
+			menusWithOptions = menuService.getMenusWithOptions(storeId);
+			
+			// ★ ここが一番の変更点！飲み放題がアクティブかどうかに応じてメニューグループを調整する
+			// Service層のメソッドを呼び出すことで、ロジックがControllerに直接書かれるのを避ける
+			menuGroups = menuAddService.getPlanActivatedCustomerMenuGroups(storeId, seatId);
+			// ※ isPlanActiveForSeat の直接呼び出しは不要になる。
+			// menuAddService.getPlanActivatedCustomerMenuGroups 内で
+			// 飲み放題の状況を判断して適切なMenuGroupリストを返すため。
 		}
 
 		model.addAttribute("menus", menusWithOptions);
-		model.addAttribute("menuGroups", menuGroups); // ★ 修正されたmenuGroupsをmodelに追加
+		model.addAttribute("menuGroups", menuGroups);
 
-		return "order"; // order.html を返す
+		return "order";
 	}
 
 	// createVisitメソッド (変更なし)
@@ -151,7 +161,7 @@ public class OrderController {
 	@PostMapping("/submit")
 	public ResponseEntity<Void> submitOrder(@RequestBody List<OrderItemDto> items,
 			@CookieValue("visitId") Integer visitId,
-			@CookieValue("storeId") Integer storeId,
+			@CookieValue("storeId") Integer storeId, // これは今回は直接使わないけど、引数として残す
 			@CookieValue(name = "userId", required = false) Integer userId) {
 		User user = null;
 		Payment payment = paymentRepository.findByVisitVisitId(visitId);
@@ -160,10 +170,13 @@ public class OrderController {
 		if (userId != null) {
 			user = userRepository.findById(userId).orElse(null);
 		}
+		
+		// submitOrderの開始時にseatIdを確定しておく
 		Integer seatId = visitRepository.findById(visitId)
 				.map(Visit::getSeat)
 				.map(Seat::getSeatId)
 				.orElseThrow(() -> new IllegalArgumentException("無効なvisitId: " + visitId));
+
 
 		for (OrderItemDto item : items) {
 			Menu menu = menuRepository.findById(item.getMenuId())
@@ -197,9 +210,59 @@ public class OrderController {
 				}
 			}
 			printService.printLabelsForOrder(submitDetails, seatId);
+
+			// ★ここからが追加ロジック！飲み放題開始メニューの注文を検知
+			// menuエンティティのisPlanStarterがBoolean型なので、NullPointerExceptionを避けるためにequalsを使用
+			if (Boolean.TRUE.equals(menu.getIsPlanStarter())) {
+				Integer planId = menu.getPlanId(); // 紐づいているplan_idを取得
+
+				// WebSocketで特定のseatIdのクライアントに通知を送信
+				// `/topic/seats/{seatId}` は入店時通知と同じエンドポイントを使う
+				Map<String, Object> payload = new HashMap<>();
+				payload.put("type", "PLAN_ACTIVATED"); // 通知の種類を明確にする
+				payload.put("seatId", seatId);
+				payload.put("planId", planId); // どのプランが有効になったか
+
+				// アクティブになったプランに紐づくmenuGroupのIDリストも送る
+				// PlanMenuGroupMapRepositoryを使って取得する
+				List<Integer> activatedMenuGroupIds = planMenuGroupMapRepository.findByPlanId(planId).stream()
+					.map(map -> map.getMenuGroupId())
+					.collect(Collectors.toList());
+				payload.put("activatedMenuGroupIds", activatedMenuGroupIds);
+
+				messagingTemplate.convertAndSend("/topic/seats/" + seatId, payload);
+				System.out.println("WebSocket通知: seatId " + seatId + " でプラン " + planId + " がアクティブ化されました。");
+			}
 		}
 
 		return ResponseEntity.ok().build();
+	}
+
+
+	// ★ showOrderPage で使うヘルパーメソッド (Service層に切り出すのが理想)
+	// このメソッドは、現在のシート（テーブル）で飲み放題がアクティブかどうかをチェックする
+	// ※ OrderControllerからはMenuAddService.getPlanActivatedCustomerMenuGroupsを呼び出すので、
+	//    このcheckActivePlanForSeatメソッドはOrderControllerでは直接は使われない。
+	//    MenuAddService内のgetActivePlanIdForSeatにロジックが移されているため、
+	//    OrderControllerからはこのメソッドは削除してOK。
+	private boolean checkActivePlanForSeat(Integer seatId, Integer storeId) {
+		// 最新のVisitを取得
+		Visit currentVisit = visitRepository.findTopByStore_StoreIdAndSeat_SeatIdOrderByVisitTimeDesc(storeId, seatId);
+		if (currentVisit == null) {
+			return false; // Visitがないなら、飲み放題もアクティブではない
+		}
+
+		// そのVisitに紐づくPaymentを取得
+		Payment payment = paymentRepository.findByVisitVisitId(currentVisit.getVisitId());
+		if (payment == null) {
+			return false; // Paymentがないなら、飲み放題もアクティブではない
+		}
+
+		// そのPaymentに紐づくPaymentDetailの中から、is_plan_starterがtrueのメニューがあるか検索
+		List<PaymentDetail> planStarterOrders = paymentDetailRepository.findByPaymentPaymentIdAndMenuIsPlanStarterTrue(payment.getPaymentId());
+
+		// 飲み放題開始メニューの注文が1つでもあれば、trueを返す
+		return !planStarterOrders.isEmpty();
 	}
 
 	// OrderItemDto (変更なし)
@@ -245,7 +308,6 @@ public class OrderController {
 	// getOrderHistoryメソッド (変更なし)
 	@GetMapping("/history")
 	@ResponseBody
-
 	public List<OrderHistoryDto> getOrderHistory(
 			@CookieValue(name = "storeId") Integer storeId,
 			@CookieValue(name = "seatId") Integer seatId) {

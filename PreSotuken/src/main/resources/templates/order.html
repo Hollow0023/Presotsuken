@@ -29,42 +29,41 @@
 				class="menu-tab"></div>
 		</div>
 
-		<div class="menu-list" id="menuList">
-			<div th:each="menu : ${menus}" class="menu-item"
-				th:data-group-id="${menu.menuGroup.groupId}">
-				<div class="menu-image-wrapper">
-					<img th:src="@{${menu.menuImage}}"
-						onerror="this.onerror=null;this.src='/images/noimage.jpg'"
-						width="100" height="100" />
-					<button class="info-btn" th:if="${menu.description != null}"
-						th:attr="data-name=${menu.menuName}, data-desc=${menu.description}">
-						i</button>
+<div class="menu-list" id="menuList">
+    <div th:each="menu : ${menus}" class="menu-item"
+        th:data-group-id="${menu.menuGroupId}"
+        th:data-is-plan-target="${menu.menuGroupIsPlanTarget}">
+        <div class="menu-image-wrapper">
+            <img th:src="@{${menu.menuImage}}"
+                onerror="this.onerror=null;this.src='/images/noimage.jpg'"
+                width="100" height="100" />
+            <button class="info-btn" th:if="${menu.description != null}"
+                th:attr="data-name=${menu.menuName}, data-desc=${menu.description}">
+                i</button>
+        </div>
+        <div class="menu-name" th:text="${menu.menuName}"></div>
+        <div class="menu-price" th:text="${#numbers.formatInteger(menu.priceWithTax, 0) + '円（税込）'}"></div>
 
-				</div>
-				<div class="menu-name" th:text="${menu.menuName}"></div>
-				<div class="menu-price" th:text="${menu.priceWithTax + '円（税込）'}"></div>
+        <div class="menu-detail">
+            <div
+                th:if="${menu.optionGroups != null and !#lists.isEmpty(menu.optionGroups)}"
+                th:each="group : ${menu.optionGroups}">
+                <label th:text="${group.groupName}">オプション</label> <select
+                    class="option-select"
+                    th:attr="data-menu-id=${menu.menuId}, data-group-id=${group.optionGroupId}">
+                    <option value="" disabled selected>選択してください</option>
+                    <option th:each="item : ${group.optionItems}"
+                        th:value="${item.optionItemId}" th:text="${item.itemName}"></option>
+                </select>
+            </div>
 
-
-				<div class="menu-detail">
-					<div
-						th:if="${menu.optionGroups != null and !#lists.isEmpty(menu.optionGroups)}"
-						th:each="group : ${menu.optionGroups}">
-						<label th:text="${group.groupName}">オプション</label> <select
-							class="option-select"
-							th:attr="data-menu-id=${menu.menuId}, data-group-id=${group.optionGroupId}">
-							<option value="" disabled selected>選択してください</option>
-							<option th:each="item : ${group.optionItems}"
-								th:value="${item.optionItemId}" th:text="${item.itemName}"></option>
-						</select>
-					</div>
-
-					数量:<input type="number" class="quantity-input" min="1" value="1">
-					<button class="add-cart-btn"
-						th:attr="data-menu-id=${menu.menuId}, data-tax-rate-id=${menu.taxRate.taxRateId}, data-price=${menu.price}, data-name=${menu.menuName}">
-						カートに追加</button>
-				</div>
-			</div>
-		</div>
+            数量:<input type="number" class="quantity-input" min="1" value="1">
+            <button class="add-cart-btn"
+                th:attr="data-menu-id=${menu.menuId}, data-tax-rate-id=${menu.taxRateId}, data-price=${menu.price}, data-name=${menu.menuName}">
+                カートに追加</button>
+        </div>
+    </div>
+</div>
 
 		<!-- カート固定枠 -->
 		<div id="cartPanel" class="cart">

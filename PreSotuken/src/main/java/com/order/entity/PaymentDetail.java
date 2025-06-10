@@ -40,6 +40,7 @@ public class PaymentDetail {
     @ManyToOne
     @JoinColumn(name = "tax_rate_id")
     private TaxRate taxRate;
+    
 
     private Double subtotal;
     private LocalDateTime orderTime;
