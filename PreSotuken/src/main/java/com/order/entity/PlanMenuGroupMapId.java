@@ -14,6 +14,10 @@ import lombok.Setter;
 @AllArgsConstructor
 @EqualsAndHashCode
 public class PlanMenuGroupMapId implements Serializable {
+	
+
     private Integer planId;
     private Integer menuGroupId;
+    
+    
 }

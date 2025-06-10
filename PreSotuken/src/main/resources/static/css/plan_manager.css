@@ -1,0 +1,140 @@
+        /* 既存のCSSスタイルはそのまま */
+        body {
+            display: flex;
+            font-family: sans-serif;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+            gap: 20px;
+        }
+        .left-panel {
+            flex: 1;
+            padding-right: 20px;
+            border-right: 1px solid #ccc;
+            overflow-y: auto;
+            max-height: calc(100vh - 40px);
+            width:30%; /* CSSファイルのスタイルが優先される可能性あり */
+        }
+        .right-panel {
+            flex: 2;
+            padding-left: 20px;
+            overflow-y: auto;
+            max-height: calc(100vh - 40px);
+        }
+        .plan-item {
+            padding: 10px;
+            border: 1px solid #eee;
+            margin-bottom: 5px;
+            cursor: pointer;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+        }
+        .plan-item:hover {
+            background-color: #e0e0e0;
+        }
+        .plan-item.selected {
+            background-color: #cceeff;
+            border-color: #99ddff;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group input[type="text"],
+        .form-group textarea,
+        .form-group select { /* selectにもスタイルを適用 */
+            width: calc(100% - 12px);
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        /* checkbox-groupは使わなくなるが、スタイル衝突を避けるため残しておくか削除 */
+        .checkbox-group {
+            border: 1px solid #ccc;
+            padding: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            border-radius: 4px;
+            background-color: #fff;
+        }
+        .checkbox-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: normal;
+        }
+        .button-group {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        .button-group button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            min-width: 80px;
+        }
+        .button-group button.primary {
+            background-color: #007bff;
+            color: white;
+        }
+        .button-group button.danger {
+            background-color: #dc3545;
+            color: white;
+        }
+        .button-group button.secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+        .list-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .list-header h1 {
+            margin: 0;
+            font-size: 1.5em;
+        }
+        .list-container {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            max-height: calc(100vh - 180px);
+            overflow-y: auto;
+            background-color: #fff;
+        }
+        /* 新しいプルダウン関連のスタイル */
+        .menu-group-select-container {
+            margin-top: 10px;
+        }
+        .menu-group-select-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            gap: 8px;
+        }
+        .menu-group-select-row select {
+            flex-grow: 1; /* プルダウンが利用可能な幅を使う */
+        }
+        .menu-group-select-row .remove-btn {
+            background-color: #f44336;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 6px 10px;
+            cursor: pointer;
+        }
+        .add-group-btn {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 8px 12px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
