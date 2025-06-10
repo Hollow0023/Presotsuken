@@ -51,6 +51,7 @@ main {
 /* メニュータブとリスト */
 /* ----------------------------------------------------------------------------- */
 
+
 /* ★追加：isPlanTargetがtrueのメニューグループを初期状態で非表示にするCSS */
 .menu-tab[data-is-plan-target="true"],
 .menu-item[data-is-plan-target="true"] {

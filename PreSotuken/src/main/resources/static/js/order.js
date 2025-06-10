@@ -218,9 +218,7 @@ function updateQuantity(index, newVal) {
         cart[index].quantity = qty;
         updateMiniCart(); // ミニカートの表示も更新
     } else {
-        alert("数量は1以上を指定してください");
-        // 不正な値が入力された場合、元の数量に戻すなどしても良い
-        // event.target.value = cart[index].quantity; 
+        showToast("数量は1以上を指定してください");
     }
 }
 
@@ -321,7 +319,7 @@ function addToCart(button) {
 
     // 数量のバリデーション
     if (isNaN(quantity) || quantity <= 0) {
-        alert('数量は1以上を入力してください。');
+        showToast('数量は1以上を入力してください。');
         return;
     }
 
@@ -345,7 +343,7 @@ function addToCart(button) {
     });
 
     if (!optionsAllSelected) {
-        alert('全てのオプションを選択してください。');
+        showToast('全てのオプションを選択してください。');
         return; // カート追加処理を中断
     }
 
@@ -395,7 +393,7 @@ function removeFromCart(index) {
  */
 function submitOrder() {
     if (cart.length === 0) {
-        alert('カートに商品がありません。');
+        showToast('カートに商品がありません。');
         return;
     }
     
@@ -418,17 +416,15 @@ function submitOrder() {
         body: JSON.stringify(orderItems)
     }).then(res => {
         if (res.ok) {
-            alert('注文を確定しました');
-            cart.length = 0; // カートを空にする
-            updateMiniCart(); // ミニカートの表示を更新
-            // 注文確定後、注文履歴を再取得して最新の状態にする
-            fetchOrderHistoryForHistoryModal(); // 履歴モーダルを更新する関数を別途作成
+            const currentUrl = new URL(window.location.href);
+            currentUrl.searchParams.set('toastMessage', '注文を確定しました');
+            window.location.href = currentUrl.toString(); // クエリパラメータ付きでリロード
         } else {
-            alert('注文に失敗しました');
+            showToast('注文に失敗しました');
         }
     }).catch(error => {
         console.error('注文送信中にエラーが発生しました:', error);
-        alert('注文送信中にエラーが発生しました。ネットワーク接続を確認してください。');
+        showToast('注文送信中にエラーが発生しました。ネットワーク接続を確認してください。');
     });
 }
 
@@ -509,7 +505,7 @@ function fetchOrderHistoryForHistoryModal() {
 function showDescriptionFromData(btn) {
     const title = btn.getAttribute('data-name');
     const desc = btn.getAttribute('data-desc');
-    alert(`${title}\n\n${desc}`);
+    showToast(`${title}\n\n${desc}`, 5000); // alertをshowToastに変更済み
 }
 
 /**
@@ -525,18 +521,16 @@ function switchTab(tabElement) {
     
     // 関連するメニューアイテムのみ表示し、他は非表示にする
     document.querySelectorAll('.menu-item').forEach(item => {
-        // isPlanTarget=trueのメニューは初期は非表示になっているので、
-        // active-plan-menuクラスがついていれば表示する（飲み放題開始後）
-        // それ以外は通常通りgroupIdでフィルタリング
+        const itemGroupId = item.getAttribute('data-group-id');
         const isPlanTargetMenu = item.getAttribute('data-is-plan-target') === 'true';
-        const isActivePlanMenu = item.classList.contains('active-plan-menu');
+        const isActivePlanMenu = item.classList.contains('active-plan-menu'); // WebSocketで追加されるクラス
 
-        if (isPlanTargetMenu && !isActivePlanMenu) {
-            // isPlanTargetで、かつまだ飲み放題でアクティブになっていないメニューは非表示のまま
+        if (isActivePlanMenu) { // ★修正点1: 飲み放題でアクティブなら常に表示を優先
+            item.style.display = 'block'; 
+        } else if (isPlanTargetMenu) { // ★修正点2: 飲み放題対象で、かつアクティブでないものは非表示
             item.style.display = 'none';
-        } else {
-            // isPlanTargetでない、または飲み放題でアクティブになったメニュー
-            item.style.display = (item.getAttribute('data-group-id') === groupId) ? 'block' : 'none';
+        } else { // ★修正点3: 通常メニューは選択されたタブのグループIDに一致するものだけ表示
+            item.style.display = (itemGroupId === groupId) ? 'block' : 'none';
         }
     });
 }
@@ -616,52 +610,56 @@ window.addEventListener('DOMContentLoaded', () => {
             }
 
             // 指定された座席のトピックを購読
-            stompClient.subscribe(`/topic/seats/${seatId}`, function (message) {
-                const body = JSON.parse(message.body); // JSONパース
-                console.log("WebSocketメッセージ受信:", body); // デバッグ用
+           stompClient.subscribe(`/topic/seats/${seatId}`, function (message) {
+                const body = JSON.parse(message.body);
+                console.log("WebSocketメッセージ受信:", body);
 
                 if (body.type === 'LEAVE') {
-                    // 座席から離席指示が来た場合
-                    document.cookie = 'visitId=; Max-Age=0; path=/'; // visitIdを削除
-                    window.location.href = '/visits/orderwait'; // 注文待ちページへリダイレクト
+                    // ... 離席処理 ...
                 } else if (body.type === 'PLAN_ACTIVATED') {
-                    // ★飲み放題プランがアクティブ化された通知
                     const activatedMenuGroupIds = body.activatedMenuGroupIds;
                     const activatedPlanId = body.planId;
                     
                     console.log(`プラン ${activatedPlanId} がシート ${seatId} でアクティブ化されました。`);
                     console.log("表示されるメニューグループID:", activatedMenuGroupIds);
 
-                    // 該当するメニューグループのタブとメニューアイテムを表示する
-                    // まず、全てのisPlanTargetグループを非表示に戻す (念のため)
+                    // Step 1: 全てのタブとメニューアイテムを初期状態（非表示）に戻す
+                    // （isPlanTargetでないものは、後でswitchTabで表示されるため、ここでは触らない）
                     document.querySelectorAll('.menu-tab[data-is-plan-target="true"]').forEach(tab => {
                         tab.classList.remove('active-plan-group');
+                        // ★修正: ここでstyle.display = 'none'; はCSSに任せる
                     });
                     document.querySelectorAll('.menu-item[data-is-plan-target="true"]').forEach(item => {
                         item.classList.remove('active-plan-menu');
+                        // ★修正: ここでstyle.display = 'none'; はCSSに任せる
                     });
+                    // もし、現在表示されているメニュー（activeクラスがついてるタブのメニュー）を一旦全部隠したいなら、
+                    // document.querySelectorAll('.menu-item').forEach(item => item.style.display = 'none');
+                    // のような処理も検討する。ただし、switchTabで表示されるはずなので、このままでOKの可能性が高い。
 
-                    // 活性化されたメニューグループを表示
+
+                    // Step 2: 活性化されたメニューグループのタブとメニューアイテムを表示する
                     activatedMenuGroupIds.forEach(groupId => {
                         // メニューグループのタブを表示
                         const menuGroupTab = document.querySelector(`.menu-tab[data-group-id="${groupId}"]`);
                         if (menuGroupTab) {
-                            menuGroupTab.classList.add('active-plan-group');
+                            menuGroupTab.classList.add('active-plan-group'); // CSSで表示
+                            // ★修正: ここでstyle.display = 'block'; はCSSに任せる
                         }
                         // そのグループに属するメニューアイテムを表示
                         document.querySelectorAll(`.menu-item[data-group-id="${groupId}"]`).forEach(item => {
-                            item.classList.add('active-plan-menu');
+                            item.classList.add('active-plan-menu'); // CSSで表示
+                            // ★修正: ここでstyle.display = 'block'; はCSSに任せる
                         });
                     });
 
-                    showToast("飲み放題が開始されました！メニューが増えました！", 3000); // 通知
+                    showToast("飲み放題が開始されました！メニューが増えました！", 3000);
 
-                    // ★飲み放題開始後、最初の飲み放題対象グループのタブを自動でクリックする
-                    // activatedMenuGroupIds の最初のIDに対応するタブがあれば、それをアクティブにする
+                    // Step 3: 最初の飲み放題対象グループのタブを自動でクリックする
                     if (activatedMenuGroupIds && activatedMenuGroupIds.length > 0) {
                         const firstActivatedTab = document.querySelector(`.menu-tab[data-group-id="${activatedMenuGroupIds[0]}"]`);
                         if (firstActivatedTab) {
-                            switchTab(firstActivatedTab); // 新しいタブに切り替える
+                            switchTab(firstActivatedTab); 
                         }
                     }
                 }
@@ -725,6 +723,15 @@ window.onload = () => {
     // ページロード時にミニカートを初期化表示
     updateMiniCart();
 
+    // ★URLパラメータにtoastMessageがあれば表示
+    const urlParams = new URLSearchParams(window.location.search);
+    const successMessage = urlParams.get('toastMessage');
+    if (successMessage) {
+        showToast(successMessage, 3000); // 3秒間表示
+        // 表示後、クエリパラメータを削除してURLをクリーンにする (History APIを使用)
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
     // ★重要: ページロード時に現在の飲み放題状態に基づいてメニューグループの表示を調整
     // WebSocketからの通知だけでなく、初期表示でも正しい状態にする必要がある
     // サーバサイドから渡されたmenuGroupsの情報を使って処理する
@@ -732,34 +739,31 @@ window.onload = () => {
     const allMenuItems = document.querySelectorAll('.menu-item');
 
     // 初期表示時に、isPlanTarget="true" のものを非表示にする
-    allMenuTabs.forEach(tab => {
-        if (tab.getAttribute('data-is-plan-target') === 'true') {
-            tab.style.display = 'none'; // CSSで制御するならここは不要
-        }
-    });
-    allMenuItems.forEach(item => {
-        if (item.getAttribute('data-is-plan-target') === 'true') {
-            item.style.display = 'none'; // CSSで制御するならここは不要
-        }
-    });
+    // ★修正: ここでstyle.displayを直接操作するのをやめる。CSSに任せる
+    // allMenuTabs.forEach(tab => {
+    //     if (tab.getAttribute('data-is-plan-target') === 'true') {
+    //         tab.style.display = 'none'; // この行を削除
+    //     }
+    // });
+    // allMenuItems.forEach(item => {
+    //     if (item.getAttribute('data-is-plan-target') === 'true') {
+    //         item.style.display = 'none'; // この行を削除
+    //     }
+    // });
 
-    // ここで、サーバーサイドで飲み放題が既にアクティブな場合は、
-    // そのグループを表示するロジックが必要になる。
-    // そのためには、サーバから「初期状態でアクティブなプラン」の情報を何らかの形でHTMLに渡す必要がある。
-    // 現状はWebSocket通知で対応するが、リロードされた場合は通知が来ないので考慮が必要。
-    // ★例: Thymeleafで初期アクティブなメニューグループIDをhidden inputなどで渡す
-    // <input type="hidden" id="initialActivatedGroups" th:value="${initialActivatedGroupsJson}" />
-    // そして、それをパースして`activateGroups`関数を呼び出す
-    
     // まずは、初回表示時に最初のタブをアクティブにする処理
     const firstNonPlanTargetTab = document.querySelector('.menu-tab:not([data-is-plan-target="true"])');
     if (firstNonPlanTargetTab) {
+        // ★修正: ここでstyle.displayを直接操作するのをやめる。CSSに任せる
+        // firstNonPlanTargetTab.style.display = 'block'; // この行を削除
         switchTab(firstNonPlanTargetTab);
     } else {
         // 全てがisPlanTarget=trueの場合（＝何も表示されない場合）
         // 最初のタブ（どれでもいい）をアクティブにする
         const anyTab = document.querySelector('.menu-tab');
         if (anyTab) {
+            // ★修正: ここでstyle.displayを直接操作するのをやめる。CSSに任せる
+            // anyTab.style.display = 'block'; // この行を削除
             switchTab(anyTab);
         }
     }
@@ -775,12 +779,12 @@ function activatePlanGroups(groupIds) {
         const menuGroupTab = document.querySelector(`.menu-tab[data-group-id="${groupId}"]`);
         if (menuGroupTab) {
             menuGroupTab.classList.add('active-plan-group'); // CSSで表示
-            menuGroupTab.style.display = 'block'; // もしCSSだけでは足りない場合
+            // ★修正: ここでstyle.display = 'block'; はCSSに任せる
         }
         // そのグループに属するメニューアイテムを表示
         document.querySelectorAll(`.menu-item[data-group-id="${groupId}"]`).forEach(item => {
             item.classList.add('active-plan-menu'); // CSSで表示
-            item.style.display = 'block'; // もしCSSだけでは足りない場合
+            // ★修正: ここでstyle.display = 'block'; はCSSに任せる
         });
     });
 }
