@@ -311,6 +311,9 @@ public class MenuAddService {
             }
             existingMenu.setMenuImage(null);
         }
+        
+        existingMenu.setIsPlanStarter(menu.getIsPlanStarter()); 
+        existingMenu.setPlanId(menu.getPlanId());       
 
         existingMenu.setMenuName(menu.getMenuName());
         existingMenu.setPrice(menu.getPrice());

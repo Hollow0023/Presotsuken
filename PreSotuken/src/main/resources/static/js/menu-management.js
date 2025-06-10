@@ -68,7 +68,7 @@ function resetForm() {
     selectedMenuId = null;
 }
 
-// 動的に追加されたselect要素を全てクリアし、テンプレートを再配置 (変更なし)
+// 動的に追加されたselect要素を全てクリアし、テンプレートを再配置
 function clearDynamicSelects(container, template) {
     Array.from(container.children).forEach(child => {
         if (child !== template) {
@@ -97,13 +97,12 @@ async function showMenuDetails(menuId) {
     deleteMenuBtn.style.display = 'inline-block';
 
     try {
-        // ★修正: URLの先頭にスラッシュ'/'を追加して、ルートからの絶対パスにする
-        const response = await fetch(`/menu/${menuId}/details`); // ControllerのGET("/{menuId}/details") に合わせる
+        const response = await fetch(`/menu/${menuId}/details`);
         if (!response.ok) {
             const errorText = await response.text();
             throw new Error(`メニュー詳細の取得に失敗しました: ${response.status} ${errorText}`);
         }
-        const menu = await response.json(); // Controllerが直接Menuエンティティを返すことを想定
+        const menu = await response.json(); // ControllerがMenuFormを返すことを想定
 
         // フォームにデータをセット
         document.getElementById('menuId').value = menu.menuId;
@@ -129,23 +128,20 @@ async function showMenuDetails(menuId) {
         }
         imageFileInput.value = '';
 
-        // プルダウンの選択
-        // 関連エンティティのIDを正しくセット (例: menu.timeSlotはMenuTimeSlotオブジェクト)
-        document.getElementById('timeSlotSelect').value = menu.timeSlot ? menu.timeSlot.timeSlotId : '';
-        document.getElementById('taxRateSelect').value = menu.taxRate ? menu.taxRate.taxRateId : '';
-        document.getElementById('menuGroupSelect').value = menu.menuGroup ? menu.menuGroup.groupId : '';
+ // プルダウンの選択 (MenuFormのフィールド名に合わせる)
+        document.getElementById('timeSlotSelect').value = menu.timeSlotTimeSlotId || ''; // ここを修正
+        document.getElementById('taxRateSelect').value = menu.taxRateTaxRateId || ''; // ここを修正
+        document.getElementById('menuGroupSelect').value = menu.menuGroupGroupId || ''; // ここを修正
 
-        // オプション選択のセット
-        // MenuFormから直接 optionGroupIds を取得
-        const fetchedOptionIds = menu.optionGroupIds || []; // menu.optionGroupIds は MenuForm に直接あるフィールド
-        setDynamicSelects(optionSelectsContainer, optionSelectTemplate, window.allOptionGroups, 'optionGroupIds', fetchedOptionIds.map(String)); // IDが数値なら文字列に変換
-		
-		// プリンター選択のセット
-        // MenuFormから直接 printerIds を取得
-        const fetchedPrinterIds = menu.printerIds || []; // menu.printerIds は MenuForm に直接あるフィールド
-        setDynamicSelects(printerSelectsContainer, printerSelectTemplate, window.allPrinters, 'printerIds', fetchedPrinterIds.map(String)); // IDが数値なら文字列に変換
+        // オプション選択のセット (MenuFormから直接 optionGroupIds を取得)
+        const fetchedOptionIds = menu.optionGroupIds || [];
+        setDynamicSelects(optionSelectsContainer, optionSelectTemplate, window.allOptionGroups, 'optionGroupIds', fetchedOptionIds.map(String));
 
-        // ★★★ここから追加！飲み放題関連のフィールドをセット★★★
+        // プリンター選択のセット (MenuFormから直接 printerIds を取得)
+        const fetchedPrinterIds = menu.printerIds || [];
+        setDynamicSelects(printerSelectsContainer, printerSelectTemplate, window.allPrinters, 'printerIds', fetchedPrinterIds.map(String));
+
+        // ★★★飲み放題関連のフィールドをセット★★★
         isPlanStarterInput.checked = menu.isPlanStarter || false;
         togglePlanIdGroup(); // プルダウンの表示/非表示を更新
         planSelect.value = menu.planId || ''; // プルダウンの選択をセット
@@ -158,7 +154,7 @@ async function showMenuDetails(menuId) {
 }
 
 // =======================================================
-// 動的セレクトボックスの管理 (オプション & プリンター共通) (変更なし)
+// 動的セレクトボックスの管理 (オプション & プリンター共通)
 // =======================================================
 function addDynamicSelect(container, template, allItems, nameAttribute, selectedValue = '') {
     const newSelect = template.cloneNode(true);
@@ -226,19 +222,23 @@ function setDynamicSelects(container, template, allItems, nameAttribute, selecte
             }
         });
     }
+    // 選択済みのIDがあっても、常に最後に空の選択肢を追加しておく
     addDynamicSelect(container, template, allItems, nameAttribute, '');
 }
 
 
 // =======================================================
-// メニュー一覧の表示 (階層構造) (変更なし)
+// メニュー一覧の表示 (階層構造)
 // =======================================================
 function displayGroupedMenus() {
     menuListDiv.innerHTML = '';
 
     const groupedMenus = {};
     window.allMenus.forEach(menu => {
-        const groupId = menu.menuGroup ? menu.menuGroup.groupId : 'null';
+        // ★修正点: menu.menuGroupが存在し、その中にgroupIdがある場合を参照する
+        const groupId = (menu.menuGroup && menu.menuGroup.groupId !== undefined && menu.menuGroup.groupId !== null) 
+                        ? menu.menuGroup.groupId 
+                        : 'null'; 
         if (!groupedMenus[groupId]) {
             groupedMenus[groupId] = [];
         }
@@ -376,7 +376,7 @@ function setupToastr() {
 // イベントリスナー設定
 // =======================================================
 
-// ファイル選択時に画像プレビューを表示 (変更なし)
+// ファイル選択時に画像プレビューを表示
 imageFileInput.addEventListener('change', (event) => {
     const file = event.target.files[0];
     if (file) {
@@ -403,7 +403,7 @@ imageFileInput.addEventListener('change', (event) => {
     }
 });
 
-// 画像削除ボタン (変更なし)
+// 画像削除ボタン
 removeImageBtn.addEventListener('click', () => {
     imageFileInput.value = '';
     imagePreview.src = '#';
@@ -413,20 +413,20 @@ removeImageBtn.addEventListener('click', () => {
     currentMenuImageInput.value = '';
 });
 
-// フォームリセットボタン (変更なし)
+// フォームリセットボタン
 resetFormBtn.addEventListener('click', resetForm);
 
-// 新規メニュー登録ボタン (変更なし)
+// 新規メニュー登録ボタン
 addNewMenuBtn.addEventListener('click', resetForm);
 
-// オプション追加ボタンクリックイベント (変更なし)
+// オプション追加ボタンクリックイベント
 addOptionSelectBtn.addEventListener('click', () => addDynamicSelect(optionSelectsContainer, optionSelectTemplate, window.allOptionGroups, 'optionGroupIds', ''));
 
-// プリンター追加ボタンクリックイベント (変更なし)
+// プリンター追加ボタンクリックイベント
 addPrinterSelectBtn.addEventListener('click', () => addDynamicSelect(printerSelectsContainer, printerSelectTemplate, window.allPrinters, 'printerIds', ''));
 
 
-// ★★★ フォームのSUBMITイベントをAjaxに切り替える (再修正) ★★★
+// ★★★ フォームのSUBMITイベントをAjaxに切り替える ★★★
 menuForm.addEventListener('submit', async (event) => {
     event.preventDefault(); // デフォルトのフォーム送信を防止
 
@@ -436,12 +436,10 @@ menuForm.addEventListener('submit', async (event) => {
     formData.append('menuId', document.getElementById('menuId').value);
 
     // プルダウンから選択された関連エンティティのIDもFormDataに追加
-    // MenuオブジェクトのTaxRate, MenuGroup, MenuTimeSlotはIDのみをセット
-    // ここで直接オブジェクトとしてセットしようとすると、マッピングエラーになる可能性が高いので、
-    // IDを直接FormDataに追加する
-    formData.append('taxRate.taxRateId', document.getElementById('taxRateSelect').value);
-    formData.append('menuGroup.groupId', document.getElementById('menuGroupSelect').value);
-    formData.append('timeSlot.timeSlotId', document.getElementById('timeSlotSelect').value);
+    // ここは MenuForm のネストされたオブジェクトのIDを参照する必要がある
+    formData.append('taxRate.taxRateId', document.getElementById('taxRateSelect').value); // 正しい
+    formData.append('menuGroup.groupId', document.getElementById('menuGroupSelect').value); // 正しい
+    formData.append('timeSlot.timeSlotId', document.getElementById('timeSlotSelect').value); // 正しい
     
     // isSoldOut (チェックボックス) はチェックが入ってないとFormDataに含まれないので、明示的に追加
     formData.append('isSoldOut', document.getElementById('isSoldOutInput').checked);
@@ -454,7 +452,7 @@ menuForm.addEventListener('submit', async (event) => {
         formData.append('planId', ''); // チェックされていない場合は空文字列を送信
     }
 
-    // オプション選択の値を正しく FormData に追加 (変更なし)
+    // オプション選択の値を正しく FormData に追加
     const optionSelects = optionSelectsContainer.querySelectorAll('select[name="optionGroupIds"]');
     formData.delete('optionGroupIds'); // 既存の formData の optionGroupIds を削除
     optionSelects.forEach(select => {
@@ -463,10 +461,14 @@ menuForm.addEventListener('submit', async (event) => {
         }
     });
 
-    // プリンター選択のセット
-        // MenuFormから直接 printerIds を取得
-        const fetchedPrinterIds = menu.printerIds || []; // menu.printerIds は MenuForm に直接あるフィールド
-        setDynamicSelects(printerSelectsContainer, printerSelectTemplate, window.allPrinters, 'printerIds', fetchedPrinterIds.map(String)); // IDが数値なら文字列に変換
+    // プリンター選択の値を正しく FormData に追加
+    const printerSelects = printerSelectsContainer.querySelectorAll('select[name="printerIds"]');
+    formData.delete('printerIds'); // 既存の formData の printerIds を削除
+    printerSelects.forEach(select => {
+        if (select.value) { // 選択されている値のみ
+            formData.append('printerIds', select.value);
+        }
+    });
     
     // 画像ファイルの扱い:
     if (!imageFileInput.files.length) {
@@ -506,7 +508,7 @@ menuForm.addEventListener('submit', async (event) => {
 });
 
 
-// ★★★ 削除ボタンのクリックイベントもAjaxに切り替える (再修正) ★★★
+// ★★★ 削除ボタンのクリックイベントもAjaxに切り替える ★★★
 deleteMenuBtn.addEventListener('click', async () => {
     if (!selectedMenuId) return;
 
@@ -543,7 +545,7 @@ deleteMenuBtn.addEventListener('click', async () => {
 });
 
 
-// メニューリストをサーバーから再取得して表示を更新する関数 (変更なし)
+// メニューリストをサーバーから再取得して表示を更新する関数
 async function refreshMenuList() {
     try {
         // storeIdをCookieから取得してリクエストに含める
@@ -564,7 +566,7 @@ async function refreshMenuList() {
 
 
 // =======================================================
-// 飲み放題関連の表示制御 (新しく追加)
+// 飲み放題関連の表示制御
 // =======================================================
 function togglePlanIdGroup() {
     if (isPlanStarterInput.checked) {
@@ -578,11 +580,19 @@ function togglePlanIdGroup() {
 }
 
 
+// Cookieを取得するヘルパー関数
+function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+    return null;
+}
+
 // ページロード時の初期化
 document.addEventListener('DOMContentLoaded', () => {
     setupToastr();
     resetForm(); // まずフォームをリセットして、飲み放題関連の初期表示を適用
-    displayGroupedMenus(); // メニューリストを表示
+    refreshMenuList(); // メニューリストをサーバーから取得して表示
 
     // 飲み放題開始メニューチェックボックスのイベントリスナー
     isPlanStarterInput.addEventListener('change', togglePlanIdGroup);
