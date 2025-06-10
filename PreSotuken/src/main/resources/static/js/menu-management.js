@@ -136,16 +136,14 @@ async function showMenuDetails(menuId) {
         document.getElementById('menuGroupSelect').value = menu.menuGroup ? menu.menuGroup.groupId : '';
 
         // オプション選択のセット
-        // ControllerのgetMenuDetailsでMenuOptionやMenuPrinterMapのIDリストが直接JSONで返されない場合、
-        // ここでMenuOptionやMenuPrinterMapオブジェクトからIDを抽出する必要がある。
-        // 現状、Menuエンティティが直接返されるため、関連エンティティのIDにアクセスするパスを確認。
-        // もしMenuエンティティがList<MenuOption>を直接持つなら
-        const fetchedOptionIds = menu.menuOptions ? menu.menuOptions.map(mo => mo.optionGroupId) : [];
-        setDynamicSelects(optionSelectsContainer, optionSelectTemplate, window.allOptionGroups, 'optionGroupIds', fetchedOptionIds);
-        
-        // もしMenuエンティティがList<MenuPrinterMap>を直接持つなら
-        const fetchedPrinterIds = menu.menuPrinterMaps ? menu.menuPrinterMaps.map(mp => mp.printer.printerId) : [];
-        setDynamicSelects(printerSelectsContainer, printerSelectTemplate, window.allPrinters, 'printerIds', fetchedPrinterIds);
+        // MenuFormから直接 optionGroupIds を取得
+        const fetchedOptionIds = menu.optionGroupIds || []; // menu.optionGroupIds は MenuForm に直接あるフィールド
+        setDynamicSelects(optionSelectsContainer, optionSelectTemplate, window.allOptionGroups, 'optionGroupIds', fetchedOptionIds.map(String)); // IDが数値なら文字列に変換
+		
+		// プリンター選択のセット
+        // MenuFormから直接 printerIds を取得
+        const fetchedPrinterIds = menu.printerIds || []; // menu.printerIds は MenuForm に直接あるフィールド
+        setDynamicSelects(printerSelectsContainer, printerSelectTemplate, window.allPrinters, 'printerIds', fetchedPrinterIds.map(String)); // IDが数値なら文字列に変換
 
         // ★★★ここから追加！飲み放題関連のフィールドをセット★★★
         isPlanStarterInput.checked = menu.isPlanStarter || false;
@@ -465,14 +463,10 @@ menuForm.addEventListener('submit', async (event) => {
         }
     });
 
-    // プリンター選択の値を正しく FormData に追加 (変更なし)
-    const printerSelects = printerSelectsContainer.querySelectorAll('select[name="printerIds"]');
-    formData.delete('printerIds'); // 既存の formData の printerIds を削除
-    printerSelects.forEach(select => {
-        if (select.value) { // 選択されている値のみ
-            formData.append('printerIds', select.value);
-        }
-    });
+    // プリンター選択のセット
+        // MenuFormから直接 printerIds を取得
+        const fetchedPrinterIds = menu.printerIds || []; // menu.printerIds は MenuForm に直接あるフィールド
+        setDynamicSelects(printerSelectsContainer, printerSelectTemplate, window.allPrinters, 'printerIds', fetchedPrinterIds.map(String)); // IDが数値なら文字列に変換
     
     // 画像ファイルの扱い:
     if (!imageFileInput.files.length) {
