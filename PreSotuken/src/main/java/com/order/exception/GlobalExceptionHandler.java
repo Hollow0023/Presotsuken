@@ -7,7 +7,6 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.method.HandlerMethod;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
@@ -15,22 +14,9 @@ public class GlobalExceptionHandler {
 
 
 	@ExceptionHandler(Exception.class)
-    public String handleAll(Exception ex, Model model, HandlerMethod handlerMethod) {
+    public String handleAll(Exception ex, Model model) {
 
-        // どのコントローラーで発生した例外かを取得
-        String controllerName = handlerMethod.getBeanType().getSimpleName();
-        
-        //発生したコントローラーによってメッセージを変更
-        switch (controllerName) {
-	        case "VisitController":
-	        	model.addAttribute("message", "入店処理中にシステムエラーが発生しました: " + ex.getMessage());
-	        	break;
-	        case "OrderController":
-	        	model.addAttribute("message", "注文処理中にシステムエラーが発生しました: " + ex.getMessage());
-	        	break;
-	        default:
-	        	model.addAttribute("message", "システムエラーが発生しました: " + ex.getMessage());
-        }
+
         
         // スタックトレース取得（デバッグ環境のみ　要削除）
         StringBuilder trace = new StringBuilder();

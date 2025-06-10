@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.order.dto.MenuForm;
 import com.order.dto.MenuWithOptionsDTO;
 import com.order.entity.Menu;
 import com.order.entity.MenuGroup;
@@ -52,6 +53,56 @@ public class MenuAddService {
     private final VisitRepository visitRepository;
     private final PlanRepository planRepository;
     private final PlanMenuGroupMapRepository planMenuGroupMapRepository;
+    
+    
+    // MenuエンティティをMenuForm DTOに変換して返すメソッド
+    public Optional<MenuForm> getMenuFormById(Integer menuId) {
+        return menuRepository.findById(menuId)
+                .map(menu -> {
+                    MenuForm form = new MenuForm();
+                    form.setMenuId(menu.getMenuId());
+                    form.setMenuName(menu.getMenuName());
+                    form.setMenuImage(menu.getMenuImage());
+                    form.setPrice(menu.getPrice());
+                    form.setMenuDescription(menu.getMenuDescription());
+                    form.setReceiptLabel(menu.getReceiptLabel());
+                    form.setIsSoldOut(menu.getIsSoldOut());
+
+                    // ★★★ここから修正！関連エンティティのフィールドをIDと表示名に置き換え★★★
+                    if (menu.getTimeSlot() != null) {
+                        form.setTimeSlotTimeSlotId(menu.getTimeSlot().getTimeSlotId());
+                        form.setTimeSlotName(menu.getTimeSlot().getName());
+                        form.setTimeSlotStartTime(menu.getTimeSlot().getStartTime().toString()); // LocalTimeをStringに
+                        form.setTimeSlotEndTime(menu.getTimeSlot().getEndTime().toString());   // LocalTimeをStringに
+                    }
+                    if (menu.getTaxRate() != null) {
+                        form.setTaxRateTaxRateId(menu.getTaxRate().getTaxRateId());
+                        form.setTaxRateRate(menu.getTaxRate().getRate());
+                    }
+                    if (menu.getMenuGroup() != null) {
+                        form.setMenuGroupGroupId(menu.getMenuGroup().getGroupId());
+                        form.setMenuGroupName(menu.getMenuGroup().getGroupName());
+                    }
+                    
+                    form.setIsPlanStarter(menu.getIsPlanStarter());
+                    form.setPlanId(menu.getPlanId());
+
+                    // オプションとプリンターのIDリストを取得してセット！
+                    List<Integer> optionGroupIds = menuOptionRepository.findByMenu_MenuId(menuId).stream()
+                        .map(MenuOption::getOptionGroupId)
+                        .collect(Collectors.toList());
+                    form.setOptionGroupIds(optionGroupIds);
+
+                    List<Integer> printerIds = menuPrinterMapRepository.findByMenu_MenuId(menuId).stream()
+                        .map(mpm -> mpm.getPrinter().getPrinterId())
+                        .collect(Collectors.toList());
+                    form.setPrinterIds(printerIds);
+
+                    return form;
+                });
+    }
+
+
     
     // ★ 顧客向け注文画面に表示するメニューグループを取得するメソッド (ソート順適用)
     public List<MenuGroup> getCustomerMenuGroups(Integer storeId) {

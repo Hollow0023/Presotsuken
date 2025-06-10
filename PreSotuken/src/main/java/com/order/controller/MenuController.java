@@ -1,5 +1,3 @@
-// src/main/java/com/order/controller/MenuController.java (修正版)
-
 package com.order.controller;
 
 import java.io.IOException;
@@ -9,6 +7,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType; // ★MediaTypeをインポート
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -21,44 +20,40 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.order.dto.MenuForm; // MenuFormをインポート
 import com.order.entity.Menu;
-import com.order.entity.MenuGroup;
-import com.order.entity.MenuTimeSlot;
-import com.order.entity.OptionGroup;
-import com.order.entity.PrinterConfig;
-import com.order.entity.TaxRate;
+import com.order.entity.Plan;
 import com.order.repository.MenuGroupRepository;
 import com.order.repository.MenuTimeSlotRepository;
 import com.order.repository.OptionGroupRepository;
 import com.order.repository.PrinterConfigRepository;
+import com.order.repository.StoreRepository; // StoreRepositoryを注入
 import com.order.repository.TaxRateRepository;
-import com.order.service.MenuAddService; // MenuAddServiceを使用
-import com.order.service.MenuService; // ★ 追加：MenuServiceをインポート
+import com.order.service.MenuAddService;
+import com.order.service.MenuService;
 
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 
-// JSONシリアライゼーションの無限ループ対策のためにJacksonのアノテーションをインポート
-// import com.fasterxml.jackson.annotation.JsonManagedReference;
-// import com.fasterxml.jackson.annotation.JsonBackReference;
-
 @Controller
 @RequiredArgsConstructor
-@RequestMapping("/menu")
+@RequestMapping(value = "/menu") // ★producesを一旦削除し、メソッドレベルで設定
 public class MenuController {
 
     private final TaxRateRepository taxRateRepository;
-    private final MenuGroupRepository menuGroupRepository; // 既存
+    private final MenuGroupRepository menuGroupRepository;
     private final MenuTimeSlotRepository menuSlotRepository;
     private final OptionGroupRepository optionGroupRepository;
     private final PrinterConfigRepository printerConfigRepository;
+    private final StoreRepository storeRepository;
 
-    private final MenuAddService menuAddService; // 既存
-    private final MenuService menuService; // ★ 追加：MenuServiceを注入
+    private final MenuAddService menuAddService;
+    private final MenuService menuService;
 
-    // メニュー一覧＆編集画面の表示 (管理者用注文画面も兼ねる想定)
-    @GetMapping("/list")
+
+    // メニュー一覧＆編集画面の表示 (HTMLを返す)
+    @GetMapping(value = "/list", produces = MediaType.TEXT_HTML_VALUE) // ★HTMLを返すことを明示
     public String showMenuListAndEditForm(HttpServletRequest request, Model model) {
         Integer storeId = null;
         if (request.getCookies() != null) {
@@ -78,31 +73,26 @@ public class MenuController {
             return "redirect:/login";
         }
 
-        List<Menu> menus = menuAddService.getMenusByStoreId(storeId);
-        model.addAttribute("menus", menus);
-
-        List<TaxRate> taxRates = taxRateRepository.findByStore_StoreId(storeId);
+        model.addAttribute("menus", menuAddService.getMenusByStoreId(storeId));
+        model.addAttribute("timeSlots", menuSlotRepository.findByStoreStoreId(storeId));
+        model.addAttribute("taxRates", taxRateRepository.findByStore_StoreId(storeId));
+        model.addAttribute("menuGroups", menuAddService.getAdminMenuGroups(storeId));
         
-        // ★ 修正：MenuAddServiceのgetAdminMenuGroupsを呼び出す
-        // MenuAddServiceにgetAdminMenuGroupsを追加する必要があるよ
-        List<MenuGroup> menuGroups = menuAddService.getAdminMenuGroups(storeId); 
-        
-        List<MenuTimeSlot> timeSlots = menuSlotRepository.findByStoreStoreId(storeId);
-        List<OptionGroup> optionGroups = optionGroupRepository.findByStoreId(storeId);
-        List<PrinterConfig> printers = printerConfigRepository.findByStoreId(storeId);
+        model.addAttribute("optionGroups", optionGroupRepository.findByStoreId(storeId));
+        model.addAttribute("printers", printerConfigRepository.findByStoreId(storeId));
 
-        model.addAttribute("menuForm", new Menu());
-        model.addAttribute("taxRates", taxRates);
-        model.addAttribute("menuGroups", menuGroups); // 修正されたリストが渡される
-        model.addAttribute("timeSlots", timeSlots);
-        model.addAttribute("optionGroups", optionGroups);
-        model.addAttribute("printers", printers);
+        List<Plan> plans = menuService.getAllPlans(storeId);
+        System.out.println("DEBUG: MenuController - Found " + plans.size() + " plans for storeId: " + storeId);
+        model.addAttribute("plans", plans);
+
+        model.addAttribute("menuForm", new MenuForm());
+        model.addAttribute("storeId", storeId);
 
         return "menu_list_and_edit";
     }
     
     // メニューリストのデータだけをJSONで返すAPIエンドポイント
-    @GetMapping("/list_data")
+    @GetMapping(value = "/list_data", produces = MediaType.APPLICATION_JSON_VALUE) // ★JSONを返すことを明示
     @ResponseBody
     public ResponseEntity<Map<String, Object>> getMenuListData(HttpServletRequest request) {
         Integer storeId = null;
@@ -124,17 +114,15 @@ public class MenuController {
 
         Map<String, Object> data = new HashMap<>();
         data.put("menus", menuAddService.getMenusByStoreId(storeId));
-        // ★ 修正：MenuAddServiceのgetAdminMenuGroupsを呼び出す
-        // MenuAddServiceにgetAdminMenuGroupsを追加する必要があるよ
-        data.put("menuGroups", menuAddService.getAdminMenuGroups(storeId)); 
+        data.put("menuGroups", menuAddService.getAdminMenuGroups(storeId));
 
         return new ResponseEntity<>(data, HttpStatus.OK);
     }
 
     // 既存メニューの詳細情報をJSONで返すAPIエンドポイント
-    @GetMapping("/{menuId}/details")
+    @GetMapping(value = "/{menuId}/details", produces = MediaType.APPLICATION_JSON_VALUE) // ★JSONを返すことを明示
     @ResponseBody
-    public ResponseEntity<Menu> getMenuDetails(@PathVariable("menuId") Integer menuId, HttpServletRequest request) {
+    public ResponseEntity<MenuForm> getMenuDetails(@PathVariable("menuId") Integer menuId, HttpServletRequest request) {
         Integer storeId = null;
         if (request.getCookies() != null) {
             for (Cookie cookie : request.getCookies()) {
@@ -148,56 +136,22 @@ public class MenuController {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         }
 
-        // ここでMenuServiceからメニュー詳細を取得
-        Optional<Menu> optionalMenu = menuAddService.getMenuById(menuId);
+        Optional<MenuForm> optionalMenuForm = menuAddService.getMenuFormById(menuId); 
         
-        if (optionalMenu.isPresent()) {
-            Menu menu = optionalMenu.get();
-            // 取得したメニューが現在の店舗に属しているか確認
-            if (!menu.getStore().getStoreId().equals(storeId)) {
-                return new ResponseEntity<>(HttpStatus.FORBIDDEN); // 403 Forbidden
-            }
+        if (optionalMenuForm.isPresent()) {
+            MenuForm menuForm = optionalMenuForm.get();
+            // StoreIDによるフィルタリングはMenuAddService.getMenuFormById()内でstoreIdを渡し、そこで処理されるべき
+            // または、menuFormにstoreIdフィールドを追加して比較する
             
-            // 関連エンティティ（MenuOption, MenuPrinterMap）がEager Loadingされているか、
-            // または、ここで明示的に初期化する必要がある。
-            // 例えば、menu.getMenuOptions().size(); や menu.getMenuPrinterMaps().size();
-            // もしくは、fetch join を使用したRepositoryメソッドを作成する。
-            // あるいは、DTOに変換して返す。
-            // ★ここではMenuエンティティに@OneToMany(fetch = FetchType.EAGER)を追加し、
-            //   @JsonManagedReference/@JsonBackReferenceを正しく設定している前提とする。
-            return new ResponseEntity<>(menu, HttpStatus.OK);
+            return new ResponseEntity<>(menuForm, HttpStatus.OK);
         }
-        return new ResponseEntity<>(HttpStatus.NOT_FOUND); // 404 Not Found
+        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
     
-    // 品切れ登録ページを表示するためのエンドポイント
-    @GetMapping("/sold-out-management")
-    public String showSoldOutManagementPage(HttpServletRequest request, Model model) {
-        Integer storeId = null;
-        if (request.getCookies() != null) {
-            for (Cookie cookie : request.getCookies()) {
-                if ("storeId".equals(cookie.getName())) {
-                    try {
-                        storeId = Integer.parseInt(cookie.getValue());
-                        break;
-                    } catch (NumberFormatException e) {
-                        return "redirect:/error?message=Invalid store ID in cookie";
-                    }
-                }
-            }
-        }
-
-        if (storeId == null) {
-            return "redirect:/login";
-        }
-        // ここで特にmodelにデータを追加する必要はない（JavaScriptでAPIから取得するため）
-        return "menu_sold_out";
-    }
-
     // メニューの追加・更新処理
-    @PostMapping("/save")
+    @PostMapping(value = "/save", produces = MediaType.APPLICATION_JSON_VALUE) // ★JSONを返すことを明示
     @ResponseBody
-    public ResponseEntity<Map<String, String>> saveMenu(@ModelAttribute("menuForm") Menu menu,
+    public ResponseEntity<Map<String, String>> saveMenu(@ModelAttribute("menuForm") MenuForm menuForm,
                                                         @RequestParam("imageFile") MultipartFile imageFile,
                                                         @RequestParam(value = "optionGroupIds", required = false) List<Integer> optionGroupIds,
                                                         HttpServletRequest request,
@@ -228,6 +182,26 @@ public class MenuController {
                 menuImageToSave = null;
             }
 
+            // ★MenuFormからMenuエンティティへの変換ロジックをここに書く
+            Menu menu = new Menu();
+            menu.setMenuId(menuForm.getMenuId());
+            menu.setMenuName(menuForm.getMenuName());
+            menu.setPrice(menuForm.getPrice());
+            menu.setMenuDescription(menuForm.getMenuDescription());
+            menu.setReceiptLabel(menuForm.getReceiptLabel());
+            menu.setIsSoldOut(menuForm.getIsSoldOut());
+
+            // 関連エンティティはIDから取得してセット
+            menu.setStore(storeRepository.findById(storeId).orElseThrow(() -> new IllegalArgumentException("店舗情報が見つかりません。")));
+            // DTOのフィールド名に合わせてIDを取得し、エンティティをセット
+            menu.setTimeSlot(menuSlotRepository.findById(menuForm.getTimeSlotTimeSlotId()).orElse(null)); 
+            menu.setTaxRate(taxRateRepository.findById(menuForm.getTaxRateTaxRateId()).orElse(null));
+            menu.setMenuGroup(menuGroupRepository.findById(menuForm.getMenuGroupGroupId()).orElse(null));
+
+            // 飲み放題関連のフィールドをセット
+            menu.setIsPlanStarter(menuForm.getIsPlanStarter());
+            menu.setPlanId(menuForm.getPlanId());
+
             if (menu.getMenuId() == null) {
                 menuAddService.addNewMenu(menu, imageFile, menuImageToSave, optionGroupIds, printerIds, storeId);
                 response.put("status", "success");
@@ -255,15 +229,17 @@ public class MenuController {
     }
 
     // メニュー削除エンドポイント
-    @PostMapping("/delete/{menuId}")
+    @PostMapping(value = "/delete/{menuId}", produces = MediaType.APPLICATION_JSON_VALUE) // ★JSONを返すことを明示
     @ResponseBody
     public ResponseEntity<Map<String, String>> deleteMenu(@PathVariable("menuId") Integer menuId,
                                                           HttpServletRequest request) {
         Integer storeId = null;
-        for (Cookie cookie : request.getCookies()) {
-            if ("storeId".equals(cookie.getName())) {
-                storeId = Integer.parseInt(cookie.getValue());
-                break;
+        if (request.getCookies() != null) {
+            for (Cookie cookie : request.getCookies()) {
+                if ("storeId".equals(cookie.getName())) {
+                    storeId = Integer.parseInt(cookie.getValue());
+                    break;
+                }
             }
         }
         if (storeId == null) {

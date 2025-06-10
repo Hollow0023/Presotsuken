@@ -12,12 +12,14 @@ import com.order.dto.OptionGroupDTO;
 import com.order.dto.OptionItemDTO;
 import com.order.entity.Menu;
 import com.order.entity.MenuTimeSlot;
+import com.order.entity.Plan;
 import com.order.repository.MenuGroupRepository; // MenuGroupRepositoryをインポート
 import com.order.repository.MenuOptionRepository;
 import com.order.repository.MenuRepository;
 import com.order.repository.MenuTimeSlotRepository;
 import com.order.repository.OptionGroupRepository;
 import com.order.repository.OptionItemRepository;
+import com.order.repository.PlanRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -31,6 +33,7 @@ public class MenuService {
     private final MenuOptionRepository menuOptionRepository;
     private final OptionGroupRepository optionGroupRepository;
     private final OptionItemRepository optionItemRepository;
+    private final PlanRepository planRepository;
 
     // ★ MenuGroupRepositoryも必要なため追加 (MenuAddServiceと一部重複するが、ここではMenuService自身の責務として扱う)
     private final MenuGroupRepository menuGroupRepository; 
@@ -63,6 +66,12 @@ public class MenuService {
 
 
         return menus.stream().map(this::toDto).collect(Collectors.toList());
+    }
+    
+    public List<Plan> getAllPlans(Integer storeId) {
+        // PlanエンティティがStoreエンティティを関連フィールド'store'で持っている場合
+        return planRepository.findByStore_StoreId(storeId);
+        // もしPlanが直接storeIdを持つなら、return planRepository.findByStoreId(storeId);
     }
 
     // 全てのメニューを表示 (品切れも表示)

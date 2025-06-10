@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
@@ -5,6 +6,32 @@
     <title>メニュー一覧と編集</title>
     <link rel="stylesheet" th:href="@{/css/menu-management.css}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+
+    <style>
+        /* 新しい要素のためのスタイルを既存のCSSに追加または別ファイルに */
+        .plan-starter-section {
+            border: 1px solid #ccc;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        .plan-starter-section label {
+            display: inline-flex;
+            align-items: center;
+            font-weight: bold;
+        }
+        .plan-starter-section input[type="checkbox"] {
+            margin-right: 8px;
+            width: 20px;
+            height: 20px;
+        }
+        .plan-id-group {
+            margin-top: 10px;
+            /* 初期は非表示 */
+            display: none; 
+        }
+    </style>
 </head>
 <body>
 
@@ -67,7 +94,7 @@
 
                 <div class="form-group">
                     <label for="timeSlotSelect">表示時間帯</label>
-                    <select id="timeSlotSelect" th:field="*{timeSlot.timeSlotId}" required>
+                    <select id="timeSlotSelect" th:field="*{timeSlotTimeSlotId}" required>
                         <option value="" disabled>選択してください</option>
                         <option th:each="slot : ${timeSlots}"
                                 th:value="${slot.timeSlotId}"
@@ -78,14 +105,14 @@
 
                 <div class="form-group">
                     <label for="taxRateSelect">税率</label>
-                    <select id="taxRateSelect" th:field="*{taxRate.taxRateId}">
+                    <select id="taxRateSelect" th:field="*{taxRateTaxRateId}">
                         <option th:each="rate : ${taxRates}" th:value="${rate.taxRateId}" th:text="${rate.rate * 100 + '%'}"></option>
                     </select>
                 </div>
 
                 <div class="form-group">
                     <label for="menuGroupSelect">メニューグループ</label>
-                    <select id="menuGroupSelect" th:field="*{menuGroup.groupId}">
+                    <select id="menuGroupSelect" th:field="*{menuGroupGroupId}">
                         <option th:each="group : ${menuGroups}" th:value="${group.groupId}" th:text="${group.groupName}"></option>
                     </select>
                 </div>
@@ -115,6 +142,22 @@
                     <button type="button" id="addPrinterSelectBtn" class="btn btn-secondary">プリンターを追加</button>
                 </div>
 
+                <div class="form-group plan-starter-section">
+                    <label>
+                        <input type="checkbox" id="isPlanStarterInput" th:field="*{isPlanStarter}" />
+                        飲み放題開始メニュー
+                    </label>
+                    <div id="planIdGroup" class="form-group plan-id-group">
+                        <label for="planSelect">紐づくプラン:</label>
+                        <select id="planSelect" th:field="*{planId}">
+                            <option value="" disabled selected>選択してください</option>
+                            <option th:each="plan : ${plans}"
+                                    th:value="${plan.planId}"
+                                    th:text="${plan.planName}">
+                            </option>
+                        </select>
+                    </div>
+                </div>
                 <div class="form-buttons">
                     <button type="submit" class="btn btn-primary" id="submitBtn">登録する</button>
                     <button type="button" id="resetFormBtn" class="btn">クリア</button>
@@ -124,16 +167,18 @@
         </div>
     </div>
 
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script th:inline="javascript">
         /*<![CDATA[*/
+        // ThymeleafからJSに渡される初期データ
         window.allOptionGroups = /*[[${optionGroups}]]*/ [];
         window.allPrinters = /*[[${printers}]]*/ [];
         window.allMenus = /*[[${menus}]]*/ []; // 全メニューデータ
         window.allMenuGroups = /*[[${menuGroups}]]*/ []; // 全メニューグループデータ
+        window.allPlans = /*[[${plans}]]*/ []; // ★追加：全プランデータ
         /*]]>*/
     </script>
     <script th:src="@{/js/menu-management.js}"></script>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
     
 </body>
