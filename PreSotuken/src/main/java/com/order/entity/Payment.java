@@ -2,6 +2,7 @@ package com.order.entity;
 
 import java.time.LocalDateTime;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -26,6 +27,9 @@ public class Payment {
     @ManyToOne
     @JoinColumn(name = "visit_id")
     private Visit visit;
+    
+    @Column(name = "visit_cancel", nullable = false) // DBのカラム名に合わせて修正
+    private Boolean visitCancel = false; // デフォルト値を0(false)に設定
 
     private LocalDateTime paymentTime;
     private Double subtotal;

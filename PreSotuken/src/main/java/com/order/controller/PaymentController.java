@@ -1,6 +1,8 @@
 package com.order.controller;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -111,7 +113,13 @@ public class PaymentController {
         //  Visit 退店時刻を設定
         Visit visit = payment.getVisit();
         visit.setLeaveTime(req.getPaymentTime());
-        messagingTemplate.convertAndSend("/topic/seats/" + visit.getSeat().getSeatId(), "LEAVE");
+        
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("type", "LEAVE");
+        payload.put("seatId", visit.getSeat().getSeatId()); // 離席した座席のIDもペイロードに含める
+        messagingTemplate.convertAndSend("/topic/seats/" + visit.getSeat().getSeatId(), payload); // 修正後のpayloadを送信
+
+
 
         // 保存
         paymentRepository.save(payment);

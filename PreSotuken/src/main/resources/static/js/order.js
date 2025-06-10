@@ -604,10 +604,10 @@ window.addEventListener('DOMContentLoaded', () => {
     stompClient.connect({}, function () {
         if (typeof seatId !== 'undefined' && seatId !== null) {
             // Cookie整理処理
-            const rawUserId = getCookie("userId");
-            if (rawUserId === "null" || rawUserId === "undefined") {
-              document.cookie = "userId=; Max-Age=0; path=/"; // userIdが不正な値なら削除
-            }
+//            const rawUserId = getCookie("userId");
+//            if (rawUserId === "null" || rawUserId === "undefined") {
+//              document.cookie = "userId=; Max-Age=0; path=/"; // userIdが不正な値なら削除
+//            }
 
             // 指定された座席のトピックを購読
            stompClient.subscribe(`/topic/seats/${seatId}`, function (message) {
@@ -615,7 +615,8 @@ window.addEventListener('DOMContentLoaded', () => {
                 console.log("WebSocketメッセージ受信:", body);
 
                 if (body.type === 'LEAVE') {
-                    // ... 離席処理 ...
+                    document.cookie = 'visitId=; Max-Age=0; path=/'; // visitIdを削除（セッション切れ用）
+                    window.location.href = '/visits/orderwait';
                 } else if (body.type === 'PLAN_ACTIVATED') {
                     const activatedMenuGroupIds = body.activatedMenuGroupIds;
                     const activatedPlanId = body.planId;

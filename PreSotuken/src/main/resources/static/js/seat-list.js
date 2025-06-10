@@ -41,7 +41,13 @@ function openSeat(elem) {
 			}
 		});
 
-	document.getElementById('deleteVisitBtn').onclick = () => {
+document.getElementById('deleteVisitBtn').onclick = () => {
+        const userSelect = document.getElementById('userSelect'); // プルダウン要素をここで取得
+        if (!userSelect || userSelect.value === "") { // userSelectが取得できないか、選択値が空なら
+            alert("担当者を選択してください。"); // 警告を表示
+            return; // 処理を中断
+        }
+        
 		if (confirm("この入店情報を削除しますか？")) {
 			fetch(`/api/delete-visit?seatId=${activeSeatId}`, { method: 'DELETE' })
 				.then(res => {
@@ -149,6 +155,8 @@ function toggleMenu() {
 }
 
 
+
+
 document.getElementById("orderBtn").addEventListener("click", () => {
     const seatId = document.getElementById("activeModal").getAttribute("data-seat-id");
 	const storeId = getCookie("storeId"); 
@@ -169,17 +177,16 @@ document.getElementById("orderBtn").addEventListener("click", () => {
       
 // ユーザーIDをCookieに保存する関数
 function setUserIdCookie(userId) {
-    if (userId) {
+    // userIdが有効な値（空文字列ではない）の場合のみCookieをセットまたは更新
+    if (userId && userId !== "null" && userId !== "undefined") { // "null"や"undefined"という文字列も除外
         document.cookie = "userId=" + userId + "; path=/; max-age=" + (60 * 60 * 24 * 30); // 30日間有効
         console.log("CookieにuserIdを保存しました: " + userId);
     } else {
-        // 未選択の場合はCookieを削除する、など
-        // `currentUserId`を`userId`に修正
-        document.cookie = "userId=; path=/; max-age=0"; // Cookieを即座に期限切れにする
-        console.log("CookieからuserIdを削除しました。");
+        // userIdが有効な値ではない場合、Cookieは削除せず何もしない（あるいは、明示的に削除したいならMax-Age=0を設定）
+        // ここでCookieを削除しないことで、ユーザーが誤って「ユーザーを選択」に戻してもuserIdが消えないようにする
+        console.log("有効なuserIdではないため、Cookieを更新しませんでした。");
     }
 }
-
 // ページロード時に実行する処理を全てこの中にまとめる
 window.onload = function() {
     // ユーザーIDをCookieから読み込んでプルダウンに反映する処理

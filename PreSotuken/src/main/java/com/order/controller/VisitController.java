@@ -72,7 +72,7 @@ public class VisitController {
 			payload.put("visitId", savedVisit.getVisitId());
 			payload.put("storeId", storeId);
 			payload.put("seatId", seatId);
-			payload.put("userId", null);
+//			payload.put("userId", null);
 			messagingTemplate.convertAndSend("/topic/seats/" + seatId, payload);
 
 			redirectAttributes.addFlashAttribute("registerSuccess", true);
