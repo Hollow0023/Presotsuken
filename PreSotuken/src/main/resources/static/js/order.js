@@ -416,9 +416,10 @@ function submitOrder() {
         body: JSON.stringify(orderItems)
     }).then(res => {
         if (res.ok) {
-            const currentUrl = new URL(window.location.href);
-            currentUrl.searchParams.set('toastMessage', '注文を確定しました');
-            window.location.href = currentUrl.toString(); // クエリパラメータ付きでリロード
+//            const currentUrl = new URL(window.location.href);
+//            currentUrl.searchParams.set('toastMessage', '注文を確定しました');
+//            window.location.href = currentUrl.toString(); // クエリパラメータ付きでリロード
+			showToast("注文を確定しました", 3000);
         } else {
             showToast('注文に失敗しました');
         }
@@ -623,6 +624,9 @@ window.addEventListener('DOMContentLoaded', () => {
                     
                     console.log(`プラン ${activatedPlanId} がシート ${seatId} でアクティブ化されました。`);
                     console.log("表示されるメニューグループID:", activatedMenuGroupIds);
+                    
+                    
+
 
                     // Step 1: 全てのタブとメニューアイテムを初期状態（非表示）に戻す
                     // （isPlanTargetでないものは、後でswitchTabで表示されるため、ここでは触らない）
@@ -653,16 +657,24 @@ window.addEventListener('DOMContentLoaded', () => {
                             // ★修正: ここでstyle.display = 'block'; はCSSに任せる
                         });
                     });
+                    
+                    
+                    const currentUrl = new URL(window.location.href);
+		            currentUrl.searchParams.set('toastMessage', '飲み放題が開始されました！メニューが増えました！');
+		            window.location.href = currentUrl.toString(); // クエリパラメータ付きでリロード
 
-                    showToast("飲み放題が開始されました！メニューが増えました！", 3000);
+//                    showToast("飲み放題が開始されました！メニューが増えました！", 3000);
+//
+//                    // Step 3: 最初の飲み放題対象グループのタブを自動でクリックする
+//                    if (activatedMenuGroupIds && activatedMenuGroupIds.length > 0) {
+//                        const firstActivatedTab = document.querySelector(`.menu-tab[data-group-id="${activatedMenuGroupIds[0]}"]`);
+//                        if (firstActivatedTab) {
+//                            switchTab(firstActivatedTab); 
+//                        }
+//                    }
 
-                    // Step 3: 最初の飲み放題対象グループのタブを自動でクリックする
-                    if (activatedMenuGroupIds && activatedMenuGroupIds.length > 0) {
-                        const firstActivatedTab = document.querySelector(`.menu-tab[data-group-id="${activatedMenuGroupIds[0]}"]`);
-                        if (firstActivatedTab) {
-                            switchTab(firstActivatedTab); 
-                        }
-                    }
+
+
                 }
             }, function (error) {
                 console.error('STOMP error:', error);

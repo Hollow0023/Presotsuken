@@ -1,6 +1,7 @@
 package com.order.service;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -116,23 +117,31 @@ public class MenuAddService {
         return menuGroupRepository.findByStore_StoreIdOrderBySortOrderAsc(storeId);
     }
 
-    // ★ 追加：飲み放題がアクティブな場合に表示する顧客向けメニューグループを取得 (ソート順適用)
+ // ★ 追加：飲み放題がアクティブな場合に表示する顧客向けメニューグループを取得 (ソート順適用)
     public List<MenuGroup> getPlanActivatedCustomerMenuGroups(Integer storeId, Integer seatId) {
         Set<MenuGroup> combinedGroups = new HashSet<>();
 
         // 1. 通常の顧客向けメニューグループ（isPlanTarget=false）を追加 (ソート順適用)
-        combinedGroups.addAll(getCustomerMenuGroups(storeId)); // このメソッドがソート済みを返すのでOK
+        combinedGroups.addAll(getCustomerMenuGroups(storeId));
 
-        // 2. 現在アクティブな飲み放題プランがあるかチェックし、そのplanIdを取得
-        Integer activePlanId = getActivePlanIdForSeat(seatId, storeId);
+        // 2. 現在アクティブな飲み放題プランがあるかチェックし、そのplanId"s"を取得
+        // ★修正！単一のIDではなく、Set<Integer>を受け取る
+        Set<Integer> activePlanIds = getActivePlanIdsForSeat(seatId, storeId);
 
-        if (activePlanId != null) {
-            List<Integer> planTargetMenuGroupIds = planMenuGroupMapRepository.findByPlanId(activePlanId).stream()
-                .map(map -> map.getMenuGroupId())
-                .collect(Collectors.toList());
-            
+        if (!activePlanIds.isEmpty()) { // activePlanIdsが空でなければ処理
+            Set<Integer> allPlanTargetMenuGroupIds = new HashSet<>(); // 収集用Set
+
+            // ★修正！全てのactivePlanIdに対して処理を繰り返す
+            for (Integer planId : activePlanIds) {
+                List<Integer> groupIdsForPlan = planMenuGroupMapRepository.findByPlanId(planId).stream()
+                    .map(map -> map.getMenuGroupId())
+                    .collect(Collectors.toList());
+                allPlanTargetMenuGroupIds.addAll(groupIdsForPlan); // 各プランのグループIDをSetに追加
+            }
+
             // 取得したMenuGroupIdリストを使ってMenuGroupエンティティを取得 (ソート順適用)
-            List<MenuGroup> planTargetGroups = menuGroupRepository.findByGroupIdInAndIsPlanTargetTrueOrderBySortOrderAsc(planTargetMenuGroupIds);
+            // Set<Integer>をList<Integer>に変換してfindByGroupIdInに渡す
+            List<MenuGroup> planTargetGroups = menuGroupRepository.findByGroupIdInAndIsPlanTargetTrueOrderBySortOrderAsc(new ArrayList<>(allPlanTargetMenuGroupIds));
             combinedGroups.addAll(planTargetGroups);
         }
 
@@ -148,25 +157,30 @@ public class MenuAddService {
                              })
                              .collect(Collectors.toList());
     }
+    
+    
 
-    // ヘルパーメソッド: 特定のシートでアクティブな飲み放題プランのIDを取得する
-    public Integer getActivePlanIdForSeat(Integer seatId, Integer storeId) {
+    public Set<Integer> getActivePlanIdsForSeat(Integer seatId, Integer storeId) {
         Visit currentVisit = visitRepository.findTopByStore_StoreIdAndSeat_SeatIdOrderByVisitTimeDesc(storeId, seatId);
         if (currentVisit == null) {
-            return null;
+            return new HashSet<>(); // Visitがなければ空のSetを返す
         }
 
         Payment payment = paymentRepository.findByVisitVisitId(currentVisit.getVisitId());
         if (payment == null) {
-            return null;
+            return new HashSet<>(); // Paymentがなければ空のSetを返す
         }
 
         List<PaymentDetail> planStarterOrders = paymentDetailRepository.findByPaymentPaymentIdAndMenuIsPlanStarterTrue(payment.getPaymentId());
 
         if (!planStarterOrders.isEmpty()) {
-            return planStarterOrders.get(0).getMenu().getPlanId();
+            // ★修正！全てのisPlanStarterメニューからplanIdを収集し、Setで重複排除して返す
+            return planStarterOrders.stream()
+                .map(pd -> pd.getMenu().getPlanId())
+                .filter(java.util.Objects::nonNull) // nullのplanIdは除外
+                .collect(Collectors.toSet());
         }
-        return null;
+        return new HashSet<>(); // 飲み放題開始メニューがなければ空のSetを返す
     }
 
 

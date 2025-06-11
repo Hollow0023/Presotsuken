@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.http.ResponseEntity;
@@ -52,6 +53,8 @@ import com.order.service.MenuAddService;
 import com.order.service.MenuService;
 import com.order.service.PrintService;
 
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 
 @Controller
@@ -162,10 +165,12 @@ public class OrderController {
 	public ResponseEntity<Void> submitOrder(@RequestBody List<OrderItemDto> items,
 			@CookieValue("visitId") Integer visitId,
 			@CookieValue("storeId") Integer storeId, // これは今回は直接使わないけど、引数として残す
-			@CookieValue(name = "userId", required = false) Integer userId) {
+			HttpServletRequest request) {
 		User user = null;
 		Payment payment = paymentRepository.findByVisitVisitId(visitId);
 		List<PaymentDetail> submitDetails = new ArrayList<>();
+		
+		Integer userId = getCookieValueAsInteger(request,"userId");
 
 		if (userId != null) {
 			user = userRepository.findById(userId).orElse(null);
@@ -215,6 +220,24 @@ public class OrderController {
 			// menuエンティティのisPlanStarterがBoolean型なので、NullPointerExceptionを避けるためにequalsを使用
 			if (Boolean.TRUE.equals(menu.getIsPlanStarter())) {
 				Integer planId = menu.getPlanId(); // 紐づいているplan_idを取得
+				List<PaymentDetail> activePlans = paymentDetailRepository.findByPaymentPaymentIdAndMenuIsPlanStarterTrue(payment.getPaymentId());
+				
+				// activePlansから、現在有効な全てのisPlanStarterメニューのplanIdを収集
+				Set<Integer> activePlanIds = activePlans.stream()
+				    .map(pd -> pd.getMenu().getPlanId())
+				    .filter(java.util.Objects::nonNull) // planIdがnullでないことを確認
+				    .collect(java.util.stream.Collectors.toSet()); // 重複を除いてSetにする
+
+				// 全ての有効なplanIdに紐づくmenuGroupのIDを収集
+				List<Integer> allActivatedMenuGroupIds = new ArrayList<>();
+				for (Integer activePlanId : activePlanIds) {
+				    List<Integer> groupIdsForPlan = planMenuGroupMapRepository.findByPlanId(activePlanId).stream()
+				        .map(map -> map.getMenuGroupId())
+				        .collect(Collectors.toList());
+				    allActivatedMenuGroupIds.addAll(groupIdsForPlan);
+				}
+				//重複を排除してユニークなIDリストにする
+				allActivatedMenuGroupIds = allActivatedMenuGroupIds.stream().distinct().collect(Collectors.toList());
 
 				// WebSocketで特定のseatIdのクライアントに通知を送信
 				// `/topic/seats/{seatId}` は入店時通知と同じエンドポイントを使う
@@ -222,13 +245,8 @@ public class OrderController {
 				payload.put("type", "PLAN_ACTIVATED"); // 通知の種類を明確にする
 				payload.put("seatId", seatId);
 				payload.put("planId", planId); // どのプランが有効になったか
-
-				// アクティブになったプランに紐づくmenuGroupのIDリストも送る
-				// PlanMenuGroupMapRepositoryを使って取得する
-				List<Integer> activatedMenuGroupIds = planMenuGroupMapRepository.findByPlanId(planId).stream()
-					.map(map -> map.getMenuGroupId())
-					.collect(Collectors.toList());
-				payload.put("activatedMenuGroupIds", activatedMenuGroupIds);
+				
+				payload.put("activatedMenuGroupIds", allActivatedMenuGroupIds);
 
 				messagingTemplate.convertAndSend("/topic/seats/" + seatId, payload);
 				System.out.println("WebSocket通知: seatId " + seatId + " でプラン " + planId + " がアクティブ化されました。");
@@ -340,4 +358,25 @@ public class OrderController {
 			return dto;
 		}).collect(Collectors.toList());
 	}
+	
+	// これをOrderControllerのprivateメソッドとして定義
+    private Integer getCookieValueAsInteger(HttpServletRequest request, String cookieName) {
+        if (request.getCookies() != null) {
+            for (Cookie cookie : request.getCookies()) {
+                if (cookieName.equals(cookie.getName())) {
+                    String value = cookie.getValue();
+                    if (value == null || value.isEmpty() || value.equalsIgnoreCase("null") || value.equalsIgnoreCase("undefined")) {
+                        return null;
+                    }
+                    try {
+                        return Integer.parseInt(value);
+                    } catch (NumberFormatException e) {
+                        System.err.println("Warning: 無効なCookie値がIntegerに変換できませんでした (" + cookieName + "): " + value);
+                        return null;
+                    }
+                }
+            }
+        }
+        return null;
+    }
 }
