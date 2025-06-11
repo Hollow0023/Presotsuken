@@ -8,6 +8,19 @@ let taxRateMap = {}; // 税率IDと税率をマッピングするオブジェク
 const seatId = getCookie("seatId"); 
 document.getElementById("seatInfo").innerText = `${seatId}`; // 取得したseatIdを画面に表示
 
+
+
+
+//以下印刷処理の実行
+
+
+
+
+
+
+
+//印刷処理ここまで
+
 /**
  * 指定された名前のCookieの値を取得する関数
  * @param {string} name - 取得したいCookieの名前
