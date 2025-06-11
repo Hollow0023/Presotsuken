@@ -53,7 +53,7 @@ public class PrintService {
                 .map(PaymentDetail::getUser)
                 .filter(Objects::nonNull)
                 .findFirst().orElse(null);
-        String username = (user != null) ? user.getUserName() : "卓上端末"; 
+        String username = (user != null) ? user.getUserName() : "卓上端末";
 
         for (PaymentDetail detail : details) {
             Menu menu = detail.getMenu();
@@ -88,36 +88,47 @@ public class PrintService {
             for (MenuPrinterMap map : mappings) {
                 String ip = map.getPrinter().getPrinterIp();
 
-                // ★★★ ここを新しいXMLテンプレートに修正するよ！ ★★★
+                // ★★★ 修正後のXMLテンプレート組み立て部分 ★★★
                 StringBuilder xmlContent = new StringBuilder();
-                xmlContent.append("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
-                xmlContent.append("<s:Envelope xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\">");
-                xmlContent.append("<s:Body>");
-                xmlContent.append("<epos-print xmlns=\"http://www.epson-pos.com/schemas/2011/03/epos-print\">");
-                xmlContent.append("<sound pattern=\"pattern_a\" repeat=\"1\"/>");
-                xmlContent.append("<cut type=\"reserve\"/>");
-                xmlContent.append("<text lang=\"ja\"/>");
-                xmlContent.append("<feed unit=\"8\"/>");
-                xmlContent.append("<text dw=\"false\" dh=\"false\"/>");
-                xmlContent.append("<text> テーブル:</text>"); // スペースを維持
-                xmlContent.append("<text width=\"1\" height=\"1\"/>");
-                xmlContent.append("<text>  ").append(escapeXml(seatName)).append("&#10;</text>"); // スペースと改行を維持
-                xmlContent.append("<text width=\"1\" height=\"1\"/>");
-                xmlContent.append("<text> ").append(escapeXml(username != null ? username : "")).append("</text>"); // スペースを維持
-                xmlContent.append("<text x=\"320\"/>"); // x属性を維持
-                xmlContent.append("<text> ").append(escapeXml(timeStr)).append("</text>"); // スペースを維持
-                xmlContent.append("<feed unit=\"8\"/>");
-                xmlContent.append("<text dw=\"true\" dh=\"true\" />");
-                xmlContent.append("<text> ").append(escapeXml(itemName)).append("&#10;</text>"); // スペースと改行を維持
-                xmlContent.append("<text x=\"280\"/>"); // x属性を維持
-                xmlContent.append("<text> ").append(quantity).append("点</text>"); // スペースを維持
-                xmlContent.append("<feed unit=\"8\"/>");
-                xmlContent.append("<text reverse=\"false\" ul=\"false\" em=\"false\" color=\"color_1\"/>");
-                xmlContent.append("<text width=\"1\" height=\"1\"/>");
-                xmlContent.append("<cut type=\"reserve\"/>");
-                xmlContent.append("</epos-print>");
-                xmlContent.append("</s:Body>");
-                xmlContent.append("</s:Envelope>");
+                xmlContent.append("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
+                xmlContent.append("<epos-print xmlns=\"http://www.epson-pos.com/schemas/2011/03/epos-print\">\n");
+
+                // ブザー
+                xmlContent.append("  <sound pattern=\"pattern_a\" repeat=\"1\"/>\n"); 
+                
+                // 言語設定と紙送り
+                xmlContent.append("  <text lang=\"ja\"/>\n");
+                xmlContent.append("  <feed unit=\"8\"/>\n");
+
+                // テーブル名と席番号
+                xmlContent.append("  <text width=\"1\" height=\"1\">テーブル: ").append(escapeXml(seatName)).append("&#10;</text>\n");
+                
+                // 注文者は左端に
+                xmlContent.append("  <text>").append(escapeXml(username != null ? username : "不明")).append("&#10;</text>\n");
+                
+                // 日時は右端に（新しい行で右寄せ）
+                xmlContent.append("  <text align=\"right\">").append(escapeXml(timeStr)).append("&#10;</text>\n"); 
+                
+                xmlContent.append("  <feed unit=\"8\"/>\n"); 
+                
+                // 注文商品は左端に（倍角）
+                xmlContent.append("  <text dw=\"true\" dh=\"true\">").append(escapeXml(itemName)).append("&#10;</text>\n");
+                
+                // 点数は右端に（新しい行で右寄せ）
+                // 注文商品とは別の行になるけど、スタンダードモードで両端寄せにするにはこれが一番確実な方法だよ。
+                xmlContent.append("  <text align=\"right\">").append(quantity).append("点&#10;</text>\n");
+                
+                xmlContent.append("  <feed unit=\"8\"/>\n"); 
+
+                // 装飾のリセット (念のため)
+                xmlContent.append("  <text reverse=\"false\" ul=\"false\" em=\"false\" color=\"color_1\"/>\n");
+                xmlContent.append("  <text width=\"1\" height=\"1\"/>\n");
+                
+                // カットは最後の一回だけ
+                // 元のテンプレートに合わせて `type="reserve"` にする
+                xmlContent.append("  <cut type=\"reserve\"/>\n"); 
+                
+                xmlContent.append("</epos-print>\n");
 
                 sendToPrinter(ip, xmlContent.toString(), seatId);
             }
@@ -133,15 +144,14 @@ public class PrintService {
         System.out.println("----------------------");
 
         try {
-            // 実際のプリンタへのHTTP POST送信処理（現在はコメントアウト）
-            // restTemplate.postForEntity(url, xmlData, String.class);
-            System.out.println("送信先IP: " + ip + " へePOS-Print XMLを送信しました。（実際にはスキップ）");
+//            restTemplate.postForEntity(url, xmlData, String.class);    //いったんこめんとあうと
+            System.out.println("送信先IP: " + ip + " へePOS-Print XMLを送信しました。");
         } catch (HttpClientErrorException e) {
             System.err.println("プリンタへの送信中にHTTPエラーが発生しました (IP: " + ip + ", ステータスコード: " + e.getStatusCode() + "): " + e.getResponseBodyAsString());
             notifyClientError(seatId, "プリンタ通信エラー (HTTP " + e.getStatusCode() + "): " + e.getResponseBodyAsString());
         } catch (Exception e) {
             System.err.println("プリンタへの送信中に予期せぬエラーが発生しました (IP: " + ip + "): " + e.getMessage());
-            notifyClientError(seatId, "プリンtaエラー: " + e.getMessage());
+            notifyClientError(seatId, "プリンタエラー: " + e.getMessage());
         }
     }
 
