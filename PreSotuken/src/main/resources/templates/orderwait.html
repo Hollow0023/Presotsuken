@@ -19,7 +19,7 @@
         const stompClient = Stomp.over(socket);
 
         stompClient.connect({}, function () {
-            stompClient.subscribe(`/topic/seats/${seatId}`, function (message) {
+            stompClient.subscribe(`/topic/seats/${seatId}/start-order`, function (message) {
                 const data = JSON.parse(message.body);
 
                 document.cookie = `visitId=${data.visitId}; path=/`;
