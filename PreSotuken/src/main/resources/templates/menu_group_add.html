@@ -2,55 +2,368 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8">
-  <title>メニューグループ追加</title>
+  <title>メニューグループ管理</title>
   <script th:inline="javascript">
-    const storeId = /*[[${storeId}]]*/ null;
+    // Thymeleafを使ってサーバーからstoreIdを受け取る
+    const storeId = /*[[${storeId}]]*/ null; 
   </script>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f4f7f6; color: #333; }
+    .container { 
+      max-width: 800px; 
+      margin: 20px auto; 
+      padding: 30px; 
+      background-color: #fff; 
+      border-radius: 10px; 
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); 
+    }
+    h2, h3 { color: #0056b3; border-bottom: 2px solid #007bff; padding-bottom: 10px; margin-bottom: 20px; }
+    a { color: #007bff; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    hr { border: none; border-top: 1px solid #eee; margin: 25px 0; }
+    .input-section, .list-section { margin-bottom: 30px; }
+    input[type="text"] {
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      margin-right: 10px;
+      width: calc(100% - 120px);
+      box-sizing: border-box;
+    }
+    button { 
+      padding: 10px 20px; 
+      cursor: pointer; 
+      background-color: #007bff; 
+      color: white; 
+      border: none; 
+      border-radius: 5px; 
+      transition: background-color 0.3s ease;
+    }
+    button:hover { background-color: #0056b3; }
+    button:disabled { background-color: #cccccc; cursor: not-allowed; }
+
+    .group-list { list-style: none; padding: 0; }
+    .group-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 15px;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      background-color: #fbfbfb;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+    .group-name { flex-grow: 1; font-weight: bold; }
+    .group-actions button { 
+      margin-left: 8px; 
+      padding: 6px 12px; 
+      font-size: 0.9em; 
+      border-radius: 4px; 
+    }
+    .up-down-buttons button { background-color: #6c757d; }
+    .up-down-buttons button:hover { background-color: #5a6268; }
+    .edit-input { width: 180px; padding: 8px; border: 1px solid #007bff; border-radius: 4px; }
+    .cancel-button { background-color: #dc3545; }
+    .cancel-button:hover { background-color: #c82333; }
+    .save-button { background-color: #28a745; }
+    .save-button:hover { background-color: #218838; }
+    #noGroupsMessage { text-align: center; color: #888; padding: 20px; border: 1px dashed #ddd; border-radius: 5px; background-color: #f9f9f9; }
+  </style>
 </head>
 <body>
 
-<h2>メニューグループ追加</h2>
-<a href="/">← トップに戻る</a>
+<div class="container">
+  <h2>メニューグループ管理</h2>
+  <a href="/">← トップに戻る</a>
 
-<div>
-  <input type="text" id="groupNameInput" placeholder="グループ名を入力" />
-  <button onclick="submitGroup()">追加</button>
+  <hr>
+
+  <div class="input-section">
+    <h3>新しいグループを追加</h3>
+    <input type="text" id="groupNameInput" placeholder="新しいグループ名を入力" maxlength="50" />
+    <button id="addGroupButton" onclick="addGroup()">追加</button>
+  </div>
+
+  <hr>
+
+  <div class="list-section">
+    <h3>既存グループ一覧</h3>
+    <ul id="menuGroupList" class="group-list">
+      </ul>
+    <p id="noGroupsMessage" style="display: none;">メニューグループはまだありません。</p>
+  </div>
 </div>
 
 <script>
-  function submitGroup() {
-    const groupName = document.getElementById("groupNameInput").value.trim();
+  // DOM要素を取得
+  const groupNameInput = document.getElementById('groupNameInput');
+  const addGroupButton = document.getElementById('addGroupButton');
+  const menuGroupList = document.getElementById('menuGroupList');
+  const noGroupsMessage = document.getElementById('noGroupsMessage');
+
+  // グループデータの一時保存用（並び替え時に便利）
+  let currentGroups = [];
+
+  // --- 1. グループ一覧の取得と表示 ---
+  async function fetchAndDisplayGroups() {
+    if (storeId === null || isNaN(storeId)) {
+      alert('店舗IDが取得できませんでした。ログインし直してください。');
+      window.location.href = '/login'; // 必要に応じてログインページにリダイレクト
+      return;
+    }
+
+    try {
+      const response = await fetch(`/menu/group/api/list/${storeId}`); 
+      if (!response.ok) {
+        throw new Error('サーバーエラー: ' + response.status);
+      }
+      currentGroups = await response.json(); // 取得したグループデータを保存
+      
+      menuGroupList.innerHTML = ''; // 一旦リストをクリア
+
+      if (currentGroups.length === 0) {
+        noGroupsMessage.style.display = 'block';
+      } else {
+        noGroupsMessage.style.display = 'none';
+        currentGroups.forEach(group => {
+          appendGroupItem(group); // 各グループをリストに追加
+        });
+      }
+    } catch (error) {
+      console.error('メニューグループの取得中にエラーが発生しました:', error);
+      alert('メニューグループの取得に失敗しました。');
+    }
+  }
+
+  // グループアイテムをリストに追加するヘルパー関数
+  function appendGroupItem(group) {
+    const li = document.createElement('li');
+    li.className = 'group-item';
+    li.dataset.groupId = group.groupId; // ★ ここが 'groupId' に変更
+    li.dataset.sortOrder = group.sortOrder; // ★ ここが 'sortOrder' に変更
+
+    const groupNameSpan = document.createElement('span');
+    groupNameSpan.className = 'group-name';
+    groupNameSpan.textContent = group.groupName;
+    li.appendChild(groupNameSpan);
+
+    const actionsDiv = document.createElement('div');
+    actionsDiv.className = 'group-actions';
+
+    // 編集ボタン
+    const editButton = document.createElement('button');
+    editButton.textContent = '編集';
+    editButton.onclick = () => enableEditMode(li, groupNameSpan, editButton);
+    actionsDiv.appendChild(editButton);
+
+    // 並び順変更ボタン (一番上/下では非活性化)
+    const upButton = document.createElement('button');
+    upButton.textContent = '▲';
+    upButton.className = 'up-down-buttons';
+    // sortOrderが1なら上には動かせない
+    upButton.disabled = (group.sortOrder === 1); 
+    upButton.onclick = () => moveGroup(group.groupId, 'up'); // ★ groupIdを渡す
+    actionsDiv.appendChild(upButton);
+
+    const downButton = document.createElement('button');
+    downButton.textContent = '▼';
+    downButton.className = 'up-down-buttons';
+    // sortOrderが最大値（配列の長さ）なら下には動かせない
+    downButton.disabled = (group.sortOrder === currentGroups.length); 
+    downButton.onclick = () => moveGroup(group.groupId, 'down'); // ★ groupIdを渡す
+    actionsDiv.appendChild(downButton);
+
+    li.appendChild(actionsDiv);
+    menuGroupList.appendChild(li);
+  }
+
+
+  // --- 2. グループの追加 ---
+  async function addGroup() {
+    const groupName = groupNameInput.value.trim();
     if (!groupName) {
       alert("グループ名を入力してください");
       return;
     }
 
-	fetch("/menu/group/api/add", {
-	    method: "POST",
-	    headers: { "Content-Type": "application/json" },
-	    body: JSON.stringify({ storeId: storeId, groupName: groupName })
-	})
-    .then(res => {
-      if (!res.ok) throw new Error("サーバーエラー: " + res.status);
-      return res.json();
-    })
-    .then(data => {
-      if (data.success) {
-        alert("追加しました！");
-        window.location.href = "/";
-      } else if (data.error === "duplicate") {
-        alert("そのグループ名は既に存在しています。");
-      } else if (data.error === "not_found") {
-        alert("店舗情報が見つかりません。");
-      } else {
-        alert("未知のエラーが発生しました。");
+    if (storeId === null || isNaN(storeId)) {
+      alert('店舗IDが取得できませんでした。');
+      return;
+    }
+    
+    addGroupButton.disabled = true; // ボタンを無効化して多重送信防止
+
+    try {
+      const response = await fetch("/menu/group/api/add", { 
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ storeId: storeId, groupName: groupName })
+      });
+
+      const data = await response.json(); 
+
+      if (!response.ok) { 
+        if (data && data.error === "duplicate") { 
+          alert("そのグループ名は既に存在しています。");
+        } else if (data && data.error === "not_found") {
+          alert("店舗情報が見つかりません。");
+        } else {
+          throw new Error("サーバーエラー: " + response.status + " - " + (data.message || "未知のエラー"));
+        }
+        return; 
       }
-    })
-    .catch(err => {
-      console.error(err);
+
+      // 成功時
+      if (data.success) { 
+        alert("グループを追加しました！");
+        groupNameInput.value = ''; // 入力フィールドをクリア
+        await fetchAndDisplayGroups(); // リストを再読み込みして最新の状態を表示
+      } else {
+        alert("グループの追加に失敗しました。");
+      }
+    } catch (err) {
+      console.error('グループ追加中にエラーが発生しました:', err);
       alert("通信エラーが発生しました。");
-    });
+    } finally {
+      addGroupButton.disabled = false; // 処理が終わったらボタンを有効化
+    }
   }
+
+
+  // --- 3. グループ名の編集 ---
+  function enableEditMode(liElement, groupNameSpan, editButton) {
+    const currentName = groupNameSpan.textContent;
+    
+    groupNameSpan.style.display = 'none';
+
+    const editInput = document.createElement('input');
+    editInput.type = 'text';
+    editInput.className = 'edit-input';
+    editInput.value = currentName;
+    editInput.maxLength = 50; 
+    liElement.insertBefore(editInput, groupNameSpan); 
+    editInput.focus();
+    editInput.select(); // 全選択状態にする
+
+    // 編集ボタンを「保存」と「キャンセル」に切り替え
+    editButton.textContent = '保存';
+    editButton.className = 'save-button';
+    editButton.onclick = () => saveGroup(liElement, editInput, groupNameSpan, editButton);
+
+    const cancelButton = document.createElement('button');
+    cancelButton.textContent = 'キャンセル';
+    cancelButton.className = 'cancel-button';
+    cancelButton.onclick = () => disableEditMode(liElement, editInput, groupNameSpan, editButton, cancelButton, currentName);
+    editButton.parentNode.insertBefore(cancelButton, editButton.nextSibling); 
+  }
+
+  async function saveGroup(liElement, editInput, groupNameSpan, saveButton) {
+    const groupId = liElement.dataset.groupId; // ★ ここも 'groupId'
+    const newName = editInput.value.trim();
+    const cancelButton = saveButton.nextSibling;
+
+    if (!newName) {
+      alert("グループ名を入力してください。");
+      return;
+    }
+    if (newName === groupNameSpan.textContent) {
+        disableEditMode(liElement, editInput, groupNameSpan, saveButton, cancelButton, groupNameSpan.textContent);
+        return;
+    }
+
+    saveButton.disabled = true;
+    if (cancelButton) cancelButton.disabled = true;
+
+    try {
+      const response = await fetch(`/menu/group/api/edit/${groupId}`, { // ★ URLも 'groupId'
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ groupName: newName, storeId: storeId }) 
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (data && data.error === "duplicate") {
+          alert("そのグループ名は既に存在しています。");
+        } else if (data && data.error === "not_found") {
+          alert("該当するグループが見つかりません。");
+        } else if (response.status === 403) {
+          alert("不正な操作です。");
+        } else {
+          throw new Error('サーバーエラー: ' + response.status + ' - ' + (data.message || '未知のエラー'));
+        }
+        return;
+      }
+      
+      alert("グループ名を更新しました！");
+      groupNameSpan.textContent = newName;
+      disableEditMode(liElement, editInput, groupNameSpan, saveButton, cancelButton, newName);
+    } catch (error) {
+      console.error('グループ名更新中にエラーが発生しました:', error);
+      alert('グループ名の更新に失敗しました。');
+    } finally {
+      saveButton.disabled = false;
+      if (cancelButton) cancelButton.disabled = false;
+    }
+  }
+
+  // 編集モードを終了するヘルパー関数
+  function disableEditMode(liElement, editInput, groupNameSpan, saveButton, cancelButton, originalName) {
+    editInput.remove(); 
+    groupNameSpan.textContent = originalName; 
+    groupNameSpan.style.display = 'inline'; 
+
+    saveButton.textContent = '編集';
+    saveButton.className = ''; 
+    saveButton.onclick = () => enableEditMode(liElement, groupNameSpan, saveButton);
+
+    if (cancelButton) {
+      cancelButton.remove(); 
+    }
+  }
+
+
+  // --- 4. 並び順の変更 ---
+  async function moveGroup(groupId, direction) { // ★ ここも 'groupId'
+    if (storeId === null || isNaN(storeId)) {
+      alert('店舗IDが取得できませんでした。');
+      return;
+    }
+
+    document.querySelectorAll('.up-down-buttons').forEach(btn => btn.disabled = true);
+
+    try {
+      const response = await fetch('/menu/group/api/reorder', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          groupId: groupId, // ★ リクエストボディのキーも 'groupId'
+          direction: direction, 
+          storeId: storeId 
+        }) 
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json(); 
+        throw new Error('サーバーエラー: ' + response.status + ' - ' + (errorData.message || '未知のエラー'));
+      }
+      
+      alert('並び順を更新しました！');
+      await fetchAndDisplayGroups(); // 更新後にリストを再読み込みして最新の並び順を表示
+    } catch (error) {
+      console.error('並び順更新中にエラーが発生しました:', error);
+      alert('並び順の更新に失敗しました。' + error.message);
+    } finally {
+      // fetchAndDisplayGroups内でボタンのdisabled状態が再設定されるため、
+      // ここでの処理はコメントアウトして大丈夫だよ。
+      // document.querySelectorAll('.up-down-buttons').forEach(btn => btn.disabled = false);
+    }
+  }
+
+  // ページ読み込み時にグループ一覧を取得・表示
+  document.addEventListener('DOMContentLoaded', fetchAndDisplayGroups);
 </script>
 
 </body>

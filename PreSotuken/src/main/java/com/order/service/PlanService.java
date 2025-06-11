@@ -120,6 +120,10 @@ public class PlanService {
     private void updatePlanMenuGroupMaps(Integer planId, List<Integer> newMenuGroupIds) {
         // 既存の紐付けを全て削除
         planMenuGroupMapRepository.deleteByPlanId(planId);
+        List<PlanMenuGroupMap> oldMaps = planMenuGroupMapRepository.findByPlanId(planId);
+        List<Integer> oldMenuGroupIds = oldMaps.stream()
+                                            .map(PlanMenuGroupMap::getMenuGroupId)
+                                            .collect(Collectors.toList());
 
         // 新しい紐付けを追加
         if (newMenuGroupIds != null && !newMenuGroupIds.isEmpty()) {
@@ -127,6 +131,37 @@ public class PlanService {
                     .map(menuGroupId -> new PlanMenuGroupMap(planId, menuGroupId))
                     .collect(Collectors.toList());
             planMenuGroupMapRepository.saveAll(mapsToSave);
+        }
+        // --- ここから追加したロジック ---
+        // 関連付けが解除されたグループの isPlanTarget を false に設定
+        // ただし、そのグループが他のプランに紐づいていない場合のみ
+        oldMenuGroupIds.forEach(oldGroupId -> {
+            // ★ ここが重要！
+            // planId以外のプランで、oldGroupIdがまだ紐づいているかチェック
+            boolean isStillAssociatedWithOtherPlans = planMenuGroupMapRepository.existsByMenuGroupIdAndPlanIdNot(oldGroupId, planId);
+            
+            // isStillAssociatedWithOtherPlans が false （他のプランには紐づいていない） かつ 
+            // newMenuGroupIds に oldGroupId が含まれていない（今回の更新でこのプランからも紐付け解除）場合
+            if (!isStillAssociatedWithOtherPlans && (newMenuGroupIds == null || !newMenuGroupIds.contains(oldGroupId))) {
+                menuGroupRepository.findById(oldGroupId).ifPresent(group -> {
+                    if (group.getIsPlanTarget() != null && group.getIsPlanTarget()) {
+                        group.setIsPlanTarget(false);
+                        menuGroupRepository.save(group);
+                    }
+                });
+            }
+        });
+
+        // 新しく紐付けられたグループの isPlanTarget を true に設定
+        if (newMenuGroupIds != null) {
+            newMenuGroupIds.forEach(newGroupId -> {
+                menuGroupRepository.findById(newGroupId).ifPresent(group -> {
+                    if (group.getIsPlanTarget() == null || !group.getIsPlanTarget()) {
+                        group.setIsPlanTarget(true);
+                        menuGroupRepository.save(group);
+                    }
+                });
+            });
         }
     }
 }

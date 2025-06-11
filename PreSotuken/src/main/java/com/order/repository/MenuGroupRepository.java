@@ -25,6 +25,7 @@ public interface MenuGroupRepository extends JpaRepository<MenuGroup, Integer> {
     // 指定されたgroupIdのリストに含まれ、かつisPlanTargetがtrueのMenuGroupをソートして取得
     List<MenuGroup> findByGroupIdInAndIsPlanTargetTrueOrderBySortOrderAsc(List<Integer> groupIds);
 
+    Optional<Integer> findTopByStoreOrderBySortOrderDesc(Store store);
     // ※ getCustomerMenuGroupsで使われているfindByStore_StoreIdAndForAdminOnlyFalseOrForAdminOnlyIsNull は
     //    上の sort_order でソートするメソッドに置き換える（または呼び出し側で変更）
     

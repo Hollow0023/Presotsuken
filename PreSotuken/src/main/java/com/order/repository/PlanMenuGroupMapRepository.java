@@ -22,4 +22,8 @@ public interface PlanMenuGroupMapRepository extends JpaRepository<PlanMenuGroupM
     @Transactional // この操作はトランザクション内で実行される必要がある
     @Query("DELETE FROM PlanMenuGroupMap pmm WHERE pmm.planId = :planId")
     void deleteByPlanId(@Param("planId") Integer planId);
+    
+    @Query("SELECT COUNT(pmm) > 0 FROM PlanMenuGroupMap pmm WHERE pmm.menuGroupId = :menuGroupId AND pmm.planId != :planId")
+    boolean existsByMenuGroupIdAndPlanIdNot(@Param("menuGroupId") Integer menuGroupId, @Param("planId") Integer planId);
+    
 }

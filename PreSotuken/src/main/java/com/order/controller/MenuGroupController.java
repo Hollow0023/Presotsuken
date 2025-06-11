@@ -1,31 +1,39 @@
 package com.order.controller;
 
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.order.entity.MenuGroup;
 import com.order.entity.Store;
 import com.order.repository.MenuGroupRepository;
 import com.order.repository.StoreRepository;
+import com.order.service.MenuGroupService;
+
+import lombok.RequiredArgsConstructor;
 
 @Controller
+@RequiredArgsConstructor
 @RequestMapping("/menu/group")
 public class MenuGroupController {
 
-    @Autowired
-    private MenuGroupRepository menuGroupRepository;
-
-    @Autowired
-    private StoreRepository storeRepository;
+    private final MenuGroupRepository menuGroupRepository;
+    private final StoreRepository storeRepository;
+    private final MenuGroupService menuGroupService;
 
  // HTMLページ表示用
     @GetMapping("/add")
@@ -56,4 +64,72 @@ public class MenuGroupController {
 
         return Map.of("success", true);
     }
+    
+ // NEW: JSON返却用API (グループ一覧取得)
+    @GetMapping("/api/list/{storeId}")
+    @ResponseBody
+    public ResponseEntity<List<Map<String, Object>>> getGroupsByStore(@PathVariable Integer storeId) {
+        try {
+            List<MenuGroup> menuGroups = menuGroupService.getMenuGroupsByStoreId(storeId);
+            List<Map<String, Object>> responseList = menuGroups.stream()
+            	    .map(group -> {
+            	        Map<String, Object> groupMap = new java.util.HashMap<>(); // ★ HashMapをインスタンス化
+            	        groupMap.put("groupId", group.getGroupId());
+            	        groupMap.put("groupName", group.getGroupName());
+            	        groupMap.put("sortOrder", group.getSortOrder());
+            	        groupMap.put("isPlanTarget", group.getIsPlanTarget() != null ? group.getIsPlanTarget() : false);
+            	        groupMap.put("forAdminOnly", group.getForAdminOnly() != null ? group.getForAdminOnly() : false);
+            	        return groupMap;
+            	    })
+            	    .collect(Collectors.toList());
+            return ResponseEntity.ok(responseList);
+        } catch (ResponseStatusException e) {
+            return ResponseEntity.status(e.getStatusCode()).build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+    
+    
+    // NEW: JSON返却用API (グループ名編集)
+    @PutMapping("/api/edit/{groupId}") // PathVariable名もgroupIdに合わせる
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> updateGroup(@PathVariable Integer groupId, @RequestBody Map<String, String> body) {
+        try {
+            String newGroupName = body.get("groupName");
+            int storeId = Integer.parseInt(body.get("storeId"));
+
+            menuGroupService.updateGroupName(groupId, newGroupName, storeId);
+            return ResponseEntity.ok(Map.of("success", true));
+        } catch (NumberFormatException e) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "error", "invalid_input"));
+        } catch (ResponseStatusException e) {
+            return ResponseEntity.status(e.getStatusCode()).body(Map.of("success", false, "error", e.getReason()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("success", false, "error", "unknown_error"));
+        }
+    }
+
+    // NEW: JSON返却用API (並び順変更)
+    @PutMapping("/api/reorder")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> reorderGroup(@RequestBody Map<String, Object> body) {
+        try {
+            Integer groupId = (Integer) body.get("groupId"); // リクエストボディのキーもgroupId
+            String direction = (String) body.get("direction");
+            Integer storeId = (Integer) body.get("storeId");
+
+            if (groupId == null || direction == null || storeId == null) {
+                return ResponseEntity.badRequest().body(Map.of("success", false, "error", "invalid_input"));
+            }
+
+            menuGroupService.reorderMenuGroup(groupId, direction, storeId);
+            return ResponseEntity.ok(Map.of("success", true));
+        } catch (ResponseStatusException e) {
+            return ResponseEntity.status(e.getStatusCode()).body(Map.of("success", false, "error", e.getReason()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("success", false, "error", "unknown_error"));
+        }
+    }
+
 } 
