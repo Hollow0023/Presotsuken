@@ -13,7 +13,6 @@ import com.order.dto.OptionItemDTO;
 import com.order.entity.Menu;
 import com.order.entity.MenuTimeSlot;
 import com.order.entity.Plan;
-import com.order.repository.MenuGroupRepository; // MenuGroupRepositoryをインポート
 import com.order.repository.MenuOptionRepository;
 import com.order.repository.MenuRepository;
 import com.order.repository.MenuTimeSlotRepository;
@@ -28,15 +27,11 @@ import lombok.RequiredArgsConstructor;
 public class MenuService {
 
     private final MenuTimeSlotRepository menuTimeSlotRepository;
-    // ★ @Autowired は削除し、finalを付ける
     private final MenuRepository menuRepository;
     private final MenuOptionRepository menuOptionRepository;
     private final OptionGroupRepository optionGroupRepository;
     private final OptionItemRepository optionItemRepository;
     private final PlanRepository planRepository;
-
-    // ★ MenuGroupRepositoryも必要なため追加 (MenuAddServiceと一部重複するが、ここではMenuService自身の責務として扱う)
-    private final MenuGroupRepository menuGroupRepository; 
 
 
     // 時間帯を絞って表示 (品切れは表示しない)
@@ -77,7 +72,7 @@ public class MenuService {
     // 全てのメニューを表示 (品切れも表示)
     public List<MenuWithOptionsDTO> getAllMenusWithOptions(Integer storeId) {
         // ★修正: storeId でフィルタリングし、menu_name でソート
-        List<Menu> menus = menuRepository.findByStore_StoreIdOrderByMenuNameAsc(storeId);
+        List<Menu> menus = menuRepository.findByStore_StoreIdOrderByMenuIdAsc(storeId);
         return menus.stream().map(this::toDto).collect(Collectors.toList());
     }
 

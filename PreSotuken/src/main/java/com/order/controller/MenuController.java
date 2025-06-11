@@ -266,4 +266,43 @@ public class MenuController {
             return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+    
+    
+    //売り切れ登録画面
+    @GetMapping("/sold-out-management")
+    public String showSoldOutManagementPage(HttpServletRequest request, Model model) {
+        // JSと同じようにCookieからstoreIdを取得する処理を入れておくといいね
+        Integer storeId = getStoreIdFromCookie(request);
+
+        if (storeId == null) {
+            // 店舗IDが取得できない場合は、エラーページやログインページにリダイレクトするなどの処理を検討してもいいかも
+            // ここでは簡易的にエラーメッセージをModelに追加してるけど、実運用ではもっと丁寧なエラーハンドリングが必要だよ
+            model.addAttribute("errorMessage", "店舗IDが取得できませんでした。ログインし直してください。");
+            return "error"; // 例えば、エラー表示用のHTMLに遷移させるとか
+        }
+        
+        // ModelにstoreIdを追加しておくと、HTML側でJavaScriptに渡すときに便利だよ
+        // 例えば <input type="hidden" id="storeId" th:value="${storeId}"> みたいに
+        model.addAttribute("storeId", storeId);
+
+        // "menu_sold_out"という文字列を返すことで、
+        // Spring Bootはsrc/main/resources/templates/menu_sold_out.htmlを探して表示してくれるよ
+        return "menu_sold_out";
+    }
+
+    // CookieからstoreIdを取得するヘルパーメソッド（MenuSoldOutControllerと内容は同じでOK）
+    private Integer getStoreIdFromCookie(HttpServletRequest request) {
+        if (request.getCookies() != null) {
+            for (Cookie cookie : request.getCookies()) {
+                if ("storeId".equals(cookie.getName())) {
+                    try {
+                        return Integer.parseInt(cookie.getValue());
+                    } catch (NumberFormatException e) {
+                        return null;
+                    }
+                }
+            }
+        }
+        return null;
+    }
 }

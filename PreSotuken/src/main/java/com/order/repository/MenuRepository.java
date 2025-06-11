@@ -38,7 +38,7 @@ public interface MenuRepository extends JpaRepository<Menu, Integer> {
     List<Menu> findByStore_StoreIdAndIsSoldOutFalseOrderByMenuNameAsc(Integer storeId); // ★ 修正
 
     // 特定の店舗の全てのメニューをmenu_nameでソートして取得 (管理者用・品切れも表示する場合)
-    List<Menu> findByStore_StoreIdOrderByMenuNameAsc(Integer storeId); // ★ 修正
+    List<Menu> findByStore_StoreIdOrderByMenuIdAsc(Integer storeId); // ★ 修正
 
     // isPlanStarterがtrueのメニューをmenu_nameでソートして取得
     List<Menu> findByIsPlanStarterTrueOrderByMenuNameAsc(); // ★ 修正

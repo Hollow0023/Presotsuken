@@ -29,7 +29,6 @@ import com.order.repository.MenuRepository;
 import com.order.repository.PaymentDetailRepository;
 import com.order.repository.PaymentRepository;
 import com.order.repository.PlanMenuGroupMapRepository;
-import com.order.repository.PlanRepository;
 import com.order.repository.PrinterConfigRepository;
 import com.order.repository.StoreRepository;
 import com.order.repository.VisitRepository;
@@ -51,7 +50,6 @@ public class MenuAddService {
     private final PaymentDetailRepository paymentDetailRepository;
     private final PaymentRepository paymentRepository;
     private final VisitRepository visitRepository;
-    private final PlanRepository planRepository;
     private final PlanMenuGroupMapRepository planMenuGroupMapRepository;
     
     
@@ -174,7 +172,7 @@ public class MenuAddService {
 
     // 全メニューを取得するメソッド (menu_nameでソート適用)
     public List<Menu> getMenusByStoreId(Integer storeId) {
-        return menuRepository.findByStore_StoreIdOrderByMenuNameAsc(storeId);
+        return menuRepository.findByStore_StoreIdOrderByMenuIdAsc(storeId);
     }
     // ...getMenusWithOptions (品切れ表示しない場合)
        public List<MenuWithOptionsDTO> getMenusWithOptions(Integer storeId) {
@@ -184,16 +182,6 @@ public class MenuAddService {
                .map(menu -> new MenuWithOptionsDTO(menu)) // コンストラクタでDTOに変換
                .collect(Collectors.toList());
        }
-
-    // ...getAllMenusWithOptions (品切れも表示する場合)
-    //   public List<MenuWithOptionsDTO> getAllMenusWithOptions(Integer storeId) {
-    //       List<Menu> menus = menuRepository.findByStore_StoreIdOrderByMenuNameAsc(storeId);
-    //       // DTOへの変換ロジック
-    //       return menus.stream()
-    //           .map(menu -> new MenuWithOptionsDTO(menu))
-    //           .collect(Collectors.toList());
-    //   }
-
 
     // 特定のメニューを取得するメソッド (関連データもフェッチされるようにエンティティを調整)
     public Optional<Menu> getMenuById(Integer menuId) {
