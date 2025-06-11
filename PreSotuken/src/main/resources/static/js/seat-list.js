@@ -157,23 +157,30 @@ function toggleMenu() {
 
 
 
-document.getElementById("orderBtn").addEventListener("click", () => {
-    const seatId = document.getElementById("activeModal").getAttribute("data-seat-id");
-	const storeId = getCookie("storeId"); 
-	
-    // visitId取得
-    fetch(`/api/visit-info?seatId=${seatId}&storeId=${storeId}`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.visiting && data.visitId) {
-            // 正しい visitId を cookie に保存
-            document.cookie = `visitId=${data.visitId}; path=/; max-age=3600`;
+	document.getElementById("orderBtn").addEventListener("click", () => {
+        if  (!userSelect || userSelect.value === ""){ // 担当者選択チェック
+      		alert("担当者を選択してください。"); 
+            return; // 担当者が選択されていなければ処理を中断
+             
         }
 
-        // 遷移（visitId はURLに含めなくてOK）
-        window.location.href = `/order?seatId=${seatId}&admin=true&from=seatlist`;
+        const seatId = document.getElementById("activeModal").getAttribute("data-seat-id");
+        const storeId = getCookie("storeId"); 
+        
+        fetch(`/api/visit-info?seatId=${seatId}&storeId=${storeId}`)
+          .then(res => res.json())
+          .then(data => {
+            if (data.visiting && data.visitId) {
+                document.cookie = `visitId=${data.visitId}; path=/; max-age=3600`;
+            }
+
+            window.location.href = `/order?seatId=${seatId}&admin=true&from=seatlist`;
+          })
+          .catch(error => {
+            console.error("注文画面への遷移中にエラー:", error);
+            alert("注文画面への遷移中にエラーが発生しました。");
+          });
       });
-  });
       
 // ユーザーIDをCookieに保存する関数
 function setUserIdCookie(userId) {

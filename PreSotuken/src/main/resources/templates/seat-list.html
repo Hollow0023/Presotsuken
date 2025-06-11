@@ -26,15 +26,12 @@
 			<a href="/menu/sold-out-management">メニュー品切れ管理</a>
 			<a href="/admin/plans">プラン管理</a>
 			
-			
-			
 		</div>
 		
 		<form th:action="@{/logout}" method="get" onsubmit="clearUserIdCookie()">
 		    <button type="submit">ログアウト</button>
 		</form>
 	</nav>
-
 
 	<div  th:each="entry : ${groupedSeats}" class="group">
 		<h3 class="groupTitle" th:text="${entry.key.seatGroupName}">グループ名</h3>
@@ -75,10 +72,10 @@
 		<div class="modal-content">
 			<span class="close" onclick="closeModal()">&times;</span>
 			<h3 id="activeModalSeatName">テーブル名</h3>
-			<button id="paymentCheckBtn">会計確認</button>
-			<button onclick="closeModal()">キャンセル</button>
-			<button id="deleteVisitBtn">会計中止</button>
-			<button id="orderBtn" type="button">注文画面へ</button>
+			<button class="modalButton" id="paymentCheckBtn">会計確認</button>
+			<button class="modalButton" onclick="closeModal()">キャンセル</button>
+			<button class="modalButton" id="deleteVisitBtn">会計中止</button>
+			<button class="modalButton" id="orderBtn" type="button">注文画面へ</button>
 		</div>
 	</div>
 	
