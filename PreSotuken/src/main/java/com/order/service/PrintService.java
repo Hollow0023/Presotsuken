@@ -224,7 +224,6 @@ public class PrintService {
 
     
     // ★★★ 小計伝票印刷メソッド (printReceiptForPayment) ★★★
-    // このメソッドは、注文全体のPaymentDetailリストを受け取って、小計伝票を印刷する用途
     public void printReceiptForPayment(List<PaymentDetail> detailsForReceipt, Integer seatId) {
         if (detailsForReceipt == null || detailsForReceipt.isEmpty()) {
             System.out.println("印刷するPaymentDetailがありません。小計伝票の生成をスキップします。");
@@ -232,107 +231,80 @@ public class PrintService {
         }
 
         // --- 伝票に必要な情報の計算 ---
-        BigDecimal subtotal = BigDecimal.ZERO;
-        // 税率ごとの集計をソートするためにTreeMapを使用
-        // 税率のBigDecimalの比較は通常compareToを使用するため、自然順序付けでソートされる
-        Map<BigDecimal, BigDecimal> taxRateToAmountMap = new TreeMap<>(); 
-        Map<BigDecimal, BigDecimal> taxRateToTaxAmountMap = new TreeMap<>();
+        BigDecimal subtotalExcludingTax = BigDecimal.ZERO; // 税抜き小計
+        BigDecimal subtotalIncludingTax = BigDecimal.ZERO; // 税込み小計
+        Map<BigDecimal, BigDecimal> taxRateToAmountMap = new TreeMap<>(); // 税率(%) -> 税率対象額 (税抜き)
+        Map<BigDecimal, BigDecimal> taxRateToTaxAmountMap = new TreeMap<>(); // 税率(%) -> 税額
 
-        for (PaymentDetail detail : detailsForReceipt) { // 引数のdetailsForReceiptを使用
-            BigDecimal itemPrice = BigDecimal.valueOf(detail.getMenu().getPrice()); // Priceはint型を想定
+        for (PaymentDetail detail : detailsForReceipt) {
+            BigDecimal unitPriceExcludingTax = BigDecimal.valueOf(detail.getMenu().getPrice()); 
             BigDecimal itemQuantity = BigDecimal.valueOf(detail.getQuantity());
-            BigDecimal itemLineTotal = itemPrice.multiply(itemQuantity); // 各商品の合計金額
-
-            subtotal = subtotal.add(itemLineTotal); // 全体の小計に加算
-
-            // TaxRateエンティティから税率をDoubleで取得し、BigDecimalに変換
-            // Double.toString()を介さず、BigDecimal.valueOf(double)で直接変換
             BigDecimal taxRateValueFromDb = BigDecimal.valueOf(detail.getTaxRate().getRate());
-            
-            // taxRateValueFromDb が 0.1 や 0.08 の形式なので、そのまま係数として使用
-            BigDecimal taxRateFactor = taxRateValueFromDb; 
-            
-            // 税額計算（四捨五入）
-            BigDecimal taxAmount = itemLineTotal.multiply(taxRateFactor).setScale(0, RoundingMode.HALF_UP); 
-            
-            // 税率ごとの対象額と税額をマップに集計
-            // マップのキーは税率パーセンテージ（例: 10, 8）ではなく、DBから取得した0.1, 0.08の形式をそのまま使用
-            taxRateToAmountMap.merge(taxRateValueFromDb, itemLineTotal, BigDecimal::add);
-            taxRateToTaxAmountMap.merge(taxRateValueFromDb, taxAmount, BigDecimal::add);
+
+            // 各商品の税抜き行合計
+            BigDecimal itemLineTotalExcludingTax = unitPriceExcludingTax.multiply(itemQuantity); 
+            // 各商品の税額
+            BigDecimal taxAmount = itemLineTotalExcludingTax.multiply(taxRateValueFromDb).setScale(0, RoundingMode.HALF_UP); 
+            // 各商品の税込み行合計
+            BigDecimal itemLineTotalIncludingTax = itemLineTotalExcludingTax.add(taxAmount);
+
+            subtotalExcludingTax = subtotalExcludingTax.add(itemLineTotalExcludingTax); // 全体の税抜き小計に加算
+            subtotalIncludingTax = subtotalIncludingTax.add(itemLineTotalIncludingTax); // 全体の税込み小計に加算
+
+            taxRateToAmountMap.merge(taxRateValueFromDb, itemLineTotalExcludingTax, BigDecimal::add); // 税抜き対象額を集計
+            taxRateToTaxAmountMap.merge(taxRateValueFromDb, taxAmount, BigDecimal::add); // 税額を集計
         }
 
-        // 全体の税額合計
-        BigDecimal totalTaxOnly = taxRateToTaxAmountMap.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add);
-        // 全体の合計額
-        BigDecimal grandTotal = subtotal.add(totalTaxOnly); 
+        BigDecimal totalTaxOnly = taxRateToTaxAmountMap.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add); // 全体の税額合計
+        BigDecimal grandTotalIncludingTax = subtotalIncludingTax; // 合計額は税込み小計に等しい
 
         // --- 共通情報取得 ---
-        // 席名
         String seatName = seatRepo.findById(seatId)
                 .map(Seat::getSeatName)
                 .orElse("不明な席");
 
-        // 現在時刻
         String timeStr = LocalDateTime.now().format(DateTimeFormatter.ofPattern("MM/dd HH:mm"));
 
-        // ユーザー名 (PaymentDetailリストが空でなければ必ず取得できるはず)
         User user = detailsForReceipt.get(0).getUser(); 
         String username = (user != null) ? user.getUserName() : "卓上端末";
 
-        // ロゴ画像データのBase64文字列（DBから取得する想定）
-        // TODO: ここでDBからロゴ画像(Base64文字列)を取得するロジックを実装
-        String logoImageBase64 = "[ロゴBase64データ]"; // 例: logoRepository.findLogo().getBase64String();
+        String logoImageBase64 = "[ロゴBase64データ]"; 
 
         // --- XMLテンプレートの組み立て（小計伝票用） ---
         StringBuilder xmlContent = new StringBuilder();
         xmlContent.append("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
         xmlContent.append("<epos-print xmlns=\"http://www.epson-pos.com/schemas/2011/03/epos-print\">\n");
 
-        // 言語とフォント設定
         xmlContent.append("  <text lang=\"ja\"/>\n");
         xmlContent.append("  <text font=\"font_a\"/>\n");
         xmlContent.append("  <text align=\"center\"/>\n");
         xmlContent.append("  <feed/>\n");
 
-        // ロゴ画像
         xmlContent.append("  <image width=\"256\" height=\"60\" color=\"color_1\" mode=\"mono\">")
                   .append(logoImageBase64)
                   .append("</image>\n");
         xmlContent.append("  <feed unit=\"40\"/>\n");
 
-        // 店舗名、電話番号
         xmlContent.append("  <text align=\"center\"/>\n");
-        xmlContent.append("  <text width=\"1\" height=\"2\">ミラノファッション専門店&#10;</text>\n");
-        xmlContent.append("  <text width=\"1\" height=\"1\">Tel.00-0000-0000&#10;</text>\n");
         xmlContent.append("  <feed unit=\"5\"/>\n");
-
-        // テーブル名と時刻
-        // テンプレートのスペースに合わせて整形
-        // 「    テーブル:[席番号]             [時刻]」のような整形を目指す
-        // 全体幅の調整が必要になる。ここではスペース文字数を仮定
-        int tableAndTimeLeftPad = INDENT_SPACES + calculateEpsonPrintByteLength("テーブル:");
-        int tableAndTimeRightPad = 20; // テーブル名＋席番号の右側のスペースの幅
-        int timeStringPad = 15; // 時刻の右側のスペースの幅
 
         String tableAndTimeLine = " ".repeat(INDENT_SPACES) 
                                 + padRightHalfWidth("テーブル:" + escapeXml(seatName), 
-                                                     calculateEpsonPrintByteLength("テーブル:") + calculateEpsonPrintByteLength(escapeXml(seatName)) + 15) // 半角15文字分のスペースを調整
+                                                     calculateEpsonPrintByteLength("テーブル:") + calculateEpsonPrintByteLength(escapeXml(seatName)) + 15)
                                 + escapeXml(timeStr);
         xmlContent.append("  <text align=\"left\"/>\n");
         xmlContent.append("  <text>").append(tableAndTimeLine).append("&#10;</text>\n");
         xmlContent.append("  <feed unit=\"5\"/>\n");
         xmlContent.append("  <feed/>\n");
 
-        // 品名、数量、単価のヘッダー
         xmlContent.append("  <text align=\"left\"/>\n");
-        String itemHeaderLine = " ".repeat(INDENT_SPACES) // 先頭のスペース
+        String itemHeaderLine = " ".repeat(INDENT_SPACES)
                                 + padRightHalfWidth("品名", ITEM_NAME_COL_WIDTH)
                                 + padRightHalfWidth("数量", QUANTITY_COL_WIDTH) 
                                 + padLeftHalfWidth("単価", UNIT_PRICE_COL_WIDTH);
         xmlContent.append("  <text>").append(itemHeaderLine).append("&#10;</text>\n");
 
-        // 商品のリスト（複数行対応）
-        for (PaymentDetail detail : detailsForReceipt) { // 引数のdetailsForReceiptをループ
+        for (PaymentDetail detail : detailsForReceipt) {
             Menu menu = detail.getMenu();
             List<PaymentDetailOption> optionList = paymentDetailOptionRepo.findByPaymentDetail(detail);
             String optionSuffix = optionList.isEmpty() ? "" :
@@ -346,12 +318,16 @@ public class PrintService {
             displayItemName += optionSuffix;
 
             String quantityStr = String.valueOf(detail.getQuantity());
-            String unitPriceStr = "\\" + String.format("%,d", detail.getMenu().getPrice()); // 単価にカンマと円マーク
+            
+            // 単価を税込みで表示
+            BigDecimal unitPriceIncludingTax = BigDecimal.valueOf(detail.getMenu().getPrice())
+                                                .multiply(BigDecimal.ONE.add(BigDecimal.valueOf(detail.getTaxRate().getRate())))
+                                                .setScale(0, RoundingMode.HALF_UP);
+            String unitPriceStr = "\\" + String.format("%,d", unitPriceIncludingTax.longValue()); 
 
-            // 各商品の行を整形
-            String itemLine = " ".repeat(INDENT_SPACES) // 先頭のスペース
+            String itemLine = " ".repeat(INDENT_SPACES)
                               + padRightHalfWidth(escapeXml(displayItemName), ITEM_NAME_COL_WIDTH)
-                              + padRightHalfWidth(escapeXml(quantityStr), QUANTITY_COL_WIDTH) 
+                              + padRightHalfWidth(escapeXml(quantityStr), QUANTITY_COL_WIDTH)
                               + padLeftHalfWidth(escapeXml(unitPriceStr), UNIT_PRICE_COL_WIDTH);
             xmlContent.append("  <text>").append(itemLine).append("&#10;</text>\n");
         }
@@ -359,93 +335,77 @@ public class PrintService {
         xmlContent.append("  <feed/>\n");
 
         // 小計
-        // 4スペース + "小計" + (中央の空白) + "\\[小計]"
-        String subtotalLine = " ".repeat(INDENT_SPACES) + padRightHalfWidth("小計", SUBTOTAL_LABEL_WIDTH + 14) // 中央の空白調整
-                               + padLeftHalfWidth("\\" + String.format("%,d", subtotal.longValue()), SUB_TOTAL_AMOUNT_WIDTH);
+        // 小計は税込み金額の合計を表示
+        String subtotalLine = " ".repeat(INDENT_SPACES) + padRightHalfWidth("小計", SUBTOTAL_LABEL_WIDTH + 14) 
+                               + padLeftHalfWidth("\\" + String.format("%,d", subtotalIncludingTax.longValue()), SUB_TOTAL_AMOUNT_WIDTH);
         xmlContent.append("  <text>").append(subtotalLine).append("&#10;</text>\n");
 
-        // 税率ごとの表示
-        // マップのキー (税率) をソートされた順で取得
+        // --- 税率ごとの表示の順序を修正 ---
         List<BigDecimal> sortedTaxRates = new ArrayList<>(taxRateToAmountMap.keySet());
-        sortedTaxRates.sort(Comparator.naturalOrder()); // 税率を昇順でソート (例: 8%, 10%)
+        sortedTaxRates.sort(Comparator.naturalOrder()); // 税率を昇順でソート (例: 0.08, 0.1)
 
+        // 1. 各税率ごとの「(X%対象 [税率%対象額])」をすべて出力
         for (BigDecimal rate : sortedTaxRates) {
-            BigDecimal amountForRate = taxRateToAmountMap.get(rate); // その税率の対象額
-            BigDecimal taxAmountForRate = taxRateToTaxAmountMap.get(rate); // その税率の税額
-
-            // ([税率]%対象 [税率%対象額])
-            // 4スペース + "([税率]%対象" + (中央の空白) + "[税率%対象額])"
-            String taxRateLabel = "(" + rate.multiply(BigDecimal.valueOf(100)).stripTrailingZeros().toPlainString() + "%対象"; // 例: "(10%対象"
+            BigDecimal amountForRate = taxRateToAmountMap.get(rate); 
+            String taxRateLabel = "(" + rate.multiply(BigDecimal.valueOf(100)).stripTrailingZeros().toPlainString() + "%対象"; 
             String taxRateAmountLine = " ".repeat(INDENT_SPACES)
                                      + padRightHalfWidth(taxRateLabel, TAX_DETAIL_LABEL_WIDTH) 
-                                     + padLeftHalfWidth("\\" + String.format("%,d", amountForRate.longValue()) + ")", TAX_AMOUNT_WIDTH + 1); // )の分+1
+                                     + padLeftHalfWidth("\\" + String.format("%,d", amountForRate.longValue()) + ")", TAX_AMOUNT_WIDTH + 1); 
             xmlContent.append("  <text>").append(taxRateAmountLine).append("&#10;</text>\n");
+        }
 
-            // 内税 [税のみの額]
-            // 4スペース + "内税" + (中央の空白) + "[税のみの額]"
-            String taxOnlyLine = " ".repeat(INDENT_SPACES) + padRightHalfWidth("内税", TAX_DETAIL_LABEL_WIDTH) 
-                               + padLeftHalfWidth("\\" + String.format("%,d", taxAmountForRate.longValue()), TAX_AMOUNT_WIDTH);
-            xmlContent.append("  <text>").append(taxOnlyLine).append("&#10;</text>\n");
-            
-            // ([税率]%税 [税率の額])
-            // 4スペース + "([税率]%税" + (中央の空白) + "[税率の額])"
-            String taxRateTaxLabel = "(" + rate.multiply(BigDecimal.valueOf(100)).stripTrailingZeros().toPlainString() + "%税"; // 例: "(10%税"
+        // 2. 「内税」テキストを復活
+        xmlContent.append("  <text> ").append("    内税").append("&#10;</text>\n"); // テンプレートのスペースに合わせて修正
+
+        // 3. 各税率ごとの「(X%税 [税率の額])」をまとめて出力
+        for (BigDecimal rate : sortedTaxRates) {
+            BigDecimal taxAmountForRate = taxRateToTaxAmountMap.get(rate); 
+            String taxRateTaxLabel = "(" + rate.multiply(BigDecimal.valueOf(100)).stripTrailingZeros().toPlainString() + "%税"; 
             String taxRateTaxLine = " ".repeat(INDENT_SPACES)
                                   + padRightHalfWidth(taxRateTaxLabel, TAX_DETAIL_LABEL_WIDTH)
-                                  + padLeftHalfWidth("\\" + String.format("%,d", taxAmountForRate.longValue()) + ")", TAX_AMOUNT_WIDTH + 1); // )の分+1
+                                  + padLeftHalfWidth("\\" + String.format("%,d", taxAmountForRate.longValue()) + ")", TAX_AMOUNT_WIDTH + 1); 
             xmlContent.append("  <text>").append(taxRateTaxLine).append("&#10;</text>\n");
         }
-
-        // 区切り線
-        xmlContent.append("  <text> ").append("---------------------------------------").append("&#10;</text>\n");
+        
         xmlContent.append("  <feed unit=\"15\"/>\n");
 
-        // 合計
-        // 4スペース + "合計" + (中央の空白) + "\\[合計額]"
-        String totalLine = " ".repeat(INDENT_SPACES) + padRightHalfWidth("合計", TOTAL_LABEL_WIDTH + 8) // 中央の空白調整
-                           + padLeftHalfWidth("\\" + String.format("%,d", grandTotal.longValue()), GRAND_TOTAL_AMOUNT_WIDTH);
-        xmlContent.append("  <text>").append(totalLine).append("&#10;</text>\n");
-        xmlContent.append("  <text dw=\"false\" dh=\"false\"/>\n"); // 倍角解除
-        xmlContent.append("  <feed unit=\"10\"/>\n");
+//        // 合計
+//        // 合計も税込み金額を表示
+//        String totalLine = " ".repeat(INDENT_SPACES) + padRightHalfWidth("合計", TOTAL_LABEL_WIDTH + 8) 
+//                           + padLeftHalfWidth("\\" + String.format("%,d", grandTotalIncludingTax.longValue()), GRAND_TOTAL_AMOUNT_WIDTH); // grandTotalをgrandTotalIncludingTaxに変更
+//        xmlContent.append("  <text>").append(totalLine).append("&#10;</text>\n");
+//        xmlContent.append("  <text dw=\"false\" dh=\"false\"/>\n");
+//        xmlContent.append("  <feed unit=\"10\"/>\n");
 
-        // (内消費税等 \3,000）
-        // 4スペース + "(内消費税等" + (中央の空白) + "\\[合計税額]）"
-        String totalTaxOnlyLine = " ".repeat(INDENT_SPACES) + padRightHalfWidth("(内消費税等", TAX_DETAIL_LABEL_WIDTH + 6) // ラベルと中央の空白調整
-                                   + padLeftHalfWidth("\\" + String.format("%,d", totalTaxOnly.longValue()) + "）", TAX_AMOUNT_WIDTH + 1); // ）の分+1
+        // --- 合計以下「注)」までの表示を削除 ---
+        // 削除する部分のXML生成ロジックをコメントアウトまたは削除
+        /*
+        // (内消費税等 [金額]） - 全体の消費税合計
+        String totalTaxOnlyLine = " ".repeat(INDENT_SPACES) + padRightHalfWidth("(内消費税等", TAX_DETAIL_LABEL_WIDTH + 6) 
+                                   + padLeftHalfWidth("\\" + String.format("%,d", totalTaxOnly.longValue()) + "）", TAX_AMOUNT_WIDTH + 1); 
         xmlContent.append("  <text>").append(totalTaxOnlyLine).append("&#10;</text>\n");
 
-        // [税率]%対象 \[対象額] - 全税率の合計対象額を表示
-        // テンプレートでは1行だが、計算ロジックから全体合計の税率対象額を表示する想定
-        String combinedTaxableAmountLine = "";
-        if (!taxRateToAmountMap.isEmpty()) {
-            BigDecimal combinedTaxableAmount = taxRateToAmountMap.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add);
-            String totalTaxableAmountLabel = taxRateToAmountMap.size() > 1 ? "対象" : 
-                                               taxRateToAmountMap.keySet().iterator().next().multiply(BigDecimal.valueOf(100)).stripTrailingZeros().toPlainString() + "%対象"; 
-            totalTaxableAmountLabel = "(" + totalTaxableAmountLabel; // (対象 または (10%対象
-            
-            combinedTaxableAmountLine = " ".repeat(INDENT_SPACES) + padRightHalfWidth(totalTaxableAmountLabel, TAX_DETAIL_LABEL_WIDTH) // ラベル幅
-                                     + padLeftHalfWidth("\\" + String.format("%,d", combinedTaxableAmount.longValue()) + ")", TAX_AMOUNT_WIDTH + 1); // 金額＋）
-            xmlContent.append("  <text>").append(combinedTaxableAmountLine).append("&#10;</text>\n");
-        }
+        // [税率]%対象 \[対象額] - 全税率の合計対象額
+        String combinedTaxableAmountLabel = "(対象"; // 「(対象」
+        String combinedTaxableAmountLine = " ".repeat(INDENT_SPACES) + padRightHalfWidth(combinedTaxableAmountLabel, TAX_DETAIL_LABEL_WIDTH + 6) // ラベル幅調整
+                                     + padLeftHalfWidth("\\" + String.format("%,d", subtotal.longValue()) + ")", TAX_AMOUNT_WIDTH + 1); // subtotalは税抜きの合計
+        xmlContent.append("  <text>").append(combinedTaxableAmountLine).append("&#10;</text>\n");
+        */
         
-        xmlContent.append("  <feed unit=\"35\"/>\n");
-        xmlContent.append("  <feed/>\n");
+        // 削除された部分に対応するfeedも削除または調整
+        xmlContent.append("  <feed/>\n"); // これもテンプレートにあったので残す
 
-        // 注釈
+        /*
         xmlContent.append("  <text align=\"center\"/>\n");
         xmlContent.append("  <text>注) ※印は軽減税率適用商品</text>\n");
         xmlContent.append("  <feed/>\n");
+        */
 
-        // カットと最終紙送り
         xmlContent.append("  <cut type=\"feed\"/>\n");
         xmlContent.append("  <feed/>\n");
 
         xmlContent.append("</epos-print>\n");
 
-        // プリンターへの送信
-        // 小計伝票を印刷するプリンターのIPアドレスを特定する必要がある
-        // 今回は、渡されたPaymentDetailリストの最初のメニューに紐づくプリンターを使用する。
-        // もし専用のレシートプリンターがあるなら、printerConfigRepoなどから取得するロジックに変更。
         Menu firstMenu = detailsForReceipt.get(0).getMenu();
         List<MenuPrinterMap> mappings = menuPrinterMapRepo.findByMenu_MenuId(firstMenu.getMenuId());
         
@@ -457,8 +417,7 @@ public class PrintService {
             notifyClientError(seatId, "小計伝票プリンタ設定なし。");
         }
     }
-
-
+    
     
     
     private String escapeXml(String text) {

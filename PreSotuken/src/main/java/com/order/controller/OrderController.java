@@ -163,104 +163,204 @@ public class OrderController {
 
 	@PostMapping("/submit")
 	public ResponseEntity<Void> submitOrder(@RequestBody List<OrderItemDto> items,
-			@CookieValue("visitId") Integer visitId,
-			@CookieValue("storeId") Integer storeId, // これは今回は直接使わないけど、引数として残す
-			HttpServletRequest request) {
-		User user = null;
-		Payment payment = paymentRepository.findByVisitVisitId(visitId);
-		List<PaymentDetail> submitDetails = new ArrayList<>();
-		
-		Integer userId = getCookieValueAsInteger(request,"userId");
+            @CookieValue("visitId") Integer visitId,
+            @CookieValue("storeId") Integer storeId,
+            HttpServletRequest request) {
+        User user = null;
+        Payment payment = paymentRepository.findByVisitVisitId(visitId);
+        List<PaymentDetail> submitDetails = new ArrayList<>(); // 今回の注文で追加されたPaymentDetailを収集
+        
+        Integer userId = getCookieValueAsInteger(request,"userId");
 
-		if (userId != null) {
-			user = userRepository.findById(userId).orElse(null);
-		}
-		
-		// submitOrderの開始時にseatIdを確定しておく
-		Integer seatId = visitRepository.findById(visitId)
-				.map(Visit::getSeat)
-				.map(Seat::getSeatId)
-				.orElseThrow(() -> new IllegalArgumentException("無効なvisitId: " + visitId));
+        if (userId != null) {
+            user = userRepository.findById(userId).orElse(null);
+        }
+        
+        // submitOrderの開始時にseatIdを確定しておく
+        Integer seatId = visitRepository.findById(visitId)
+                .map(Visit::getSeat)
+                .map(Seat::getSeatId)
+                .orElseThrow(() -> new IllegalArgumentException("無効なvisitId: " + visitId));
 
 
-		for (OrderItemDto item : items) {
-			Menu menu = menuRepository.findById(item.getMenuId())
-					.orElseThrow(() -> new RuntimeException("Menu not found with ID: " + item.getMenuId()));
-			TaxRate taxRate = taxRateRepository.findById(item.getTaxRateId())
-					.orElseThrow(() -> new RuntimeException("TaxRate not found with ID: " + item.getTaxRateId()));
+        for (OrderItemDto item : items) {
+            Menu menu = menuRepository.findById(item.getMenuId())
+                    .orElseThrow(() -> new RuntimeException("Menu not found with ID: " + item.getMenuId()));
+            TaxRate taxRate = taxRateRepository.findById(item.getTaxRateId())
+                    .orElseThrow(() -> new RuntimeException("TaxRate not found with ID: " + item.getTaxRateId()));
 
-			PaymentDetail detail = new PaymentDetail();
-			detail.setPayment(payment);
-			detail.setStore(menu.getStore());
-			detail.setMenu(menu);
-			detail.setQuantity(item.getQuantity());
-			detail.setUser(user);
-			detail.setTaxRate(taxRate);
-			detail.setSubtotal((double) (menu.getPrice() * item.getQuantity()));
-			detail.setOrderTime(LocalDateTime.now());
+            PaymentDetail detail = new PaymentDetail();
+            detail.setPayment(payment);
+            detail.setStore(menu.getStore());
+            detail.setMenu(menu);
+            detail.setQuantity(item.getQuantity());
+            detail.setUser(user);
+            detail.setTaxRate(taxRate);
+            detail.setSubtotal((double) (menu.getPrice() * item.getQuantity()));
+            detail.setOrderTime(LocalDateTime.now());
 
-			PaymentDetail savedDetail = paymentDetailRepository.save(detail);
-			submitDetails.add(savedDetail);
+            PaymentDetail savedDetail = paymentDetailRepository.save(detail);
+            submitDetails.add(savedDetail); // 今回の注文で追加されたPaymentDetailをリストに追加
 
-			if (item.getOptionItemIds() != null && !item.getOptionItemIds().isEmpty()) {
-				for (Integer optionItemId : item.getOptionItemIds()) {
-					OptionItem optionItem = optionItemRepository.findById(optionItemId)
-							.orElseThrow(() -> new RuntimeException("OptionItem not found with ID: " + optionItemId));
+            if (item.getOptionItemIds() != null && !item.getOptionItemIds().isEmpty()) {
+                for (Integer optionItemId : item.getOptionItemIds()) {
+                    OptionItem optionItem = optionItemRepository.findById(optionItemId)
+                            .orElseThrow(() -> new RuntimeException("OptionItem not found with ID: " + optionItemId));
 
-					PaymentDetailOption paymentDetailOption = new PaymentDetailOption();
-					paymentDetailOption.setPaymentDetail(savedDetail);
-					paymentDetailOption.setOptionItem(optionItem);
+                    PaymentDetailOption paymentDetailOption = new PaymentDetailOption();
+                    paymentDetailOption.setPaymentDetail(savedDetail);
+                    paymentDetailOption.setOptionItem(optionItem);
 
-					paymentDetailOptionRepository.save(paymentDetailOption);
-				}
-			}
-			printService.printLabelsForOrder(submitDetails, seatId);
-			
-			
-			
-			
-			
-			
+                    paymentDetailOptionRepository.save(paymentDetailOption);
+                }
+            }
+            
+            // ★★★ 単品伝票の印刷（savedDetailのみをリストにして渡すように変更）★★★
+            // これで、各商品が1枚の単品伝票として印刷される
+            printService.printLabelsForOrder(List.of(savedDetail), seatId); 
+            
+            // ★ここからが追加ロジック！飲み放題開始メニューの注文を検知
+            // menuエンティティのisPlanStarterがBoolean型なので、NullPointerExceptionを避けるためにequalsを使用
+            if (Boolean.TRUE.equals(menu.getIsPlanStarter())) {
+                Integer planId = menu.getPlanId(); // 紐づいているplan_idを取得
+                List<PaymentDetail> activePlans = paymentDetailRepository.findByPaymentPaymentIdAndMenuIsPlanStarterTrue(payment.getPaymentId());
+                
+                // activePlansから、現在有効な全てのisPlanStarterメニューのplanIdを収集
+                Set<Integer> activePlanIds = activePlans.stream()
+                    .map(pd -> pd.getMenu().getPlanId())
+                    .filter(java.util.Objects::nonNull)
+                    .collect(java.util.stream.Collectors.toSet());
 
-			// ★ここからが追加ロジック！飲み放題開始メニューの注文を検知
-			// menuエンティティのisPlanStarterがBoolean型なので、NullPointerExceptionを避けるためにequalsを使用
-			if (Boolean.TRUE.equals(menu.getIsPlanStarter())) {
-				Integer planId = menu.getPlanId(); // 紐づいているplan_idを取得
-				List<PaymentDetail> activePlans = paymentDetailRepository.findByPaymentPaymentIdAndMenuIsPlanStarterTrue(payment.getPaymentId());
-				
-				// activePlansから、現在有効な全てのisPlanStarterメニューのplanIdを収集
-				Set<Integer> activePlanIds = activePlans.stream()
-				    .map(pd -> pd.getMenu().getPlanId())
-				    .filter(java.util.Objects::nonNull) // planIdがnullでないことを確認
-				    .collect(java.util.stream.Collectors.toSet()); // 重複を除いてSetにする
+                // 全ての有効なplanIdに紐づくmenuGroupのIDを収集
+                List<Integer> allActivatedMenuGroupIds = new ArrayList<>();
+                for (Integer activePlanId : activePlanIds) {
+                    List<Integer> groupIdsForPlan = planMenuGroupMapRepository.findByPlanId(activePlanId).stream()
+                        .map(map -> map.getMenuGroupId())
+                        .collect(Collectors.toList());
+                    allActivatedMenuGroupIds.addAll(groupIdsForPlan);
+                }
+                //重複を排除してユニークなIDリストにする
+                allActivatedMenuGroupIds = allActivatedMenuGroupIds.stream().distinct().collect(Collectors.toList());
 
-				// 全ての有効なplanIdに紐づくmenuGroupのIDを収集
-				List<Integer> allActivatedMenuGroupIds = new ArrayList<>();
-				for (Integer activePlanId : activePlanIds) {
-				    List<Integer> groupIdsForPlan = planMenuGroupMapRepository.findByPlanId(activePlanId).stream()
-				        .map(map -> map.getMenuGroupId())
-				        .collect(Collectors.toList());
-				    allActivatedMenuGroupIds.addAll(groupIdsForPlan);
-				}
-				//重複を排除してユニークなIDリストにする
-				allActivatedMenuGroupIds = allActivatedMenuGroupIds.stream().distinct().collect(Collectors.toList());
+                // WebSocketで特定のseatIdのクライアントに通知を送信
+                Map<String, Object> payload = new HashMap<>();
+                payload.put("type", "PLAN_ACTIVATED");
+                payload.put("seatId", seatId);
+                payload.put("planId", planId);
+                
+                payload.put("activatedMenuGroupIds", allActivatedMenuGroupIds);
 
-				// WebSocketで特定のseatIdのクライアントに通知を送信
-				// `/topic/seats/{seatId}` は入店時通知と同じエンドポイントを使う
-				Map<String, Object> payload = new HashMap<>();
-				payload.put("type", "PLAN_ACTIVATED"); // 通知の種類を明確にする
-				payload.put("seatId", seatId);
-				payload.put("planId", planId); // どのプランが有効になったか
-				
-				payload.put("activatedMenuGroupIds", allActivatedMenuGroupIds);
+                messagingTemplate.convertAndSend("/topic/seats/" + seatId, payload);
+                System.out.println("WebSocket通知: seatId " + seatId + " でプラン " + planId + " がアクティブ化されました。");
+            }
+        }
 
-				messagingTemplate.convertAndSend("/topic/seats/" + seatId, payload);
-				System.out.println("WebSocket通知: seatId " + seatId + " でプラン " + planId + " がアクティブ化されました。");
-			}
-		}
+        // ★★★ ループの最後に小計伝票を印刷するメソッドを呼び出す ★★★
+        // 今回注文された全てのPaymentDetailをまとめて渡す
+        printService.printReceiptForPayment(submitDetails, seatId); 
 
-		return ResponseEntity.ok().build();
-	}
+        return ResponseEntity.ok().build();
+    }
+// @PostMapping("/submit")
+//	public ResponseEntity<Void> submitOrder(@RequestBody List<OrderItemDto> items,
+//			@CookieValue("visitId") Integer visitId,
+//			@CookieValue("storeId") Integer storeId, // これは今回は直接使わないけど、引数として残す
+//			HttpServletRequest request) {
+//		User user = null;
+//		Payment payment = paymentRepository.findByVisitVisitId(visitId);
+//		List<PaymentDetail> submitDetails = new ArrayList<>();
+//		
+//		Integer userId = getCookieValueAsInteger(request,"userId");
+//
+//		if (userId != null) {
+//			user = userRepository.findById(userId).orElse(null);
+//		}
+//		
+//		// submitOrderの開始時にseatIdを確定しておく
+//		Integer seatId = visitRepository.findById(visitId)
+//				.map(Visit::getSeat)
+//				.map(Seat::getSeatId)
+//				.orElseThrow(() -> new IllegalArgumentException("無効なvisitId: " + visitId));
+//
+//
+//		for (OrderItemDto item : items) {
+//			Menu menu = menuRepository.findById(item.getMenuId())
+//					.orElseThrow(() -> new RuntimeException("Menu not found with ID: " + item.getMenuId()));
+//			TaxRate taxRate = taxRateRepository.findById(item.getTaxRateId())
+//					.orElseThrow(() -> new RuntimeException("TaxRate not found with ID: " + item.getTaxRateId()));
+//
+//			PaymentDetail detail = new PaymentDetail();
+//			detail.setPayment(payment);
+//			detail.setStore(menu.getStore());
+//			detail.setMenu(menu);
+//			detail.setQuantity(item.getQuantity());
+//			detail.setUser(user);
+//			detail.setTaxRate(taxRate);
+//			detail.setSubtotal((double) (menu.getPrice() * item.getQuantity()));
+//			detail.setOrderTime(LocalDateTime.now());
+//
+//			PaymentDetail savedDetail = paymentDetailRepository.save(detail);
+//			submitDetails.add(savedDetail);
+//
+//			if (item.getOptionItemIds() != null && !item.getOptionItemIds().isEmpty()) {
+//				for (Integer optionItemId : item.getOptionItemIds()) {
+//					OptionItem optionItem = optionItemRepository.findById(optionItemId)
+//							.orElseThrow(() -> new RuntimeException("OptionItem not found with ID: " + optionItemId));
+//
+//					PaymentDetailOption paymentDetailOption = new PaymentDetailOption();
+//					paymentDetailOption.setPaymentDetail(savedDetail);
+//					paymentDetailOption.setOptionItem(optionItem);
+//
+//					paymentDetailOptionRepository.save(paymentDetailOption);
+//				}
+//			}
+//			printService.printLabelsForOrder(submitDetails, seatId);
+//			
+//			
+//			
+//			
+//			
+//			
+//
+//			// ★ここからが追加ロジック！飲み放題開始メニューの注文を検知
+//			// menuエンティティのisPlanStarterがBoolean型なので、NullPointerExceptionを避けるためにequalsを使用
+//			if (Boolean.TRUE.equals(menu.getIsPlanStarter())) {
+//				Integer planId = menu.getPlanId(); // 紐づいているplan_idを取得
+//				List<PaymentDetail> activePlans = paymentDetailRepository.findByPaymentPaymentIdAndMenuIsPlanStarterTrue(payment.getPaymentId());
+//				
+//				// activePlansから、現在有効な全てのisPlanStarterメニューのplanIdを収集
+//				Set<Integer> activePlanIds = activePlans.stream()
+//				    .map(pd -> pd.getMenu().getPlanId())
+//				    .filter(java.util.Objects::nonNull) // planIdがnullでないことを確認
+//				    .collect(java.util.stream.Collectors.toSet()); // 重複を除いてSetにする
+//
+//				// 全ての有効なplanIdに紐づくmenuGroupのIDを収集
+//				List<Integer> allActivatedMenuGroupIds = new ArrayList<>();
+//				for (Integer activePlanId : activePlanIds) {
+//				    List<Integer> groupIdsForPlan = planMenuGroupMapRepository.findByPlanId(activePlanId).stream()
+//				        .map(map -> map.getMenuGroupId())
+//				        .collect(Collectors.toList());
+//				    allActivatedMenuGroupIds.addAll(groupIdsForPlan);
+//				}
+//				//重複を排除してユニークなIDリストにする
+//				allActivatedMenuGroupIds = allActivatedMenuGroupIds.stream().distinct().collect(Collectors.toList());
+//
+//				// WebSocketで特定のseatIdのクライアントに通知を送信
+//				// `/topic/seats/{seatId}` は入店時通知と同じエンドポイントを使う
+//				Map<String, Object> payload = new HashMap<>();
+//				payload.put("type", "PLAN_ACTIVATED"); // 通知の種類を明確にする
+//				payload.put("seatId", seatId);
+//				payload.put("planId", planId); // どのプランが有効になったか
+//				
+//				payload.put("activatedMenuGroupIds", allActivatedMenuGroupIds);
+//
+//				messagingTemplate.convertAndSend("/topic/seats/" + seatId, payload);
+//				System.out.println("WebSocket通知: seatId " + seatId + " でプラン " + planId + " がアクティブ化されました。");
+//			}
+//		}
+//
+//		return ResponseEntity.ok().build();
+//	}
 
 
 	// ★ showOrderPage で使うヘルパーメソッド (Service層に切り出すのが理想)
