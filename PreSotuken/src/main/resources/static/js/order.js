@@ -15,7 +15,6 @@ if (!seatId || seatId === "null" || seatId === "undefined") {
     seatId = window.seatIdFromModel;
 }
 
-
 document.getElementById("seatInfo").innerText = `${seatId}`;
 
 /**

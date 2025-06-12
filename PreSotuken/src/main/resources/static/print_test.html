@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>ePOS印刷テスト</title>
+  <script src="/js/epos-2.27.0.js"></script> <!-- ライブラリは配置済み前提 -->
+</head>
+<body>
+  <h1>プリンタテスト</h1>
+  <button onclick="startPrint()">印刷する</button>
+
+  <script>
+    let printer = null;
+    const ePosDev = new epson.ePOSDevice();
+
+    function startPrint() {
+      console.log("プリンタに接続中...");
+      ePosDev.connect('192.168.11.102', 8008, cbConnect);
+    }
+
+    function cbConnect(result) {
+      if (result === 'OK') {
+        console.log("接続成功。プリンタデバイス作成中...");
+        ePosDev.createDevice(
+          'local_printer',
+          ePosDev.DEVICE_TYPE_PRINTER,
+          { crypto: false, buffer: false }, // ← ポート8008なら crypto: false！
+          cbCreateDevice_printer
+        );
+      } else {
+        console.error("接続失敗:", result);
+      }
+    }
+
+    function cbCreateDevice_printer(devobj, retcode) {
+      if (retcode === 'OK') {
+        printer = devobj;
+        executeAddedCode();
+      } else {
+        console.error("デバイス作成失敗:", retcode);
+      }
+    }
+
+    function executeAddedCode() {
+      printer.addText('Hello,\tWorld!\n');
+      printer.addFeedLine(3);
+      printer.addCut(printer.CUT_FEED);
+      printer.send();
+    }
+  </script>
+</body>
+</html>
