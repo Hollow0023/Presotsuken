@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
     <meta charset="UTF-8">
     <title>座席一覧</title>
     <link rel="stylesheet" href="/css/seat-list.css">
@@ -61,9 +63,15 @@
 			<form th:action="@{/visits}" method="post">
 				<input type="hidden" name="seat.seatId" id="modalSeatId">
 	            <input type="hidden" name="store.storeId" value="1" />
-				<label>人数: <input type="number"
-					name="numberOfPeople" min="1" required /></label><br> <br>
-				<button type="submit">入店</button>
+<!--				<label>人数: -->
+<!--				<input type="number" name="numberOfPeople" min="1" required /></label><br> <br>-->
+				<label for="peopleCount">人数:</label>
+				<div class="counter">
+				  <button type="button"  onclick="decrease()">－</button>
+				  <input  type="number" name="numberOfPeople" id="peopleCount" value="1" min="1" required />
+				  <button type="button" onclick="increase()">＋</button>
+				</div>
+				<button class="visitButton" type="submit">入店</button>
 			</form>
 		</div>
 	</div>
@@ -73,10 +81,13 @@
 		<div class="modal-content">
 			<span class="close" onclick="closeModal()">&times;</span>
 			<h3 id="activeModalSeatName">テーブル名</h3>
-			<button class="modalButton" id="paymentCheckBtn">会計確認</button>
-			<button class="modalButton" onclick="closeModal()">キャンセル</button>
-			<button class="modalButton" id="deleteVisitBtn">会計中止</button>
-			<button class="modalButton" id="orderBtn" type="button">注文画面へ</button>
+			<div class="modalButtons">
+				<button class="modalButton" id="orderBtn" type="button">注文画面へ</button>
+				<button class="modalButton" id="paymentCheckBtn">会計確認</button>
+				<button class="modalButton" id="deleteVisitBtn">会計中止</button>
+				<button class="modalButton" id="cancelBtn" onclick="closeModal()">キャンセル</button>
+			</div>
+
 		</div>
 	</div>
 	

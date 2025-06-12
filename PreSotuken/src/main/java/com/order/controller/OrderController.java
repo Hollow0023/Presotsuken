@@ -83,13 +83,27 @@ public class OrderController {
 	// ★ 新しく注入するリポジトリ
 	private final PlanRepository planRepository; // PlanRepositoryはOrderControllerでは直接使用しないが、依存関係としては問題なし
 	private final PlanMenuGroupMapRepository planMenuGroupMapRepository;
-
-
 	@GetMapping
-	public String showOrderPage(@CookieValue("seatId") Integer seatId,
-			@CookieValue("storeId") Integer storeId,
-			@RequestParam(name = "admin", required = false, defaultValue = "false") boolean showAll,
-			Model model) {
+	public String showOrderPage(
+	        @CookieValue(name = "seatId", required = false) Integer seatIdCookie,
+	        @CookieValue(name = "storeId") Integer storeId,
+	        @RequestParam(name = "seatId", required = false) Integer seatIdParam,
+	        @RequestParam(name = "admin", required = false, defaultValue = "false") boolean showAll,
+	        Model model) {
+
+	    // seatIdはCookie優先、なければURLパラメータから取得
+	    Integer seatId = (seatIdCookie != null) ? seatIdCookie : seatIdParam;
+
+	    if (seatId == null) {
+	        throw new IllegalArgumentException("seatIdが指定されていません（Cookieにもクエリにも存在しません）");
+	    }
+
+//	@GetMapping
+//	public String showOrderPage(
+//			@CookieValue("seatId") Integer seatId,
+//			@CookieValue("storeId") Integer storeId,
+//			@RequestParam(name = "admin", required = false, defaultValue = "false") boolean showAll,
+//			Model model) {
 
 		model.addAttribute("seatId", seatId);
 		model.addAttribute("storeId", storeId);

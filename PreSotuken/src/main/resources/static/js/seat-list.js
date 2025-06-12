@@ -1,5 +1,17 @@
 let activeSeatId = null;
 
+function increase() {
+  const input = document.getElementById("peopleCount");
+  input.value = parseInt(input.value) + 1;
+}
+
+function decrease() {
+  const input = document.getElementById("peopleCount");
+  if (parseInt(input.value) > 1) {
+    input.value = parseInt(input.value) - 1;
+  }
+}
+
 function clearUserIdCookie() {
     document.cookie = "userId=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
 }

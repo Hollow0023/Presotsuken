@@ -3,6 +3,12 @@ body{
 	margin: 0;
 }
 
+#userSelect{
+	width: 150px;
+    font-size: larger;
+    font-weight: 600;
+}
+
 
 .burger {
 	position: fixed;
@@ -39,6 +45,8 @@ body{
     flex-direction: column; /* 縦並びに */
     justify-content: space-between; /* 上：リンク群、下：ログアウト */
     box-sizing: border-box;
+    overflow-y: auto;       /* 縦方向にスクロール許可 */
+	max-height: 100vh; 
 }
 
 .menu-drawer.open {
@@ -133,6 +141,13 @@ body{
 	background-color: #f44336 !important;
 	color: white;
 }
+.visitButton{
+	height: 50px;
+    width: 100%;
+    font-size: large;
+    font-weight: bold;
+}
+
 
 .modal {
 	display: none;
@@ -144,17 +159,55 @@ body{
 	height: 100%;
 	background: rgba(0, 0, 0, 0.4);
 }
+.modalButtons{
+	display: flex;
+	justify-content: space-between;
+	flex-wrap: wrap;
+}
+
+.modalButton {
+	max-width:330px;
+	min-width: 200px;;
+	
+	height: 150px;;
+	padding:10px;
+	margin: 3px auto; /* 上下余白 & 中央寄せ */
+	display: block;   /* インラインからブロック要素に */
+	font-weight: bold;
+	border-style: none;
+}
+#deleteVisitBtn{
+	background-color:#b22222 ;
+	color: white;
+}
+#paymentCheckBtn{
+	background-color:#32cd32 ;
+	color: white;
+}
+#orderBtn{
+	background-color:#20b2aa ;
+	color: white;
+}
+#cancelBtn{
+	margin-top:20px;
+	width: 100%;
+	height:50px;
+}
 
 .modal-content {
 	background: white;
 	margin: 10% auto;
 	padding: 20px;
-	width: 300px;
+	max-width:700px;
+	max-height:1200px;
 	border-radius: 8px;
+	overflow-y: auto;       /* 縦方向にスクロール許可 */
+	max-height: 80vh;      /* 画面よりはみ出さないように */
 }
 
 .close {
 	float: right;
 	cursor: pointer;
 	font-weight: bold;
+	font-size: xx-large;
 }

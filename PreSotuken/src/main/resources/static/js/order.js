@@ -5,11 +5,18 @@ let taxRateMap = {}; // 税率IDと税率をマッピングするオブジェク
 
 // 座席情報の表示
 // CookieからseatIdを取得、なければURLから取得することも想定
-const seatId = getCookie("seatId"); 
-document.getElementById("seatInfo").innerText = `${seatId}`; // 取得したseatIdを画面に表示
+//const seatId = getCookie("seatId"); 
+//document.getElementById("seatInfo").innerText = `${seatId}`; // 取得したseatIdを画面に表示
 
 
+let seatId = getCookie("seatId");
+if (!seatId || seatId === "null" || seatId === "undefined") {
+    // HTMLで定義されたグローバル変数 seatIdFromModel を使う
+    seatId = window.seatIdFromModel;
+}
 
+
+document.getElementById("seatInfo").innerText = `${seatId}`;
 
 /**
  * 指定された名前のCookieの値を取得する関数

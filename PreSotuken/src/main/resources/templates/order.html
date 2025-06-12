@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta charset="UTF-8">
 <title>注文画面</title>
 <link rel="stylesheet" href="/css/order.css">
@@ -8,6 +9,7 @@
 <body>
 	<div class="buttons">
 		<div id="seatInfo"></div>
+<!--		<p id="seatInfo" th:text="${seatId}"></p>-->
 		<div>
 			<!--			<button class="history-button" onclick="openHistoryModal()" style="margin-right: 8px;">注文履歴</button>-->
 			<button id="historyToggleButton" class="history-button"
@@ -129,6 +131,9 @@
 	<div id="toast"
 		style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 12px 20px; border-radius: 4px; display: none; z-index: 1000; box-shadow: 0 0 8px rgba(0, 0, 0, 0.3); transition: opacity 0.5s ease;"></div>
 
+	<script th:inline="javascript">
+		const seatIdFromModel = /*[[${seatId}]]*/ 0;
+	</script>
 	
 	<script src="/js/order.js"></script>
 	<script
