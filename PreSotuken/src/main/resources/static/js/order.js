@@ -1,20 +1,248 @@
-// グローバル変数と初期設定
+// Epson EPOS SDK関連のグローバル変数
+// -----------------------------------------------------------------------------
+let printer = null; // Epson Printerオブジェクト
+const ePosDev = new epson.ePOSDevice(); // Epson ePOSDeviceオブジェクト
+let currentPrinterIp = null; // 現在接続中のプリンターのIPアドレスを保持
+
+// UIステータス表示用の要素
+// HTMLのbodyタグ直後などに <p id="statusMessage">プリンタステータス: 初期化中...</p> を追加してください
+const statusMessageElement = document.getElementById("statusMessage"); 
+
+function updateStatus(message) {
+    if (statusMessageElement) {
+        statusMessageElement.textContent = `プリンタステータス: ${message}`;
+    }
+    console.log(`[Printer Status] ${message}`); // コンソールにも出力
+}
+
+// プリンターへの接続とコマンド実行のラッパー関数
+async function connectAndExecute(ipAddress, commandsJson) {
+    // 既存の接続を切断する前に、現在のプリンターオブジェクトを解放
+    if (printer && ePosDev.isConnected) {
+        try {
+            await new Promise(resolve => {
+                ePosDev.deleteDevice(printer, () => {
+                    ePosDev.disconnect();
+                    printer = null;
+                    resolve();
+                });
+            });
+            console.log('既存プリンター接続を安全に切断しました。');
+        } catch (error) {
+            console.warn('既存プリンター切断中にエラー:', error);
+        }
+    }
+
+    return new Promise((resolve, reject) => {
+        ePosDev.connect(ipAddress, 8008, function(result) { // ポートは固定とするか、設定で取得
+            if (result === 'OK' || result === 'SSL_CONNECT_OK') {
+                console.log("接続成功。プリンタデバイス作成中...");
+                currentPrinterIp = ipAddress; // 接続したIPを記録
+                ePosDev.createDevice(
+                    'local_printer',
+                    ePosDev.DEVICE_TYPE_PRINTER,
+                    { crypto: false, buffer: false }, // ポート8008なら crypto: false
+                    function(devobj, retcode) {
+                        if (retcode === 'OK') {
+                            printer = devobj;
+                            setupPrinterEvents(printer); // イベントハンドラを設定
+                            console.log('プリンタデバイス作成成功。コマンド実行中...');
+                            updateStatus('印刷コマンド実行中...');
+                            executeCommands(commandsJson).then(resolve).catch(reject); // コマンド実行を待つ
+                        } else {
+                            console.error("デバイス作成失敗:", retcode);
+                            updateStatus('プリンタデバイス作成失敗: ' + retcode);
+                            reject(new Error("Device creation failed: " + retcode));
+                        }
+                    }
+                );
+            } else {
+                console.error("プリンタ接続失敗:", result);
+                updateStatus('プリンタ接続失敗: ' + result);
+                reject(new Error("Printer connection failed: " + result));
+            }
+        });
+    });
+}
+
+// プリンターイベントハンドラのセットアップ
+function setupPrinterEvents(printerObj) {
+    printerObj.timeout = 60000; // タイムアウト設定 
+    printerObj.onreceive = function(response) { 
+        if (response.success) { 
+            console.log('印刷成功！');
+            updateStatus('印刷完了');
+        } else { 
+            console.error('印刷失敗:', response.code); 
+            updateStatus('印刷失敗: ' + response.code);
+        }
+ 
+    printerObj.onstatuschange = function(status) { 
+        console.log('プリンタステータス変更:', status);
+        // ASB_RECEIPT_NEAR_END などで用紙補充を促すなど
+    };
+    printerObj.onpaperend = function() { 
+        console.warn('用紙切れ！');
+        updateStatus('警告: 用紙切れ！');
+    };
+    printerObj.oncoveropen = function() {}
+        console.warn('カバーオープン！');
+        updateStatus('警告: カバーオープン！');
+    };
+    // ondisconnectイベントでネットワーク切断の検知も重要 
+    ePosDev.ondisconnect = function() { 
+        console.warn('プリンタとの接続が切断されました！');
+        updateStatus('警告: プリンタ切断！');
+        printer = null; // プリンターオブジェクトをリセット
+        currentPrinterIp = null;
+    };
+    // onreconnecting / onreconnect も設定しておくとより堅牢
+    ePosDev.onreconnecting = function() { 
+        console.log('プリンタに再接続中...');
+        updateStatus('プリンタに再接続中...');
+    };
+    ePosDev.onreconnect = function() {
+        console.log('プリンタに再接続しました！');
+        updateStatus('プリンタ再接続完了');
+    };
+}
+
+// 印刷命令リストを実行するコア関数
+async function executeCommands(commandsJson) {
+    const commands = JSON.parse(commandsJson);
+
+    // 印刷開始前にプリンターの状態を初期化する
+    // 必要に応じて printer.reset() を呼び出すが、各コマンドで設定を上書きするなら不要な場合も
+    // printer.addReset(); // またはprinter.reset()
+
+    for (const command of commands) {
+        try {
+            switch (command.api) {
+                case "addSound": // 
+                    printer.addSound(
+                        command.pattern,
+                        command.repeat,
+                        command.cycle // cycleはオプション、存在しない場合はundefined
+                    );
+                    break;
+                case "addTextLang": // 
+                    printer.addTextLang(command.lang);
+                    break;
+                case "addFeedUnit": // 
+                    printer.addFeedUnit(command.unit);
+                    break;
+                case "addText": // 
+                    // アラインメント設定
+                    if (command.align) { 
+                        printer.addTextAlign(printer[`ALIGN_${command.align.toUpperCase()}`]); // 
+                    } else {
+                        printer.addTextAlign(printer.ALIGN_LEFT); // デフォルト 
+                    }
+                    // 倍角設定
+                    if (command.dw !== undefined && command.dh !== undefined) {
+                       printer.addTextDouble(command.dw, command.dh); // 
+                    } else {
+                       printer.addTextDouble(false, false); // デフォルトに戻す 
+                    }
+                    // テキストサイズ設定
+                    if (command.width !== undefined && command.height !== undefined) {
+                        printer.addTextSize(command.width, command.height); // 
+                    } else {
+                        printer.addTextSize(1, 1); // デフォルトに戻す 
+                    }
+                    // テキストスタイル設定
+                    if (command.reverse !== undefined && command.ul !== undefined && command.em !== undefined && command.color) {
+                        printer.addTextStyle(command.reverse, command.ul, command.em, printer[command.color]); // 
+                    } else {
+                        printer.addTextStyle(false, false, false, printer.COLOR_1); // デフォルトスタイルに戻す 
+                    }
+                    printer.addText(command.content + '\n'); // 改行はJava側で含めていても良いし、JSで追加しても良い 
+                    break;
+                case "addTextAlign": // 
+                    printer.addTextAlign(printer[`ALIGN_${command.align.toUpperCase()}`]);
+                    break;
+                case "addTextDouble": // 
+                    printer.addTextDouble(command.dw, command.dh);
+                    break;
+                case "addTextSize": // 
+                    printer.addTextSize(command.width, command.height);
+                    break;
+                case "addTextStyle": // 
+                    printer.addTextStyle(command.reverse, command.ul, command.em, printer[command.color]);
+                    break;
+                case "addFeed": // 
+                    printer.addFeed();
+                    break;
+                case "addCut": // 
+                    printer.addCut(printer[`CUT_${command.type.toUpperCase()}`]);
+                    break;
+                case "addImage": // 
+                    // 画像のBase64データ処理は非同期なので、Promiseで完了を待つ
+                    await new Promise((resolve, reject) => {
+                        const img = new Image();
+                        img.onload = function() {
+                            const canvas = document.createElement('canvas');
+                            canvas.width = command.width;
+                            canvas.height = command.height;
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(img, 0, 0, command.width, command.height);
+
+                            printer.addImage(
+                                ctx,
+                                command.x,
+                                command.y,
+                                command.width,
+                                command.height,
+                                printer[command.color], // COLOR_1 など 
+                                printer['MODE_' + command.mode.toUpperCase()] // MODE_MONO など 
+                            );
+                            resolve(); // 描画完了を通知
+                        };
+                        img.onerror = function() {
+                            console.error("画像読み込みエラー:", command.base64Content.substring(0, 50) + '...');
+                            reject(new Error("Image load error"));
+                        };
+                        img.src = "data:image/png;base64," + command.base64Content;
+                    });
+                    break;
+                case "addTextFont": 
+                    printer.addTextFont(printer[command.font]);
+                    break;
+                // 必要に応じて他のAPI（addBarcode, addSymbolなど）も追加
+                default:
+                  console.warn("未対応のAPIコマンド:", command.api, command);
+            }
+        } catch (e) {
+            console.error(`コマンド実行中にエラーが発生しました: ${command.api}`, e);
+            updateStatus(`コマンド実行エラー: ${command.api}`);
+            // エラーが発生したら、それ以上コマンドを送らないようにする
+            break;
+        }
+    }
+    
+    let logOutput = commands.map(cmd => {
+    return `[${cmd.api}] ${JSON.stringify(cmd)}`;
+    }).join('\n');
+
+    console.log("=== 印刷コマンド変換ログ ===\n" + logOutput);
+    
+	console.log(printer);
+	console.log("印刷はコメントアウト中 224行")
+    //printer.send(); // 
+}
+
+// ここまで↑、Epson EPOS SDK関連の関数群をグローバルスコープに配置
+
+// グローバル変数と初期設定 (ここから下は既存のコード)
 // -----------------------------------------------------------------------------
 const cart = []; // カートの中身を保持する配列
 let taxRateMap = {}; // 税率IDと税率をマッピングするオブジェクト
 
 // 座席情報の表示
-// CookieからseatIdを取得、なければURLから取得することも想定
-//const seatId = getCookie("seatId"); 
-//document.getElementById("seatInfo").innerText = `${seatId}`; // 取得したseatIdを画面に表示
-
-
 let seatId = getCookie("seatId");
 if (!seatId || seatId === "null" || seatId === "undefined") {
-    // HTMLで定義されたグローバル変数 seatIdFromModel を使う
     seatId = window.seatIdFromModel;
 }
-
 document.getElementById("seatInfo").innerText = `${seatId}`;
 
 /**
@@ -649,7 +877,7 @@ window.addEventListener('DOMContentLoaded', () => {
             // 指定された座席のトピックを購読
            stompClient.subscribe(`/topic/seats/${seatId}`, function (message) {
                 const body = JSON.parse(message.body);
-                console.log("WebSocketメッセージ受信:", body);
+                console.log("WebSocketメッセージ受信 (seatsトピック):", body);
 
                 if (body.type === 'LEAVE') {
                     document.cookie = 'visitId=; Max-Age=0; path=/'; // visitIdを削除（セッション切れ用）
@@ -716,6 +944,50 @@ window.addEventListener('DOMContentLoaded', () => {
                 console.error('STOMP error:', error);
                 // エラー処理、再接続の試行など
             });
+            // ★★★ 新たに '/topic/printer/${seatId}' の購読を追加する ★★★
+        stompClient.subscribe(`/topic/printer/${seatId}`, function (message) { // <- ここを新たに追加
+            const payload = JSON.parse(message.body);
+            console.log("WebSocketメッセージ受信 (printerトピック):", payload); // ログで区別できるように変更
+
+            if (payload.type === 'PRINT_COMMANDS') {
+                const targetIp = payload.ip;
+                const commandsJson = payload.commands; // JSON文字列
+
+                console.log(`バックエンドから印刷コマンドを受信。IP: ${targetIp}`);
+                console.log("コマンド:", JSON.parse(commandsJson));
+
+                // プリンターが未接続、またはIPが異なる場合は再接続・切り替え
+                if (!printer || !ePosDev.isConnected || currentPrinterIp !== targetIp) {
+                    console.log(`プリンターを ${targetIp} に接続中...`);
+                    updateStatus(`プリンターを ${targetIp} に接続中...`);
+                    // 既存の接続を切断
+                    if (printer) {
+                        ePosDev.deleteDevice(printer, () => {
+                            ePosDev.disconnect();
+                            printer = null;
+                            connectAndExecute(targetIp, commandsJson);
+                        });
+                    } else {
+                        connectAndExecute(targetIp, commandsJson);
+                    }
+                } else {
+                    // 既に接続済みでIPも同じならそのまま実行
+                    console.log('既存プリンターにコマンド実行。');
+                    updateStatus('印刷コマンド実行中...');
+                    executeCommands(commandsJson);
+                }
+
+            } else if (payload.type === 'PRINT_ERROR') {
+                alert('印刷エラー: ' + payload.message);
+                console.error('印刷エラー:', payload.message);
+                updateStatus('エラー: ' + payload.message);
+            }
+            // ... (その他の printer トピックのメッセージタイプもここに追加) ...
+        }, function (error) { // printerトピックの購読エラーハンドラ
+            console.error('STOMP error for /topic/printer:', error);
+            updateStatus('WebSocket購読エラー (printer): ' + error);
+        });
+
         }
     });
 });
