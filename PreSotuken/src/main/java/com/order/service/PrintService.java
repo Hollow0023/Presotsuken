@@ -24,7 +24,9 @@ import com.order.entity.Menu;
 import com.order.entity.MenuPrinterMap;
 import com.order.entity.PaymentDetail;
 import com.order.entity.PaymentDetailOption;
+import com.order.entity.PrinterConfig;
 import com.order.entity.Seat;
+import com.order.entity.Store;
 import com.order.entity.User;
 import com.order.repository.MenuPrinterMapRepository;
 import com.order.repository.MenuRepository;
@@ -405,17 +407,51 @@ public class PrintService {
         xmlContent.append("  <feed/>\n");
 
         xmlContent.append("</epos-print>\n");
-
-        Menu firstMenu = detailsForReceipt.get(0).getMenu();
-        List<MenuPrinterMap> mappings = menuPrinterMapRepo.findByMenu_MenuId(firstMenu.getMenuId());
         
-        if (!mappings.isEmpty()) {
-            String ip = mappings.get(0).getPrinter().getPrinterIp();
-            sendToPrinter(ip, xmlContent.toString(), seatId);
-        } else {
-            System.err.println("小計伝票を印刷するプリンタが見つかりませんでした。");
-            notifyClientError(seatId, "小計伝票プリンタ設定なし。");
+        
+     // プリンターのIP取得ロジック
+        // storeIdを取得
+        Store store = seatRepo.findById(seatId)
+                        .map(Seat::getStore)
+                        .orElse(null);
+
+        if (store == null) {
+            System.err.println("SeatID: " + seatId + " に紐づく店舗情報が見つかりませんでした。");
+            notifyClientError(seatId, "店舗情報が見つかりません。");
+            return;
         }
+
+        // storeIdとreceipt_outputでプリンタを検索
+        // receipt_outputの値は、PrinterConfigエンティティのフィールドで設定されていると仮定
+        // 例: PrinterConfigに `outputType` フィールドがあり、"RECEIPT_OUTPUT"のような文字列で区別される
+        // または `isReceiptPrinter` のようなbooleanフィールドがある
+        List<PrinterConfig> receiptPrinters = printerConfigRepo.findByStoreIdAndReceiptOutput(store.getStoreId(), true); // 仮の"RECEIPT_OUTPUT"
+
+        if (receiptPrinters.isEmpty()) {
+            System.err.println("StoreId: " + store.getStoreId() + " のレシート出力用プリンタ設定が見つかりませんでした。");
+            notifyClientError(seatId, "レシートプリンタ設定なし。");
+            return;
+        }
+
+        // 見つかった全てのプリンタへ送信
+        for (PrinterConfig printer : receiptPrinters) {
+            String ip = printer.getPrinterIp(); // PrinterConfigエンティティにgetPrinterIp()がある仮定
+            sendToPrinter(ip, xmlContent.toString(), seatId);
+        }
+        
+        
+        
+//	//    多分不要
+//        Menu firstMenu = detailsForReceipt.get(0).getMenu();
+//        List<MenuPrinterMap> mappings = menuPrinterMapRepo.findByMenu_MenuId(firstMenu.getMenuId());
+//        
+//        if (!mappings.isEmpty()) {
+//            String ip = mappings.get(0).getPrinter().getPrinterIp();
+//            sendToPrinter(ip, xmlContent.toString(), seatId);
+//        } else {
+//            System.err.println("小計伝票を印刷するプリンタが見つかりませんでした。");
+//            notifyClientError(seatId, "小計伝票プリンタ設定なし。");
+//        }
     }
     
     

@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>端末管理</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; background-color: #f4f7f6; color: #333; }
+        h1 { color: #2c3e50; text-align: center; margin-bottom: 30px; }
+        .form-section { 
+            margin-bottom: 20px; 
+            padding: 20px; 
+            border: 1px solid #e0e0e0; 
+            border-radius: 8px; 
+            background-color: #ffffff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .form-section h2 { 
+            color: #34495e; 
+            margin-top: 0; 
+            margin-bottom: 15px; 
+            border-bottom: 2px solid #3498db; 
+            padding-bottom: 10px;
+        }
+        label { display: block; margin-bottom: 8px; font-weight: bold; color: #555; }
+        input[type="text"], input[type="number"], select {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        input[type="text"]#ipAddressPrefix {
+            width: 80px;
+            margin-left: 10px;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+        button:hover { background-color: #2980b9; }
+        .action-buttons button { margin-right: 5px; } /* 編集・削除ボタンの間隔 */
+        .delete-btn { background-color: #e74c3c; }
+        .delete-btn:hover { background-color: #c0392b; }
+        .edit-btn { background-color: #f39c12; }
+        .edit-btn:hover { background-color: #e67e22; }
+
+
+        /* トーストメッセージのスタイル */
+        #toast {
+            visibility: hidden;
+            min-width: 250px;
+            margin-left: -125px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 5px;
+            padding: 16px;
+            position: fixed;
+            z-index: 1000;
+            left: 50%;
+            bottom: 30px;
+            font-size: 1.1em;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out, background-color 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        #toast.error { background-color: #e74c3c; }
+        #toast.success { background-color: #2ecc71; }
+        #toast.info { background-color: #3498db; }
+
+        /* テーブルのスタイル */
+        #terminalListTable { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 20px; 
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        #terminalListTable th, #terminalListTable td {
+            border: 1px solid #e0e0e0;
+            padding: 12px;
+            text-align: left;
+        }
+        #terminalListTable th { 
+            background-color: #ecf0f1; 
+            color: #2c3e50;
+            font-weight: bold;
+        }
+        #terminalListTable tbody tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        #terminalListTable tbody tr:hover {
+            background-color: #f2f2f2;
+        }
+
+        /* モーダル */
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1001; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%; /* Could be responsive */
+            max-width: 500px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            position: relative;
+        }
+        .close-button {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .close-button:hover,
+        .close-button:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>端末管理</h1>
+	<a href="/">← トップに戻る</a>
+    <div class="form-section">
+        <h2>新しい端末を追加</h2>
+        <form id="addTerminalForm">
+            <div>
+                <label for="seatSelect">座席ID:</label>
+                <select id="seatSelect" required>
+                    <option value="">座席を選択してください</option>
+                </select>
+            </div>
+            <div>
+                <label for="ipAddressBase">IPアドレス:</label>
+                <input type="text" id="ipAddressBase" placeholder="例: 192.168.1.1" required>
+            </div>
+            <button type="submit">端末追加</button>
+        </form>
+    </div>
+
+    <div class="form-section">
+        <h2>既存端末リスト</h2>
+        <table id="terminalListTable">
+            <thead>
+                <tr>
+                    <th>Terminal ID</th>
+                    <th>Seat ID</th>
+                    <th>Store ID</th>
+                    <th>IP Address</th>
+                    <th>操作</th> </tr>
+            </thead>
+            <tbody>
+                </tbody>
+        </table>
+    </div>
+
+    <div id="editTerminalModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h2>端末を編集</h2>
+            <form id="editTerminalForm">
+                <input type="hidden" id="editTerminalId">
+                <div>
+                    <label for="editSeatSelect">座席ID:</label>
+                    <select id="editSeatSelect" required>
+                        <option value="">座席を選択してください</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="editIpAddressBase">IPアドレス:</label>
+                    <input type="text" id="editIpAddressBase" placeholder="例: 192.168.1.1" required>
+                </div>
+                <button type="submit">更新</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="toast"></div>
+
+    <script>
+        // グローバル変数と初期設定
+        // -----------------------------------------------------------------------------
+        const seatId = getCookie("seatId"); 
+
+        // ヘルパー関数
+        // -----------------------------------------------------------------------------
+        function getCookie(name) {
+            // Cookie文字列全体を取得
+            const cookies = document.cookie.split(';'); // ; で分割して個々のCookieに
+            for (let i = 0; i < cookies.length; i++) {
+                let cookie = cookies[i].trim(); // 前後の空白を削除
+                // Cookieが'name='で始まるか確認
+                if (cookie.startsWith(name + '=')) {
+                    // 'name=' の部分を除いた値を取得
+                    const value = cookie.substring(name.length + 1);
+                    return decodeURIComponent(value); // デコードして返す
+                }
+            }
+            return null; // 見つからなければnullを返す
+        }
+        function showToast(message, duration = 2000, type = 'success') {
+            const toast = document.getElementById("toast");
+            if (!toast) { console.error("Toast element not found."); alert(message); return; }
+            toast.textContent = message;
+            toast.className = '';
+            toast.classList.add(type);
+            toast.style.display = "block";
+            toast.style.opacity = "1";
+            setTimeout(() => {
+                toast.style.opacity = "0";
+                setTimeout(() => { toast.style.display = "none"; }, 500);
+            }, duration);
+        }
+
+
+        // データフェッチとDOM更新
+        // -----------------------------------------------------------------------------
+
+        /**
+         * 座席のプルダウンをバックエンドから取得して設定する関数
+         * @param {string} [selectedValue] - 初期選択したい座席ID
+         */
+        async function fetchSeatsForDropdown(selectedValue = '') {
+            const seatSelect = document.getElementById('seatSelect');
+            const editSeatSelect = document.getElementById('editSeatSelect'); // 編集モーダル用
+            const storeId = getCookie('storeId');
+
+            if (!storeId) { showToast('店舗IDが取得できませんでした。', 3000, 'error'); return; }
+
+            try {
+                const response = await fetch(`/admin/terminals/seats`, { headers: { 'Cookie': `storeId=${storeId}` } });
+                if (!response.ok) { throw new Error(`HTTP error! status: ${response.status}`); }
+                const seats = await response.json();
+                
+                // 新規追加フォームのプルダウン
+                seatSelect.innerHTML = '<option value="">座席を選択してください</option>';
+                seats.forEach(seat => {
+                    const option = document.createElement('option');
+                    option.value = seat.seatId;
+                    option.textContent = seat.seatName;
+                    seatSelect.appendChild(option);
+                });
+
+                // 編集モーダル用のプルダウン (クローンして内容を同期)
+                editSeatSelect.innerHTML = seatSelect.innerHTML; 
+                // 初期選択値があれば設定
+                if (selectedValue) {
+                    seatSelect.value = selectedValue;
+                    editSeatSelect.value = selectedValue;
+                }
+
+            } catch (error) {
+                console.error('座席の取得に失敗しました:', error);
+                showToast('座席の読み込みに失敗しました。', 3000, 'error');
+            }
+        }
+
+        /**
+         * 既存の端末リストをバックエンドから取得して表示する関数
+         */
+        async function fetchTerminals() {
+            const terminalListTbody = document.querySelector('#terminalListTable tbody');
+            terminalListTbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">読み込み中...</td></tr>'; // 列数を5に修正
+            const storeId = getCookie('storeId');
+
+            if (!storeId) { terminalListTbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">店舗IDが取得できませんでした。</td></tr>'; return; }
+
+            try {
+                const response = await fetch(`/admin/terminals/list`, { headers: { 'Cookie': `storeId=${storeId}` } });
+                if (!response.ok) { throw new Error(`HTTP error! status: ${response.status}`); }
+                const terminals = await response.json();
+
+                terminalListTbody.innerHTML = '';
+                if (terminals.length === 0) {
+                    terminalListTbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">登録されている端末はありません。</td></tr>';
+                } else {
+                    terminals.forEach(terminal => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${terminal.terminalId}</td>
+                            <td>${terminal.seat ? terminal.seat.seatId : 'N/A'}</td>
+                            <td>${terminal.store ? terminal.store.storeId : 'N/A'}</td>
+                            <td>${terminal.ipAddress}</td>
+                            <td class="action-buttons">
+                                <button class="edit-btn" data-terminal-id="${terminal.terminalId}">編集</button>
+                                <button class="delete-btn" data-terminal-id="${terminal.terminalId}">削除</button>
+                            </td>
+                        `;
+                        terminalListTbody.appendChild(row);
+                    });
+                    // ボタンにイベントリスナーを設定
+                    setupActionButtons();
+                }
+            } catch (error) {
+                console.error('端末リストの取得に失敗しました:', error);
+                terminalListTbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">端末リストの読み込みに失敗しました。</td></tr>';
+                showToast('端末リストの読み込みに失敗しました。', 3000, 'error');
+            }
+        }
+
+        /**
+         * 編集・削除ボタンにイベントリスナーを設定する関数
+         */
+        function setupActionButtons() {
+            document.querySelectorAll('.edit-btn').forEach(button => {
+                button.addEventListener('click', (e) => openEditModal(e.target.dataset.terminalId));
+            });
+            document.querySelectorAll('.delete-btn').forEach(button => {
+                button.addEventListener('click', (e) => deleteTerminal(e.target.dataset.terminalId));
+            });
+        }
+
+
+        // 端末追加・編集・削除処理
+        // -----------------------------------------------------------------------------
+
+        /**
+         * 端末追加フォームの送信処理
+         */
+         document.addEventListener('DOMContentLoaded', () => {
+             // IPアドレスのプレフィックスのデフォルト値を設定
+             const ipAddressPrefixInput = document.getElementById('ipAddressPrefix');
+             if (ipAddressPrefixInput) {
+                 if (!ipAddressPrefixInput.value) { // 既に値がなければ
+                     ipAddressPrefixInput.value = '/24';
+                 }
+             }
+
+             // ★★★ ページロード時にデータ取得関数を呼び出す ★★★
+             fetchSeatsForDropdown(); // 座席プルダウンをロード
+             fetchTerminals();      // 既存端末リストをロード
+
+             // 端末追加フォームの送信イベントリスナーを設定
+             document.getElementById('addTerminalForm').addEventListener('submit', async (e) => {
+                 e.preventDefault(); // フォームのデフォルト送信を防止
+
+                 const seatSelect = document.getElementById('seatSelect');
+                 const ipAddressBaseInput = document.getElementById('ipAddressBase');
+                 const ipAddressPrefixInput = document.getElementById('ipAddressPrefix');
+
+                 const seatId = seatSelect.value;
+                 const ipAddressBase = ipAddressBaseInput.value;
+                 const ipAddressPrefix = ipAddressPrefixInput.value;
+
+                 if (!seatId || !ipAddressBase) {
+                     showToast('全ての必須項目を入力してください。', 3000, 'error');
+                     return;
+                 }
+
+                 const data = {
+                     seatId: parseInt(seatId), // 座席IDを数値に変換して送信
+                     ipAddress: ipAddressBase  // 文字列
+                 };
+
+                 try {
+                     const response = await fetch('/admin/terminals', {
+                         method: 'POST',
+                         headers: {
+                             'Content-Type': 'application/json',
+                             'Cookie': `storeId=${getCookie('storeId')}` // Cookieを明示的に渡す
+                         },
+                         body: JSON.stringify(data)
+                     });
+
+                     const responseBody = await response.json(); // レスポンスボディをJSONとしてパース
+
+                     if (response.ok) {
+                         showToast(responseBody.message || '端末が追加されました。', 3000, 'success');
+                         document.getElementById('addTerminalForm').reset(); // フォームをリセット
+                         fetchTerminals(); // 端末リストを再読み込み
+                     } else {
+                         showToast(responseBody.message || '端末の追加に失敗しました。', 3000, 'error');
+                     }
+                 } catch (error) {
+                     console.error('端末追加中にエラーが発生しました:', error);
+                     showToast('端末追加中にエラーが発生しました。ネットワーク接続を確認してください。', 3000, 'error');
+                 }
+             });
+
+             // モーダルの閉じるボタンと外側クリックのイベントリスナー設定
+             document.querySelector('#editTerminalModal .close-button').addEventListener('click', closeEditModal);
+             window.addEventListener('click', (event) => {
+                 const modal = document.getElementById('editTerminalModal');
+                 if (event.target == modal) {
+                     closeEditModal();
+                 }
+             });
+
+             // 端末編集フォームの送信イベントリスナー設定
+             document.getElementById('editTerminalForm').addEventListener('submit', async (e) => {
+                 e.preventDefault();
+
+                 const terminalId = document.getElementById('editTerminalId').value;
+                 const seatId = document.getElementById('editSeatSelect').value;
+                 const ipAddressBase = document.getElementById('editIpAddressBase').value;
+
+                 if (!seatId || !ipAddressBase) {
+                     showToast('全ての必須項目を入力してください。', 3000, 'error');
+                     return;
+                 }
+
+                 const data = {
+                     seatId: parseInt(seatId),
+                     ipAddress: ipAddressBase  // 文字列
+                 };
+
+                 try {
+                     const response = await fetch(`/admin/terminals/${terminalId}`, {
+                         method: 'PUT',
+                         headers: {
+                             'Content-Type': 'application/json',
+                             'Cookie': `storeId=${getCookie('storeId')}`
+                         },
+                         body: JSON.stringify(data)
+                     });
+
+                     const responseBody = await response.json();
+
+                     if (response.ok) {
+                         showToast(responseBody.message || '端末情報が更新されました。', 3000, 'success');
+                         closeEditModal();
+                         fetchTerminals();
+                     } else {
+                         showToast(responseBody.message || '端末情報の更新に失敗しました。', 3000, 'error');
+                     }
+                 } catch (error) {
+                     console.error('端末更新中にエラーが発生しました:', error);
+                     showToast('端末更新中にエラーが発生しました。ネットワーク接続を確認してください。', 3000, 'error');
+                 }
+             });
+         });
+
+        /**
+         * 編集モーダルを開く関数
+         * @param {number} terminalId - 編集対象の端末ID
+         */
+        async function openEditModal(terminalId) {
+            const modal = document.getElementById('editTerminalModal');
+            const editForm = document.getElementById('editTerminalForm');
+            const editTerminalIdInput = document.getElementById('editTerminalId');
+            const editSeatSelect = document.getElementById('editSeatSelect');
+            const editIpAddressBaseInput = document.getElementById('editIpAddressBase');
+
+            editTerminalIdInput.value = terminalId;
+
+            try {
+                // 編集対象の端末情報を取得
+                const response = await fetch(`/admin/terminals/list`, { // 全端末リストから検索
+                    headers: { 'Cookie': `storeId=${getCookie('storeId')}` }
+                });
+                if (!response.ok) throw new Error('Failed to fetch terminals for edit.');
+                const terminals = await response.json();
+                const terminalToEdit = terminals.find(t => t.terminalId == terminalId);
+
+                if (!terminalToEdit) {
+                    showToast('編集対象の端末が見つかりませんでした。', 3000, 'error');
+                    return;
+                }
+
+                // 座席プルダウンをロードし、現在の座席を選択状態にする
+                await fetchSeatsForDropdown(terminalToEdit.seat.seatId); // await追加
+
+                // IPアドレスを分割してセット
+                const ipParts = terminalToEdit.ipAddress.split('/');
+                editIpAddressBaseInput.value = ipParts[0] || '';
+
+                editSeatSelect.value = terminalToEdit.seat.seatId; // ロード後に選択状態に
+
+                modal.style.display = 'flex'; // Flexboxを使って中央寄せ
+            } catch (error) {
+                console.error('端末編集モーダルの表示に失敗しました:', error);
+                showToast('端末情報の取得に失敗しました。', 3000, 'error');
+            }
+        }
+
+        /**
+         * 編集モーダルを閉じる関数
+         */
+        function closeEditModal() {
+            document.getElementById('editTerminalModal').style.display = 'none';
+        }
+
+        // モーダルの閉じるボタンにイベントリスナーを設定
+        document.querySelector('#editTerminalModal .close-button').addEventListener('click', closeEditModal);
+        // モーダルの外側をクリックで閉じる (任意)
+        window.addEventListener('click', (event) => {
+            const modal = document.getElementById('editTerminalModal');
+            if (event.target == modal) {
+                closeEditModal();
+            }
+        });
+
+
+        /**
+         * 端末編集フォームの送信処理
+         */
+        document.getElementById('editTerminalForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const terminalId = document.getElementById('editTerminalId').value;
+            const seatId = document.getElementById('editSeatSelect').value;
+            const ipAddressBase = document.getElementById('editIpAddressBase').value;
+
+            if (!seatId || !ipAddressBase) {
+                showToast('全ての必須項目を入力してください。', 3000, 'error');
+                return;
+            }
+
+            const data = {
+                seatId: parseInt(seatId),
+                ipAddress: ipAddressBase  // 文字列
+            };
+
+            try {
+                const response = await fetch(`/admin/terminals/${terminalId}`, {
+                    method: 'PUT', // PUTメソッド
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Cookie': `storeId=${getCookie('storeId')}`
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const responseBody = await response.json();
+
+                if (response.ok) {
+                    showToast(responseBody.message || '端末情報が更新されました。', 3000, 'success');
+                    closeEditModal();
+                    fetchTerminals(); // リストを再読み込み
+                } else {
+                    showToast(responseBody.message || '端末情報の更新に失敗しました。', 3000, 'error');
+                }
+            } catch (error) {
+                console.error('端末更新中にエラーが発生しました:', error);
+                showToast('端末更新中にエラーが発生しました。ネットワーク接続を確認してください。', 3000, 'error');
+            }
+        });
+
+
+        /**
+         * 端末を削除する関数
+         * @param {number} terminalId - 削除対象の端末ID
+         */
+        async function deleteTerminal(terminalId) {
+            if (!confirm('本当にこの端末を削除しますか？')) {
+                return; // キャンセルされたら何もしない
+            }
+
+            try {
+                const response = await fetch(`/admin/terminals/${terminalId}`, {
+                    method: 'DELETE', // DELETEメソッド
+                    headers: {
+                        'Cookie': `storeId=${getCookie('storeId')}`
+                    }
+                });
+
+                const responseBody = await response.json();
+
+                if (response.ok) {
+                    showToast(responseBody.message || '端末が削除されました。', 3000, 'success');
+                    fetchTerminals(); // リストを再読み込み
+                } else {
+                    showToast(responseBody.message || '端末の削除に失敗しました。', 3000, 'error');
+                }
+            } catch (error) {
+                console.error('端末削除中にエラーが発生しました:', error);
+                showToast('端末削除中にエラーが発生しました。ネットワーク接続を確認してください。', 3000, 'error');
+            }
+        }
+
+    </script>
+</body>
+</html>

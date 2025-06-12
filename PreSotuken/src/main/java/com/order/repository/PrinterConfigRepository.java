@@ -8,5 +8,6 @@ import com.order.entity.PrinterConfig;
 
 public interface PrinterConfigRepository extends JpaRepository<PrinterConfig, Integer> {
     List<PrinterConfig> findByStoreId(Integer storeId);
-    List<PrinterConfig> findByReceiptOutputTrue();
+//    List<PrinterConfig> findByReceiptOutputTrue();
+    List<PrinterConfig> findByStoreIdAndReceiptOutput(Integer storeId, boolean isReceiptOutput);
 }
