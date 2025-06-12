@@ -215,6 +215,12 @@ public class OrderController {
 				}
 			}
 			printService.printLabelsForOrder(submitDetails, seatId);
+			
+			
+			
+			
+			
+			
 
 			// ★ここからが追加ロジック！飲み放題開始メニューの注文を検知
 			// menuエンティティのisPlanStarterがBoolean型なので、NullPointerExceptionを避けるためにequalsを使用
