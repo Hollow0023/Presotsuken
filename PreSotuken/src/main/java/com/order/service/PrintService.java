@@ -209,7 +209,8 @@ public class PrintService {
             commands.add(createTextAlignCommand("left")); // デフォルトに戻しておく
         }
         
-        commands.add(createCutCommand("reserve")); // 最後のカット
+        commands.add(createFeedUnitCommand(15));
+        commands.add(createCutCommand("feed")); // 最後はfeedカット
         commands.add(createFeedCommand()); // 最後の改行
 
         // WebSocketでフロントエンドにJSONコマンドを送信

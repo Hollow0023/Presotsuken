@@ -280,7 +280,7 @@ public class OrderController {
 
         // ★★★ ループの最後に小計伝票を印刷するメソッドを呼び出す ★★★
         // 今回注文された全てのPaymentDetailをまとめて渡す
-        printService.printReceiptForPayment(submitDetails, seatId); 
+//        printService.printReceiptForPayment(submitDetails, seatId); 
 
         return ResponseEntity.ok().build();
     }

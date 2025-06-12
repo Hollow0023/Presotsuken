@@ -228,7 +228,7 @@ async function executeCommands(commandsJson) {
     
 	console.log(printer);
 	console.log("印刷はコメントアウト中 224行")
-    //printer.send(); // 
+    printer.send(); // 
 }
 
 // ここまで↑、Epson EPOS SDK関連の関数群をグローバルスコープに配置
