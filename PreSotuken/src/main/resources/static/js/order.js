@@ -11,16 +11,6 @@ document.getElementById("seatInfo").innerText = `${seatId}`; // 取得したseat
 
 
 
-//以下印刷処理の実行
-
-
-
-
-
-
-
-//印刷処理ここまで
-
 /**
  * 指定された名前のCookieの値を取得する関数
  * @param {string} name - 取得したいCookieの名前
@@ -36,17 +26,34 @@ function getCookie(name) {
  * @param {string} message - 表示するメッセージ
  * @param {number} [duration=2000] - 表示時間 (ミリ秒)
  */
-function showToast(message, duration = 2000) {
+function showToast(message, duration = 2000, type = 'success') {
     const toast = document.getElementById("toast");
     toast.textContent = message;
-    toast.style.display = "block"; // 表示
-    toast.style.opacity = "1"; // フェードイン
+    
+    // スタイルをリセット
+    toast.style.backgroundColor = '';
+    toast.style.color = '';
+
+    // タイプに応じたスタイルを設定
+    if (type === 'error') {
+        toast.style.backgroundColor = '#dc3545'; // 赤色
+        toast.style.color = '#fff'; // 白文字
+    } else if (type === 'success') {
+        toast.style.backgroundColor = '#28a745'; // 緑色
+        toast.style.color = '#fff';
+    } else if (type === 'info') {
+        toast.style.backgroundColor = '#007bff'; // 青色
+        toast.style.color = '#fff';
+    }
+
+    toast.style.display = "block";
+    toast.style.opacity = "1";
 
     setTimeout(() => {
-        toast.style.opacity = "0"; // フェードアウト
+        toast.style.opacity = "0";
         setTimeout(() => {
-            toast.style.display = "none"; // 非表示
-        }, 500); // フェードアウト後に非表示
+            toast.style.display = "none";
+        }, 500);
     }, duration);
 }
 
@@ -432,9 +439,19 @@ function submitOrder() {
 //            const currentUrl = new URL(window.location.href);
 //            currentUrl.searchParams.set('toastMessage', '注文を確定しました');
 //            window.location.href = currentUrl.toString(); // クエリパラメータ付きでリロード
+            cart.length = 0; // カートの配列を空にする
+            updateMiniCart();
 			showToast("注文を確定しました", 3000);
         } else {
-            showToast('注文に失敗しました');
+			return res.json().then(errorBody => {
+                const errorMessage = errorBody.message || '不明なエラーが発生しました。';
+                // エラーメッセージとタイプをクエリパラメータにセットしてリロード
+                const currentUrl = new URL(window.location.href);
+                currentUrl.searchParams.set('toastMessage', errorMessage);
+                currentUrl.searchParams.set('toastType', 'error'); // エラータイプも渡す
+                window.location.href = currentUrl.toString(); // リロード
+            });
+//            showToast('注文に失敗しました');
         }
     }).catch(error => {
         console.error('注文送信中にエラーが発生しました:', error);
@@ -748,15 +765,18 @@ window.onload = () => {
     }
     // ページロード時にミニカートを初期化表示
     updateMiniCart();
-
+    
+    
     // ★URLパラメータにtoastMessageがあれば表示
     const urlParams = new URLSearchParams(window.location.search);
-    const successMessage = urlParams.get('toastMessage');
-    if (successMessage) {
-        showToast(successMessage, 3000); // 3秒間表示
-        // 表示後、クエリパラメータを削除してURLをクリーンにする (History APIを使用)
+    const message = urlParams.get('toastMessage');
+    const type = urlParams.get('toastType') || 'success'; // デフォルトはsuccess
+    if (message) {
+        showToast(message, 3000, type); // タイプを渡す
         window.history.replaceState({}, document.title, window.location.pathname);
     }
+
+
 
     // ★重要: ページロード時に現在の飲み放題状態に基づいてメニューグループの表示を調整
     // WebSocketからの通知だけでなく、初期表示でも正しい状態にする必要がある

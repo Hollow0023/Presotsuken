@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
@@ -162,13 +163,14 @@ public class OrderController {
 	// submitOrderメソッド (変更なし)
 
 	@PostMapping("/submit")
-	public ResponseEntity<Void> submitOrder(@RequestBody List<OrderItemDto> items,
+	public ResponseEntity<Map<String, String>> submitOrder(@RequestBody List<OrderItemDto> items,
             @CookieValue("visitId") Integer visitId,
             @CookieValue("storeId") Integer storeId,
             HttpServletRequest request) {
         User user = null;
         Payment payment = paymentRepository.findByVisitVisitId(visitId);
         List<PaymentDetail> submitDetails = new ArrayList<>(); // 今回の注文で追加されたPaymentDetailを収集
+        Map<String, String> responseBody = new HashMap<>();
         
         Integer userId = getCookieValueAsInteger(request,"userId");
 
@@ -188,6 +190,13 @@ public class OrderController {
                     .orElseThrow(() -> new RuntimeException("Menu not found with ID: " + item.getMenuId()));
             TaxRate taxRate = taxRateRepository.findById(item.getTaxRateId())
                     .orElseThrow(() -> new RuntimeException("TaxRate not found with ID: " + item.getTaxRateId()));
+            
+            if (Boolean.TRUE.equals(menu.getIsSoldOut())) {
+                System.err.println("品切れ商品が含まれています: " + menu.getMenuName());
+                responseBody.put("message", "品切れ商品「" + menu.getMenuName() + "」が含まれていました。再度注文をお願いします。");
+                return ResponseEntity.status(HttpStatus.CONFLICT) // 409 Conflict
+                                     .body(responseBody); // エラーメッセージをボディに含める
+            }
 
             PaymentDetail detail = new PaymentDetail();
             detail.setPayment(payment);
