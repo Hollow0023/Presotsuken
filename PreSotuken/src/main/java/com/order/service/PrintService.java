@@ -10,7 +10,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
@@ -110,49 +109,52 @@ public class PrintService {
 
     // 単品伝票印刷 (変更後)
     // このメソッドは、JSONコマンドを生成してWebSocketでフロントエンドに通知する
-    public void printLabelsForOrder(List<PaymentDetail> details, Integer seatId) {
+    public void printLabelsForOrder(PaymentDetail detail, Integer seatId) {
         String seatName = seatRepo.findById(seatId)
                 .map(Seat::getSeatName)
                 .orElse("不明な席");
+        
+        if (detail == null) {
+            notifyClientError(seatId, "印刷対象のPaymentDetailがnullです。");
+            return;
+        }
 
         String timeStr = LocalDateTime.now().format(DateTimeFormatter.ofPattern("MM/dd HH:mm"));
 
-        User user = details.stream()
-                .map(PaymentDetail::getUser)
-                .filter(Objects::nonNull)
-                .findFirst().orElse(null);
+        User user = detail.getUser();
         String username = (user != null) ? user.getUserName() : "卓上端末";
 
         // JSONコマンドを格納するArrayNode
         ArrayNode commands = objectMapper.createArrayNode();
+        commands.add(createSoundCommand("pattern_a", 1));
+        commands.add(createAddTextLangCommand("ja"));
+        commands.add(createAddTextFontCommand("FONT_A")); // フォントA
 
-        for (PaymentDetail detail : details) {
-            Menu menu = detail.getMenu();
-            if (menu == null) {
-                notifyClientError(seatId, "menu_id=" + detail.getMenu().getMenuId() + " のメニューが存在しません");
-                continue;
-            }
+        Menu menu = detail.getMenu();
+        if (menu == null) {
+            notifyClientError(seatId, "menu_id=" + detail.getMenu().getMenuId() + " のメニューが存在しません");
+        }
 
-            List<PaymentDetailOption> optionList = paymentDetailOptionRepo.findByPaymentDetail(detail);
-            String optionSuffix = optionList.isEmpty() ? "" :
-                    optionList.stream()
-                            .map(o -> o.getOptionItem().getItemName())
-                            .collect(Collectors.joining("・", "（", "）"));
+        List<PaymentDetailOption> optionList = paymentDetailOptionRepo.findByPaymentDetail(detail);
+        String optionSuffix = optionList.isEmpty() ? "" :
+                optionList.stream()
+                        .map(o -> o.getOptionItem().getItemName())
+                        .collect(Collectors.joining("・", "（", "）"));
 
-            String baseLabel = (menu.getReceiptLabel() != null && !menu.getReceiptLabel().isBlank())
-                    ? menu.getReceiptLabel()
-                    : menu.getMenuName();
+        String baseLabel = (menu.getReceiptLabel() != null && !menu.getReceiptLabel().isBlank())
+                ? menu.getReceiptLabel()
+                : menu.getMenuName();
 
-            String itemName = baseLabel + optionSuffix;
+        String itemName = baseLabel + optionSuffix;
 
-            Integer currentQuantity = detail.getQuantity();
-            int quantity = (currentQuantity != null) ? currentQuantity : 1;
+        Integer currentQuantity = detail.getQuantity();
+        int quantity = (currentQuantity != null) ? currentQuantity : 1;
 
-            // ★★★ JSONコマンド組み立て部分 ★★★
-            // 各印刷命令をObjectNodeとして作成し、commandsに追加する
+        // ★★★ JSONコマンド組み立て部分 ★★★
+        // 各印刷命令をObjectNodeとして作成し、commandsに追加する
 
-            // 初期化・リセット系は、印刷ジョブの最初に一度だけ発行する方が効率的
-            // ここでは各アイテムごとに発行するが、設計によって調整
+        // 初期化・リセット系は、印刷ジョブの最初に一度だけ発行する方が効率的
+        // ここでは各アイテムごとに発行するが、設計によって調整
 //            if (commands.isEmpty()) { // 最初のアイテムのときだけ実行
 //                 // ブザー
 //                ObjectNode soundCmd = objectMapper.createObjectNode();
@@ -184,57 +186,57 @@ public class PrintService {
 //                commands.add(textStyleResetCmd);
 //            }
 
-            // 個別のアイテム印刷コマンド
+        // 個別のアイテム印刷コマンド
 //            commands.add(createFeedUnitCommand(0)); // 少し空白
-            
-            //初期設定
-            commands.add(createSoundCommand("pattern_a", 1));
-            commands.add(createAddTextLangCommand("ja"));
-            commands.add(createAddTextFontCommand("FONT_A")); // フォントA
+        
+//            //初期設定
+//            commands.add(createSoundCommand("pattern_a", 1));
+//            commands.add(createAddTextLangCommand("ja"));
+//            commands.add(createAddTextFontCommand("FONT_A")); // フォントA
 //            commands.add(createTextAlignCommand("center"));
 //            commands.add(createFeedCommand());
 
-            // テーブル名
-            commands.add(createTextAlignCommand("left")); // デフォルトに戻す
-            commands.add(createTextCommand("テーブル: " + seatName));
+        // テーブル名
+        commands.add(createTextAlignCommand("left")); // デフォルトに戻す
+        commands.add(createTextCommand("テーブル: " + seatName));
 
-            // 注文者名
-            commands.add(createFeedUnitCommand(5));
-            commands.add(createTextCommand((username != null ? username : "不明") + "             " + timeStr));
-            System.out.println(timeStr);
+        // 注文者名
+        commands.add(createFeedUnitCommand(5));
+        commands.add(createTextCommand((username != null ? username : "不明") + "             " + timeStr));
+        System.out.println(timeStr);
 
-            // 日時 (右寄せ)
+        // 日時 (右寄せ)
 //            commands.add(createTextAlignCommand("right"));
 //            commands.add(createTextCommand("                "+timeStr));
-            commands.add(createFeedUnitCommand(8));
+        commands.add(createFeedUnitCommand(8));
 
-            // 注文商品 (倍角)
-            commands.add(createTextDoubleCommand(true, true)); // 倍角設定
-            commands.add(createTextAlignCommand("left")); // 左寄せに戻す
-            commands.add(createTextCommand(itemName));
+        // 注文商品 (倍角)
+        commands.add(createTextDoubleCommand(true, true)); // 倍角設定
+        commands.add(createTextAlignCommand("left")); // 左寄せに戻す
+        commands.add(createTextCommand(itemName));
 
-            // 点数 (右寄せ、倍角はそのまま)
-            commands.add(createTextAlignCommand("right"));
-            commands.add(createTextCommand("          "+quantity + "点"));
-            commands.add(createFeedUnitCommand(8));
+        // 点数 (右寄せ、倍角はそのまま)
+        commands.add(createTextAlignCommand("right"));
+        commands.add(createTextCommand("          "+quantity + "点"));
+        commands.add(createFeedUnitCommand(8));
 
-            // 倍角とアラインメントをリセット (次のアイテムのために)
-            commands.add(createTextDoubleCommand(false, false));
-            commands.add(createTextAlignCommand("left")); // デフォルトに戻しておく
-            
+        // 倍角とアラインメントをリセット (次のアイテムのために)
+        commands.add(createTextDoubleCommand(false, false));
+        commands.add(createTextAlignCommand("left")); // デフォルトに戻しておく
+        
 //          commands.add(createFeedUnitCommand(15));
-            commands.add(createCutCommand("feed")); // 最後はfeedカット
+        commands.add(createCutCommand("feed")); // 最後はfeedカット
 //            commands.add(createFeedCommand()); // 最後の改行
-            MenuPrinterMap printerMap = menuPrinterMapRepository.findFirstByMenu_MenuIdOrderByPrinter_PrinterIdAsc(detail.getMenu().getMenuId());
-            String printerIp = printerMap.getPrinter().getPrinterIp();
-            sendPrintCommandsToFrontend(printerIp, seatId, commands.toString());
+        MenuPrinterMap printerMap = menuPrinterMapRepository.findFirstByMenu_MenuIdOrderByPrinter_PrinterIdAsc(detail.getMenu().getMenuId());
+        String printerIp = printerMap.getPrinter().getPrinterIp();
+        sendPrintCommandsToFrontend(printerIp, seatId, commands.toString());
 
-        }
-        
-        
+    }
+    
+    
 
 //        return commands;
-    }
+    
     
     // 小計伝票印刷メソッド (printReceiptForPayment) も同様にJSONを組み立てる
     public void printReceiptForPayment(

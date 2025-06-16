@@ -24,7 +24,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.order.dto.MenuWithOptionsDTO;
 import com.order.dto.OrderHistoryDto;
 import com.order.entity.Menu;
@@ -179,7 +178,6 @@ public class OrderController {
         Payment payment = paymentRepository.findByVisitVisitId(visitId);
         List<PaymentDetail> submitDetails = new ArrayList<>(); // 今回の注文で追加されたPaymentDetailを収集
         Map<String, String> responseBody = new HashMap<>();
-        ArrayNode commands = null;
         
         Integer userId = getCookieValueAsInteger(request,"userId");
 
@@ -235,7 +233,7 @@ public class OrderController {
             
             // ★★★ 単品伝票の印刷（savedDetailのみをリストにして渡すように変更）★★★
             // これで、各商品が1枚の単品伝票として印刷される
-            printService.printLabelsForOrder(List.of(savedDetail), seatId);
+            printService.printLabelsForOrder(savedDetail, seatId);
 
             // ★ここからが追加ロジック！飲み放題開始メニューの注文を検知
             // menuエンティティのisPlanStarterがBoolean型なので、NullPointerExceptionを避けるためにequalsを使用
@@ -275,7 +273,6 @@ public class OrderController {
 
         // ★★★ ループの最後に小計伝票を構築するメソッドを呼び出す ★★★
         printService.printReceiptForPayment(submitDetails, seatId, storeId); 
-        System.out.println("全てのコマンド"+commands);
         return ResponseEntity.ok().build();
     }
 // @PostMapping("/submit")
