@@ -36,7 +36,7 @@ public class MenuForm {
     // オプション選択用（IDリスト）
     private List<Integer> optionGroupIds;
     // プリンター選択用（IDリスト）
-    private List<Integer> printerIds;
+    private Integer printerId;
 
     // 飲み放題関連のフィールド
     private Boolean isPlanStarter;

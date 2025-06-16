@@ -138,8 +138,10 @@ async function showMenuDetails(menuId) {
         setDynamicSelects(optionSelectsContainer, optionSelectTemplate, window.allOptionGroups, 'optionGroupIds', fetchedOptionIds.map(String));
 
         // プリンター選択のセット (MenuFormから直接 printerIds を取得)
-        const fetchedPrinterIds = menu.printerIds || [];
-        setDynamicSelects(printerSelectsContainer, printerSelectTemplate, window.allPrinters, 'printerIds', fetchedPrinterIds.map(String));
+		const printerId = menu.printerId || '';
+		clearDynamicSelects(printerSelectsContainer, printerSelectTemplate);
+		addDynamicSelect(printerSelectsContainer, printerSelectTemplate, window.allPrinters, 'printerIds', String(printerId));
+
 
         // ★★★飲み放題関連のフィールドをセット★★★
         isPlanStarterInput.checked = menu.isPlanStarter || false;
@@ -423,7 +425,7 @@ addNewMenuBtn.addEventListener('click', resetForm);
 addOptionSelectBtn.addEventListener('click', () => addDynamicSelect(optionSelectsContainer, optionSelectTemplate, window.allOptionGroups, 'optionGroupIds', ''));
 
 // プリンター追加ボタンクリックイベント
-addPrinterSelectBtn.addEventListener('click', () => addDynamicSelect(printerSelectsContainer, printerSelectTemplate, window.allPrinters, 'printerIds', ''));
+//addPrinterSelectBtn.addEventListener('click', () => addDynamicSelect(printerSelectsContainer, printerSelectTemplate, window.allPrinters, 'printerIds', ''));
 
 
 // ★★★ フォームのSUBMITイベントをAjaxに切り替える ★★★
@@ -462,13 +464,13 @@ menuForm.addEventListener('submit', async (event) => {
     });
 
     // プリンター選択の値を正しく FormData に追加
-    const printerSelects = printerSelectsContainer.querySelectorAll('select[name="printerIds"]');
-    formData.delete('printerIds'); // 既存の formData の printerIds を削除
-    printerSelects.forEach(select => {
-        if (select.value) { // 選択されている値のみ
-            formData.append('printerIds', select.value);
-        }
-    });
+// submit時の処理を「1個だけ」に限定
+	const printerSelect = printerSelectsContainer.querySelector('select[name="printerIds"]');
+	formData.delete('printerId');
+	if (printerSelect && printerSelect.value) {
+	    formData.append('printerId', printerSelect.value); // ← 1件だけ送る
+	}
+
     
     // 画像ファイルの扱い:
     if (!imageFileInput.files.length) {

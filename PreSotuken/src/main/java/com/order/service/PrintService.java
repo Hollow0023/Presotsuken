@@ -16,14 +16,15 @@ import java.util.stream.Collectors;
 
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.CookieValue;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.order.entity.Menu;
+import com.order.entity.MenuPrinterMap;
 import com.order.entity.PaymentDetail;
 import com.order.entity.PaymentDetailOption;
+import com.order.entity.PrinterConfig;
 import com.order.entity.Seat;
 import com.order.entity.User;
 // 必要なリポジトリのインポート
@@ -48,6 +49,8 @@ public class PrintService {
     private final PaymentDetailOptionRepository paymentDetailOptionRepo;
     private final SimpMessagingTemplate messagingTemplate;
     private final LogoService logoService;
+    private final MenuPrinterMapRepository menuPrinterMapRepository;
+    private final PrinterConfigRepository printerConfigRepository;
 
     private final ObjectMapper objectMapper = new ObjectMapper(); // JSON生成用
 
@@ -107,7 +110,7 @@ public class PrintService {
 
     // 単品伝票印刷 (変更後)
     // このメソッドは、JSONコマンドを生成してWebSocketでフロントエンドに通知する
-    public ArrayNode printLabelsForOrder(List<PaymentDetail> details, Integer seatId) {
+    public void printLabelsForOrder(List<PaymentDetail> details, Integer seatId) {
         String seatName = seatRepo.findById(seatId)
                 .map(Seat::getSeatName)
                 .orElse("不明な席");
@@ -218,22 +221,26 @@ public class PrintService {
             // 倍角とアラインメントをリセット (次のアイテムのために)
             commands.add(createTextDoubleCommand(false, false));
             commands.add(createTextAlignCommand("left")); // デフォルトに戻しておく
+            
+//          commands.add(createFeedUnitCommand(15));
+            commands.add(createCutCommand("feed")); // 最後はfeedカット
+//            commands.add(createFeedCommand()); // 最後の改行
+            MenuPrinterMap printerMap = menuPrinterMapRepository.findFirstByMenu_MenuIdOrderByPrinter_PrinterIdAsc(detail.getMenu().getMenuId());
+            String printerIp = printerMap.getPrinter().getPrinterIp();
+            sendPrintCommandsToFrontend(printerIp, seatId, commands.toString());
+
         }
         
-//        commands.add(createFeedUnitCommand(15));
-        commands.add(createCutCommand("feed")); // 最後はfeedカット
-//        commands.add(createFeedCommand()); // 最後の改行
+        
 
-        // WebSocketでフロントエンドにJSONコマンドを送信
-//        sendPrintCommandsToFrontend(seatId, commands.toString());
-        return commands;
+//        return commands;
     }
     
     // 小計伝票印刷メソッド (printReceiptForPayment) も同様にJSONを組み立てる
-    public ArrayNode printReceiptForPayment(
+    public void printReceiptForPayment(
     		List<PaymentDetail> detailsForReceipt, 
     		Integer seatId,
-    		@CookieValue(name = "storeId", required = false) Long storeId) {
+    		Integer storeId) {
 //        if (detailsForReceipt == null || detailsForReceipt.isEmpty()) {
 //            System.out.println("印刷するPaymentDetailがありません。小計伝票の生成をスキップします。");
 //            
@@ -274,7 +281,7 @@ public class PrintService {
         User user = detailsForReceipt.get(0).getUser();
         String username = (user != null) ? user.getUserName() : "卓上端末";
 
-        String logoImageBase64 = logoService.getLogoBase64Data(storeId);
+        String logoImageBase64 = logoService.getLogoBase64Data((long)storeId);
 
         // JSONコマンドを格納するArrayNode
         ArrayNode commands = objectMapper.createArrayNode();
@@ -380,20 +387,21 @@ public class PrintService {
 //        commands.add(createFeedUnitCommand(15));
         commands.add(createCutCommand("feed")); // 最後はfeedカット
 //        commands.add(createFeedCommand()); // 最後の改行
-
+        PrinterConfig printer = printerConfigRepository.findByStoreIdAndReceiptOutput(storeId,true);
+        String printerIp = printer.getPrinterIp();
         // フロントエンドに送信
-//        sendPrintCommandsToFrontend(seatId, commands.toString());
-        return commands;
+        sendPrintCommandsToFrontend(printerIp, seatId,commands.toString());
+//        return commands;
     }
 
     // JSONコマンドをフロントエンドに送信するヘルパーメソッド
-    public void sendPrintCommandsToFrontend(Integer seatId, String jsonCommands) {
+    public void sendPrintCommandsToFrontend(String printerIp, Integer seatId, String jsonCommands) {
         // 通常、プリンターのIPアドレスはフロントエンドが管理・保持し、
         // 印刷命令の実行時に使用する。
         // ここでは便宜的に、特定のプリンターIPをメッセージに含めるように変更
         // 実際には、複数のプリンターが存在する場合、どのプリンターに送るかの情報も必要になる
         // (例: プリンターの種類 'receipt_printer', 'kitchen_printer' など)
-        String targetPrinterIp = "192.168.11.101"; // サンプルコードのIPアドレスを仮に使う
+        String targetPrinterIp = printerIp; // サンプルコードのIPアドレスを仮に使う
 
         Map<String, String> payload = new HashMap<>();
         payload.put("type", "PRINT_COMMANDS");

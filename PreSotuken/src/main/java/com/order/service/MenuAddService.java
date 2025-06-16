@@ -92,10 +92,12 @@ public class MenuAddService {
                         .collect(Collectors.toList());
                     form.setOptionGroupIds(optionGroupIds);
 
-                    List<Integer> printerIds = menuPrinterMapRepository.findByMenu_MenuId(menuId).stream()
-                        .map(mpm -> mpm.getPrinter().getPrinterId())
-                        .collect(Collectors.toList());
-                    form.setPrinterIds(printerIds);
+                    MenuPrinterMap printerMap = menuPrinterMapRepository.findFirstByMenu_MenuIdOrderByPrinter_PrinterIdAsc(menuId);
+                    if (printerMap != null && printerMap.getPrinter() != null) {
+                        form.setPrinterId(printerMap.getPrinter().getPrinterId());
+                    }
+
+
 
                     return form;
                 });
@@ -208,16 +210,18 @@ public class MenuAddService {
             .collect(Collectors.toList());
     }
 
-    public List<Integer> getMenuPrinterIdsByMenuId(Integer menuId) {
-        return menuPrinterMapRepository.findByMenu_MenuId(menuId).stream()
-            .map(mpm -> mpm.getPrinter().getPrinterId())
-            .collect(Collectors.toList());
+    public Integer getMenuPrinterIdByMenuId(Integer menuId) {
+        MenuPrinterMap map = menuPrinterMapRepository.findFirstByMenu_MenuIdOrderByPrinter_PrinterIdAsc(menuId);
+        if (map != null && map.getPrinter() != null) {
+            return map.getPrinter().getPrinterId();
+        }
+        return null;
     }
 
 
     @Transactional
     public Menu addNewMenu(Menu menu, MultipartFile imageFile, String existingMenuImage,
-                            List<Integer> optionGroupIds, List<Integer> printerIds, Integer storeId) throws IOException {
+                            List<Integer> optionGroupIds, Integer printerId, Integer storeId) throws IOException {
 
         Optional<Store> optionalStore = storeRepository.findById(storeId);
         if (optionalStore.isEmpty()) {
@@ -246,25 +250,14 @@ public class MenuAddService {
         Menu savedMenu = menuRepository.save(menu);
         
         menuPrinterMapRepository.deleteByMenu_MenuId(savedMenu.getMenuId()); 
-        if (printerIds != null && !printerIds.isEmpty()) {
-            List<MenuPrinterMap> mapsToSave = printerIds.stream()
-                .map(printerId -> {
-                    if (printerId == null) return null;
-                    Optional<PrinterConfig> printerOptional = printerConfigRepository.findById(printerId);
-                    if (printerOptional.isPresent()) {
-                        return new MenuPrinterMap(savedMenu, printerOptional.get());
-                    } else {
-                        System.err.println("Warning: Printer with ID " + printerId + " not found for menu " + savedMenu.getMenuId());
-                        return null;
-                    }
-                })
-                .filter(map -> map != null)
-                .collect(Collectors.toList());
-            
-            if (!mapsToSave.isEmpty()) {
-                menuPrinterMapRepository.saveAll(mapsToSave);
-            }
+        if (printerId != null) {
+            Optional<PrinterConfig> printerOptional = printerConfigRepository.findById(printerId);
+            printerOptional.ifPresent(printer -> {
+                menuPrinterMapRepository.save(new MenuPrinterMap(savedMenu, printer));
+            });
         }
+
+
         
         menuOptionRepository.deleteByMenu_MenuId(savedMenu.getMenuId()); 
         if (optionGroupIds != null) {
@@ -283,7 +276,7 @@ public class MenuAddService {
 
     @Transactional
     public Menu updateExistingMenu(Menu menu, MultipartFile imageFile, String existingMenuImage,
-                                    List<Integer> optionGroupIds, List<Integer> printerIds, Integer storeId) throws IOException {
+                                    List<Integer> optionGroupIds, Integer printerId, Integer storeId) throws IOException {
 
         if (menu.getMenuId() == null) {
             throw new IllegalArgumentException("更新対象のメニューIDが指定されていません。");
@@ -332,26 +325,15 @@ public class MenuAddService {
 
         Menu updatedMenu = menuRepository.save(existingMenu);
         
-        menuPrinterMapRepository.deleteByMenu_MenuId(updatedMenu.getMenuId()); 
-        if (printerIds != null && !printerIds.isEmpty()) {
-            List<MenuPrinterMap> mapsToSave = printerIds.stream()
-                .map(printerId -> {
-                    if (printerId == null) return null;
-                    Optional<PrinterConfig> printerOptional = printerConfigRepository.findById(printerId);
-                    if (printerOptional.isPresent()) {
-                        return new MenuPrinterMap(updatedMenu, printerOptional.get());
-                    } else {
-                        System.err.println("Warning: Printer with ID " + printerId + " not found for menu " + updatedMenu.getMenuId());
-                        return null;
-                    }
-                })
-                .filter(map -> map != null)
-                .collect(Collectors.toList());
-            
-            if (!mapsToSave.isEmpty()) {
-                menuPrinterMapRepository.saveAll(mapsToSave);
-            }
+        menuPrinterMapRepository.deleteByMenu_MenuId(updatedMenu.getMenuId());
+        if (printerId != null) {
+            Optional<PrinterConfig> printerOptional = printerConfigRepository.findById(printerId);
+            printerOptional.ifPresent(printer -> {
+                menuPrinterMapRepository.save(new MenuPrinterMap(updatedMenu, printer));
+            });
         }
+
+
         
         menuOptionRepository.deleteByMenu_MenuId(updatedMenu.getMenuId()); 
         if (optionGroupIds != null) {

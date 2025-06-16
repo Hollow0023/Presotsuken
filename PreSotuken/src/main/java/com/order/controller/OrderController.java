@@ -235,12 +235,8 @@ public class OrderController {
             
             // ★★★ 単品伝票の印刷（savedDetailのみをリストにして渡すように変更）★★★
             // これで、各商品が1枚の単品伝票として印刷される
-            if(commands == null){
-            	commands = printService.printLabelsForOrder(List.of(savedDetail), seatId);
-            }else {
-                commands.add(printService.printLabelsForOrder(List.of(savedDetail), seatId)); 
-            }
-            
+            printService.printLabelsForOrder(List.of(savedDetail), seatId);
+
             // ★ここからが追加ロジック！飲み放題開始メニューの注文を検知
             // menuエンティティのisPlanStarterがBoolean型なので、NullPointerExceptionを避けるためにequalsを使用
             if (Boolean.TRUE.equals(menu.getIsPlanStarter())) {
@@ -278,13 +274,8 @@ public class OrderController {
         }
 
         // ★★★ ループの最後に小計伝票を構築するメソッドを呼び出す ★★★
-        commands.add(printService.printReceiptForPayment(submitDetails, seatId)); 
+        printService.printReceiptForPayment(submitDetails, seatId, storeId); 
         System.out.println("全てのコマンド"+commands);
-        
-        // 今回注文された全ての伝票を印刷する
-//        	System.out.println("印刷機能コメントアウト中 287行付近 ordercontroller");
-        printService.sendPrintCommandsToFrontend(seatId, commands.toString());
-
         return ResponseEntity.ok().build();
     }
 // @PostMapping("/submit")

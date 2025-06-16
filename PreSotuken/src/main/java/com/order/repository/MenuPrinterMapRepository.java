@@ -13,6 +13,8 @@ public interface MenuPrinterMapRepository extends JpaRepository<MenuPrinterMap, 
     List<MenuPrinterMap> findByPrinter(PrinterConfig printer);
     
     void deleteByMenu_MenuId(Integer menuId);
-    List<MenuPrinterMap> findByMenu_MenuId(Integer menuId);
+//    List<MenuPrinterMap> findByMenu_MenuId(Integer menuId);
+    MenuPrinterMap findFirstByMenu_MenuIdOrderByPrinter_PrinterIdAsc(Integer menuId);
+
     
 }

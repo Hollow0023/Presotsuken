@@ -155,7 +155,7 @@ public class MenuController {
                                                         @RequestParam("imageFile") MultipartFile imageFile,
                                                         @RequestParam(value = "optionGroupIds", required = false) List<Integer> optionGroupIds,
                                                         HttpServletRequest request,
-                                                        @RequestParam(value = "printerIds", required = false) List<Integer> printerIds,
+                                                        @RequestParam(value = "printerId", required = false) Integer printerId,
                                                         @RequestParam(value = "currentMenuImage", required = false) String currentMenuImage) {
 
         Integer storeId = null;
@@ -203,11 +203,11 @@ public class MenuController {
             menu.setPlanId(menuForm.getPlanId());
 
             if (menu.getMenuId() == null) {
-                menuAddService.addNewMenu(menu, imageFile, menuImageToSave, optionGroupIds, printerIds, storeId);
+                menuAddService.addNewMenu(menu, imageFile, menuImageToSave, optionGroupIds, printerId, storeId);
                 response.put("status", "success");
                 response.put("message", "メニューを追加しました！");
             } else {
-                menuAddService.updateExistingMenu(menu, imageFile, menuImageToSave, optionGroupIds, printerIds, storeId);
+                menuAddService.updateExistingMenu(menu, imageFile, menuImageToSave, optionGroupIds, printerId, storeId);
                 response.put("status", "success");
                 response.put("message", "メニューを更新しました！");
             }
