@@ -63,7 +63,7 @@
     }
     .up-down-buttons button { background-color: #6c757d; }
     .up-down-buttons button:hover { background-color: #5a6268; }
-    .edit-input { width: 180px; padding: 8px; border: 1px solid #007bff; border-radius: 4px; }
+    input.edit-input { width: 240px; padding: 8px; border: 1px solid #007bff; border-radius: 4px; }
     .cancel-button { background-color: #dc3545; }
     .cancel-button:hover { background-color: #c82333; }
     .save-button { background-color: #28a745; }
@@ -94,6 +94,20 @@
     <p id="noGroupsMessage" style="display: none;">メニューグループはまだありません。</p>
   </div>
 </div>
+<div id="toast" style="
+    display: none;
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #333;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    z-index: 1000;
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out;
+"></div>
 
 <script>
   // DOM要素を取得
@@ -120,6 +134,12 @@
       }
       currentGroups = await response.json(); // 取得したグループデータを保存
       
+      let maxSortOrder = 0;
+      if (currentGroups.length > 0) {
+          // currentGroupsの中で最も大きいsortOrderを探す
+          maxSortOrder = Math.max(...currentGroups.map(group => group.sortOrder));
+      }
+      
       menuGroupList.innerHTML = ''; // 一旦リストをクリア
 
       if (currentGroups.length === 0) {
@@ -127,7 +147,7 @@
       } else {
         noGroupsMessage.style.display = 'none';
         currentGroups.forEach(group => {
-          appendGroupItem(group); // 各グループをリストに追加
+        appendGroupItem(group, maxSortOrder); // group と maxSortOrder の両方を渡す！
         });
       }
     } catch (error) {
@@ -137,7 +157,7 @@
   }
 
   // グループアイテムをリストに追加するヘルパー関数
-  function appendGroupItem(group) {
+  function appendGroupItem(group, maxSortOrder) {
     const li = document.createElement('li');
     li.className = 'group-item';
     li.dataset.groupId = group.groupId; // ★ ここが 'groupId' に変更
@@ -170,7 +190,7 @@
     downButton.textContent = '▼';
     downButton.className = 'up-down-buttons';
     // sortOrderが最大値（配列の長さ）なら下には動かせない
-    downButton.disabled = (group.sortOrder === currentGroups.length); 
+    downButton.disabled = (group.sortOrder === maxSortOrder);
     downButton.onclick = () => moveGroup(group.groupId, 'down'); // ★ groupIdを渡す
     actionsDiv.appendChild(downButton);
 
@@ -350,7 +370,7 @@
         throw new Error('サーバーエラー: ' + response.status + ' - ' + (errorData.message || '未知のエラー'));
       }
       
-      alert('並び順を更新しました！');
+      showToast('並び順を更新しました！', 3000);
       await fetchAndDisplayGroups(); // 更新後にリストを再読み込みして最新の並び順を表示
     } catch (error) {
       console.error('並び順更新中にエラーが発生しました:', error);
@@ -364,6 +384,41 @@
 
   // ページ読み込み時にグループ一覧を取得・表示
   document.addEventListener('DOMContentLoaded', fetchAndDisplayGroups);
+  function showToast(message, duration = 2000, type = 'success') {
+      const toast = document.getElementById("toast"); // toast要素もこのHTMLに追加する必要がある
+      if (!toast) { // toast要素がない場合のガード
+          console.warn("Toast element not found.");
+          alert(message); // fallbackとしてalert
+          return;
+      }
+      toast.textContent = message;
+      
+      // スタイルをリセット
+      toast.style.backgroundColor = '';
+      toast.style.color = '';
+
+      // タイプに応じたスタイルを設定
+      if (type === 'error') {
+          toast.style.backgroundColor = '#dc3545'; // 赤色
+          toast.style.color = '#fff'; // 白文字
+      } else if (type === 'success') {
+          toast.style.backgroundColor = '#28a745'; // 緑色
+          toast.style.color = '#fff';
+      } else if (type === 'info') {
+          toast.style.backgroundColor = '#007bff'; // 青色
+          toast.style.color = '#fff';
+      }
+
+      toast.style.display = "block";
+      toast.style.opacity = "1";
+
+      setTimeout(() => {
+          toast.style.opacity = "0";
+          setTimeout(() => {
+              toast.style.display = "none";
+          }, 500);
+      }, duration);
+  }
 </script>
 
 </body>

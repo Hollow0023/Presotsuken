@@ -358,7 +358,7 @@ function showToast(message, duration = 2000, type = 'success') {
 function toggleHistory() {
     const historyModal = document.getElementById("historyModal");
     const toggleBtn = document.getElementById("historyToggleButton");
-    document.cookie = `seatId=${seatId}; max-age=3`; 
+    document.cookie = `seatId=${seatId};`; 
 
     // モーダルが表示されている場合は閉じる
     if (historyModal.classList.contains("show")) {

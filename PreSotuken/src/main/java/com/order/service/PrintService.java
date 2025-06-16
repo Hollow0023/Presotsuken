@@ -398,11 +398,6 @@ public class PrintService {
 
     // JSONコマンドをフロントエンドに送信するヘルパーメソッド
     public void sendPrintCommandsToFrontend(String printerIp, Integer seatId, String jsonCommands) {
-        // 通常、プリンターのIPアドレスはフロントエンドが管理・保持し、
-        // 印刷命令の実行時に使用する。
-        // ここでは便宜的に、特定のプリンターIPをメッセージに含めるように変更
-        // 実際には、複数のプリンターが存在する場合、どのプリンターに送るかの情報も必要になる
-        // (例: プリンターの種類 'receipt_printer', 'kitchen_printer' など)
         String targetPrinterIp = printerIp; // サンプルコードのIPアドレスを仮に使う
 
         Map<String, String> payload = new HashMap<>();
