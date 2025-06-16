@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.order.dto.MenuWithOptionsDTO;
 import com.order.dto.OrderHistoryDto;
 import com.order.entity.Menu;
@@ -97,13 +98,6 @@ public class OrderController {
 	    if (seatId == null) {
 	        throw new IllegalArgumentException("seatIdが指定されていません（Cookieにもクエリにも存在しません）");
 	    }
-
-//	@GetMapping
-//	public String showOrderPage(
-//			@CookieValue("seatId") Integer seatId,
-//			@CookieValue("storeId") Integer storeId,
-//			@RequestParam(name = "admin", required = false, defaultValue = "false") boolean showAll,
-//			Model model) {
 
 		model.addAttribute("seatId", seatId);
 		model.addAttribute("storeId", storeId);
@@ -185,6 +179,7 @@ public class OrderController {
         Payment payment = paymentRepository.findByVisitVisitId(visitId);
         List<PaymentDetail> submitDetails = new ArrayList<>(); // 今回の注文で追加されたPaymentDetailを収集
         Map<String, String> responseBody = new HashMap<>();
+        ArrayNode commands = null;
         
         Integer userId = getCookieValueAsInteger(request,"userId");
 
@@ -240,7 +235,11 @@ public class OrderController {
             
             // ★★★ 単品伝票の印刷（savedDetailのみをリストにして渡すように変更）★★★
             // これで、各商品が1枚の単品伝票として印刷される
-            printService.printLabelsForOrder(List.of(savedDetail), seatId); 
+            if(commands == null){
+            	commands = printService.printLabelsForOrder(List.of(savedDetail), seatId);
+            }else {
+                commands.add(printService.printLabelsForOrder(List.of(savedDetail), seatId)); 
+            }
             
             // ★ここからが追加ロジック！飲み放題開始メニューの注文を検知
             // menuエンティティのisPlanStarterがBoolean型なので、NullPointerExceptionを避けるためにequalsを使用
@@ -278,9 +277,13 @@ public class OrderController {
             }
         }
 
-        // ★★★ ループの最後に小計伝票を印刷するメソッドを呼び出す ★★★
-        // 今回注文された全てのPaymentDetailをまとめて渡す
-//        printService.printReceiptForPayment(submitDetails, seatId); 
+        // ★★★ ループの最後に小計伝票を構築するメソッドを呼び出す ★★★
+        commands.add(printService.printReceiptForPayment(submitDetails, seatId)); 
+        System.out.println("全てのコマンド"+commands);
+        
+        // 今回注文された全ての伝票を印刷する
+//        	System.out.println("印刷機能コメントアウト中 287行付近 ordercontroller");
+        printService.sendPrintCommandsToFrontend(seatId, commands.toString());
 
         return ResponseEntity.ok().build();
     }
@@ -457,7 +460,14 @@ public class OrderController {
 	@ResponseBody
 	public List<OrderHistoryDto> getOrderHistory(
 			@CookieValue(name = "storeId") Integer storeId,
-			@CookieValue(name = "seatId") Integer seatId) {
+			@CookieValue(name = "seatId", required = false) Integer seatIdCookie,
+			@RequestParam(name = "seatId", required = false) Integer seatIdParam) {
+	    
+		 Integer seatId = (seatIdCookie != null) ? seatIdCookie : seatIdParam;
+		if (seatId == null) {
+	        throw new IllegalArgumentException("seatIdが指定されていません（Cookieにもクエリにも存在しません）");
+	    }
+		
 		Visit currentVisit = visitRepository.findTopByStore_StoreIdAndSeat_SeatIdOrderByVisitTimeDesc(storeId, seatId);
 		if (currentVisit == null)
 			return List.of();

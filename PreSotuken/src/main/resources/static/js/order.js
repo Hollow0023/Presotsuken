@@ -109,7 +109,8 @@ function setupPrinterEvents(printerObj) {
 
 // 印刷命令リストを実行するコア関数
 async function executeCommands(commandsJson) {
-    const commands = JSON.parse(commandsJson);
+    let commands = JSON.parse(commandsJson);
+    commands = commands.flat();
 
     // 印刷開始前にプリンターの状態を初期化する
     // 必要に応じて printer.reset() を呼び出すが、各コマンドで設定を上書きするなら不要な場合も
@@ -142,13 +143,14 @@ async function executeCommands(commandsJson) {
                     if (command.dw !== undefined && command.dh !== undefined) {
                        printer.addTextDouble(command.dw, command.dh); // 
                     } else {
-                       printer.addTextDouble(false, false); // デフォルトに戻す 
+//                       printer.addTextDouble(false, false); // デフォルトに戻す 
                     }
+
                     // テキストサイズ設定
                     if (command.width !== undefined && command.height !== undefined) {
                         printer.addTextSize(command.width, command.height); // 
                     } else {
-                        printer.addTextSize(1, 1); // デフォルトに戻す 
+//                        printer.addTextSize(1, 1); // デフォルトに戻す 
                     }
                     // テキストスタイル設定
                     if (command.reverse !== undefined && command.ul !== undefined && command.em !== undefined && command.color) {
@@ -163,6 +165,7 @@ async function executeCommands(commandsJson) {
                     break;
                 case "addTextDouble": // 
                     printer.addTextDouble(command.dw, command.dh);
+                    console.log("倍角");
                     break;
                 case "addTextSize": // 
                     printer.addTextSize(command.width, command.height);
@@ -225,7 +228,7 @@ async function executeCommands(commandsJson) {
     }).join('\n');
 
     console.log("=== 印刷コマンド変換ログ ===\n" + logOutput);
-    
+    console.log(commands);
 	console.log(printer);
 	console.log("印刷はコメントアウト中 224行")
     printer.send(); // 
@@ -300,6 +303,7 @@ function showToast(message, duration = 2000, type = 'success') {
 function toggleHistory() {
     const historyModal = document.getElementById("historyModal");
     const toggleBtn = document.getElementById("historyToggleButton");
+    document.cookie = `seatId=${seatId}; max-age=3`; 
 
     // モーダルが表示されている場合は閉じる
     if (historyModal.classList.contains("show")) {
