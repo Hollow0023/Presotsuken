@@ -4,6 +4,11 @@ let printer = null; // Epson Printerオブジェクト
 const ePosDev = new epson.ePOSDevice(); // Epson ePOSDeviceオブジェクト
 let currentPrinterIp = null; // 現在接続中のプリンターのIPアドレスを保持
 
+// 印刷ジョブのキューと状態
+const printJobQueue = [];
+let isPrinting = false;
+
+
 // UIステータス表示用の要素
 // HTMLのbodyタグ直後などに <p id="statusMessage">プリンタステータス: 初期化中...</p> を追加してください
 const statusMessageElement = document.getElementById("statusMessage"); 
