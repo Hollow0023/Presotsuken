@@ -8,6 +8,56 @@ let currentPrinterIp = null; // 現在接続中のプリンターのIPアドレ�
 const printJobQueue = [];
 let isPrinting = false;
 
+//印刷キュー追加関数
+function enqueuePrintJob(ip, commandsJson, retryCount = 0) {
+    printJobQueue.push({ ip, commandsJson, retryCount });
+    if (!isPrinting) {
+        processPrintJobs();
+    }
+}
+
+//キュー処理
+async function processPrintJobs() {
+    if (printJobQueue.length === 0) {
+        isPrinting = false;
+        return;
+    }
+
+    isPrinting = true;
+    const { ip, commandsJson, retryCount } = printJobQueue.shift();
+
+    try {
+        if (!printer || !ePosDev.isConnected || currentPrinterIp !== ip) {
+            if (printer) {
+                await new Promise(resolve => {
+                    ePosDev.deleteDevice(printer, () => {
+                        ePosDev.disconnect();
+                        printer = null;
+                        resolve();
+                    });
+                });
+            }
+            await connectAndExecute(ip, commandsJson);
+        } else {
+            await executeCommands(commandsJson);
+        }
+    } catch (e) {
+        console.error("印刷エラー:", e);
+        updateStatus(`印刷エラー: ${e.message}`);
+
+        if (retryCount < 3) {
+            console.warn(`リトライ ${retryCount + 1} 回目: 再キューします`);
+            enqueuePrintJob(ip, commandsJson, retryCount + 1);
+        } else {
+            showToast("印刷に3回失敗しました。プリンタの状態を確認してください。", 4000, 'error');
+        }
+    }
+
+    processPrintJobs(); // 次のジョブを処理
+}
+
+
+
 
 // UIステータス表示用の要素
 // HTMLのbodyタグ直後などに <p id="statusMessage">プリンタステータス: 初期化中...</p> を追加してください
@@ -81,7 +131,7 @@ function setupPrinterEvents(printerObj) {
             console.error('印刷失敗:', response.code); 
             updateStatus('印刷失敗: ' + response.code);
         }
- 
+ 	};
     printerObj.onstatuschange = function(status) { 
         console.log('プリンタステータス変更:', status);
         // ASB_RECEIPT_NEAR_END などで用紙補充を促すなど
@@ -90,7 +140,7 @@ function setupPrinterEvents(printerObj) {
         console.warn('用紙切れ！');
         updateStatus('警告: 用紙切れ！');
     };
-    printerObj.oncoveropen = function() {}
+    printerObj.oncoveropen = function() {
         console.warn('カバーオープン！');
         updateStatus('警告: カバーオープン！');
     };
@@ -957,40 +1007,14 @@ window.addEventListener('DOMContentLoaded', () => {
         stompClient.subscribe(`/topic/printer/${seatId}`, function (message) { // <- ここを新たに追加
             const payload = JSON.parse(message.body);
             console.log("WebSocketメッセージ受信 (printerトピック):", payload); // ログで区別できるように変更
-
-            if (payload.type === 'PRINT_COMMANDS') {
-                const targetIp = payload.ip;
-                const commandsJson = payload.commands; // JSON文字列
-
-                console.log(`バックエンドから印刷コマンドを受信。IP: ${targetIp}`);
-                console.log("コマンド:", JSON.parse(commandsJson));
-
-                // プリンターが未接続、またはIPが異なる場合は再接続・切り替え
-                if (!printer || !ePosDev.isConnected || currentPrinterIp !== targetIp) {
-                    console.log(`プリンターを ${targetIp} に接続中...`);
-                    updateStatus(`プリンターを ${targetIp} に接続中...`);
-                    // 既存の接続を切断
-                    if (printer) {
-                        ePosDev.deleteDevice(printer, () => {
-                            ePosDev.disconnect();
-                            printer = null;
-                            connectAndExecute(targetIp, commandsJson);
-                        });
-                    } else {
-                        connectAndExecute(targetIp, commandsJson);
-                    }
-                } else {
-                    // 既に接続済みでIPも同じならそのまま実行
-                    console.log('既存プリンターにコマンド実行。');
-                    updateStatus('印刷コマンド実行中...');
-                    executeCommands(commandsJson);
-                }
-
-            } else if (payload.type === 'PRINT_ERROR') {
-                alert('印刷エラー: ' + payload.message);
-                console.error('印刷エラー:', payload.message);
-                updateStatus('エラー: ' + payload.message);
-            }
+			if (payload.type === 'PRINT_COMMANDS') {
+			        enqueuePrintJob(payload.ip, payload.commands);
+		    } else if (payload.type === 'PRINT_ERROR') {
+		        alert('印刷エラー: ' + payload.message);
+		        console.error('印刷エラー:', payload.message);
+		        updateStatus('エラー: ' + payload.message);
+		    }
+            
             // ... (その他の printer トピックのメッセージタイプもここに追加) ...
         }, function (error) { // printerトピックの購読エラーハンドラ
             console.error('STOMP error for /topic/printer:', error);
