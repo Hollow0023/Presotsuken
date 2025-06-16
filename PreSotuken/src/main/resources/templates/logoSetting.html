@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ロゴ設定</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}"> <style>
+        /* 簡単なスタイル */
+        body { font-family: sans-serif; margin: 20px; }
+        .container { max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ccc; border-radius: 8px; }
+        .logo-preview {
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+            background-color: #f9f9f9;
+        }
+        .logo-preview img {
+            max-width: 100%; /* 親要素の幅に合わせて縮小 */
+            height: auto; /* アスペクト比を維持 */
+            max-height: 150px; /* 最大高さを設定して大きくなりすぎないように */
+            border: 1px dashed #aaa;
+        }
+        .message { padding: 10px; margin-bottom: 15px; border-radius: 4px; }
+        .success { background-color: #d4edda; color: #155724; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; color: #721c24; border-color: #f5c6cb; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input[type="file"] { margin-bottom: 10px; }
+        button { padding: 10px 20px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+        .note { font-size: 0.9em; color: #666; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>店舗ロゴ設定</h1>
+
+        <div th:if="${successMessage}" class="message success">
+            <p th:text="${successMessage}"></p>
+        </div>
+        <div th:if="${errorMessage}" class="message error">
+            <p th:text="${errorMessage}"></p>
+        </div>
+
+        <div class="logo-preview">
+            <h3>現在のロゴ</h3>
+            <img id="currentLogo"
+                 th:src="${logoExists} ? ${logoDataUri} : @{${defaultLogoPath}}"
+                 alt="現在のロゴ"
+                 onerror="this.onerror=null;this.src='/images/default_logo.png';" /><p th:if="${logoExists}">DBに保存されているロゴです。</p>
+            <p th:unless="${logoExists}">デフォルトのロゴが表示されています。</p>
+        </div>
+
+        <form id="logoUploadForm" th:action="@{/admin/terminals/logo/upload}" method="post" enctype="multipart/form-data">
+            <input type="hidden" id="storeId" name="storeId" value="1" /> <input type="hidden" id="logoBase64" name="logoBase64" />
+
+            <div class="form-group">
+                <label for="logoFile">新しいロゴを選択:</label>
+                <input type="file" id="logoFile" accept="image/png, image/jpeg, image/gif" />
+                <div class="note">
+                    <p>推奨サイズ: 幅300px～600px、高さ100px～200px</p>
+                    <p>ファイルサイズ: 100KB以内推奨</p>
+                </div>
+            </div>
+
+            <button type="submit" id="uploadButton" disabled>ロゴを更新</button>
+        </form>
+    </div>
+
+    <script th:src="@{/js/logo.js}"></script>
+</body>
+</html>

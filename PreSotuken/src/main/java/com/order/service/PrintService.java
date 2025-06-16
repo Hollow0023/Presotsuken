@@ -16,6 +16,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.CookieValue;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -46,6 +47,7 @@ public class PrintService {
     private final UserRepository usersRepo;
     private final PaymentDetailOptionRepository paymentDetailOptionRepo;
     private final SimpMessagingTemplate messagingTemplate;
+    private final LogoService logoService;
 
     private final ObjectMapper objectMapper = new ObjectMapper(); // JSON生成用
 
@@ -228,7 +230,10 @@ public class PrintService {
     }
     
     // 小計伝票印刷メソッド (printReceiptForPayment) も同様にJSONを組み立てる
-    public ArrayNode printReceiptForPayment(List<PaymentDetail> detailsForReceipt, Integer seatId) {
+    public ArrayNode printReceiptForPayment(
+    		List<PaymentDetail> detailsForReceipt, 
+    		Integer seatId,
+    		@CookieValue(name = "storeId", required = false) Long storeId) {
 //        if (detailsForReceipt == null || detailsForReceipt.isEmpty()) {
 //            System.out.println("印刷するPaymentDetailがありません。小計伝票の生成をスキップします。");
 //            
@@ -269,7 +274,7 @@ public class PrintService {
         User user = detailsForReceipt.get(0).getUser();
         String username = (user != null) ? user.getUserName() : "卓上端末";
 
-        String logoImageBase64 = "[ロゴBase64データ]"; // ここに実際のBase64データが入る
+        String logoImageBase64 = logoService.getLogoBase64Data(storeId);
 
         // JSONコマンドを格納するArrayNode
         ArrayNode commands = objectMapper.createArrayNode();
@@ -283,8 +288,12 @@ public class PrintService {
 
         // ロゴ画像
         // imageはBase64データを直接渡す形にする
-//        commands.add(createAddImageCommand(logoImageBase64, 0, 0, 256, 60, "COLOR_1", "MONO"));
-//        commands.add(createFeedUnitCommand(10));
+        // ロゴが登録されている場合のみ印刷する
+        if(logoImageBase64 != null) {
+            commands.add(createAddImageCommand(logoImageBase64, 0, 0, 256, 60, "COLOR_1", "MONO"));
+            commands.add(createFeedUnitCommand(10));
+        }
+
 
         // テキストアラインメントをセンターに (上の画像のアラインメント設定を引き継ぐ可能性があるので明示的に)
 //        commands.add(createTextAlignCommand("center"));
