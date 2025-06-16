@@ -1,0 +1,25 @@
+        /* 簡単なスタイル */
+        body { font-family: sans-serif; margin: 20px; }
+        .container { max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ccc; border-radius: 8px; }
+        .logo-preview {
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+            background-color: #f9f9f9;
+        }
+        .logo-preview img {
+            max-width: 100%; /* 親要素の幅に合わせて縮小 */
+            height: auto; /* アスペクト比を維持 */
+            max-height: 150px; /* 最大高さを設定して大きくなりすぎないように */
+            border: 1px dashed #aaa;
+        }
+        .message { padding: 10px; margin-bottom: 15px; border-radius: 4px; }
+        .success { background-color: #d4edda; color: #155724; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; color: #721c24; border-color: #f5c6cb; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input[type="file"] { margin-bottom: 10px; }
+        button { padding: 10px 20px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+        .note { font-size: 0.9em; color: #666; margin-top: 10px; }

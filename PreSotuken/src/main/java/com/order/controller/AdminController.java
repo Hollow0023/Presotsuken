@@ -18,15 +18,19 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.order.dto.TerminalCreationDto;
+import com.order.entity.Logo;
 import com.order.entity.Seat;
 import com.order.entity.Store;
 import com.order.entity.Terminal;
 import com.order.repository.SeatRepository;
 import com.order.repository.StoreRepository;
 import com.order.repository.TerminalRepository;
+import com.order.service.LogoService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -38,6 +42,8 @@ public class AdminController { // クラス名はAdminControllerではなくAdmi
     private final TerminalRepository terminalRepository;
     private final SeatRepository seatRepository;
     private final StoreRepository storeRepository;
+    private final LogoService logoService;
+
 
     @GetMapping
     public String showTerminalManagementPage(Model model) {
@@ -234,4 +240,69 @@ public class AdminController { // クラス名はAdminControllerではなくAdmi
         List<Terminal> terminals = terminalRepository.findByStoreStoreId(storeId); 
         return ResponseEntity.ok(terminals);
     }
+    
+    
+    
+    
+    /**
+     * ロゴ設定画面を表示する。
+     * 既存のロゴがあれば表示し、なければデフォルト画像を示す。
+     */
+    @GetMapping("/logo") // ★ /admin/terminals/logo へのGETリクエストを処理
+    public String showLogoSettingPage(Model model) {
+        Long storeId = 1L; // 例: 固定の店舗ID。陽翔君のシステムに合わせて調整してね！
+
+        Optional<Logo> logoOptional = logoService.findLogoByStoreId(storeId);
+
+        if (logoOptional.isPresent()) {
+            model.addAttribute("logoExists", true);
+            model.addAttribute("logoDataUri", "data:image/png;base64," + logoOptional.get().getLogoData());
+        } else {
+            model.addAttribute("logoExists", false);
+            model.addAttribute("defaultLogoPath", "/images/default_logo.png");
+        }
+
+        if (model.asMap().containsKey("successMessage")) {
+            model.addAttribute("successMessage", model.asMap().get("successMessage"));
+        }
+        if (model.asMap().containsKey("errorMessage")) {
+            model.addAttribute("errorMessage", model.asMap().get("errorMessage"));
+        }
+
+        return "logoSetting"; // templates/admin/logoSetting.html を表示する想定
+    }
+
+    /**
+     * ロゴ画像を保存または更新する。
+     * フロントエンドからBASE64エンコードされた文字列を受け取る。
+     */
+    @PostMapping("/logo/upload") // ★ /admin/terminals/logo/upload へのPOSTリクエストを処理
+    public String uploadLogo(@RequestParam("storeId") Long storeId,
+                             @RequestParam("logoBase64") String logoBase64,
+                             RedirectAttributes redirectAttributes) {
+
+        if (logoBase64 == null || logoBase64.isEmpty()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "ロゴデータが空です。");
+            return "redirect:/admin/terminals/logo"; // ★ リダイレクト先も変更
+        }
+
+        String cleanedBase64Data = logoBase64;
+        if (logoBase64.startsWith("data:")) {
+            int commaIndex = logoBase64.indexOf(',');
+            if (commaIndex != -1) {
+                cleanedBase64Data = logoBase64.substring(commaIndex + 1);
+            }
+        }
+
+        try {
+            logoService.saveOrUpdateLogo(storeId, cleanedBase64Data);
+            redirectAttributes.addFlashAttribute("successMessage", "ロゴが正常に保存されました！");
+        } catch (Exception e) {
+            System.err.println("ロゴの保存中にエラーが発生しました: " + e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", "ロゴの保存中にエラーが発生しました。");
+        }
+
+        return "redirect:/admin/terminals/logo"; // ★ リダイレクト先も変更
+    }
+    
 }

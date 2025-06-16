@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ロゴ設定</title>
+    <link rel="stylesheet" th:href="@{/css/logoSetting.css}">
+</head>
+<body>
+    <div class="container">
+        <h1>店舗ロゴ設定</h1>
+		<a id="backToSeatList" href="/">← 座席リストに戻る</a><br><br>
+        <div th:if="${successMessage}" class="message success">
+            <p th:text="${successMessage}"></p>
+        </div>
+        <div th:if="${errorMessage}" class="message error">
+            <p th:text="${errorMessage}"></p>
+        </div>
+
+        <div class="logo-preview">
+            <h3>現在のロゴ</h3>
+            <img id="currentLogo"
+                 th:src="${logoExists} ? ${logoDataUri} : @{${defaultLogoPath}}"
+                 alt="現在のロゴ"
+                 onerror="this.onerror=null;this.src='/images/default_logo.png';" /><p th:if="${logoExists}">DBに保存されているロゴです。</p>
+            <p th:unless="${logoExists}">デフォルトのロゴが表示されています。</p>
+        </div>
+
+        <form id="logoUploadForm" th:action="@{/admin/terminals/logo/upload}" method="post" enctype="multipart/form-data">
+            <input type="hidden" id="storeId" name="storeId" value="1" /> <input type="hidden" id="logoBase64" name="logoBase64" />
+
+            <div class="form-group">
+                <label for="logoFile">新しいロゴを選択:</label>
+                <input type="file" id="logoFile" accept="image/png, image/jpeg, image/gif" />
+                <div class="note">
+                    <p>推奨サイズ: 幅300px～600px、高さ100px～200px</p>
+                    <p>ファイルサイズ: 100KB以内推奨</p>
+                </div>
+            </div>
+
+            <button type="submit" id="uploadButton" disabled>ロゴを更新</button>
+        </form>
+    </div>
+
+    <script th:src="@{/js/logo.js}"></script>
+</body>
+</html>
