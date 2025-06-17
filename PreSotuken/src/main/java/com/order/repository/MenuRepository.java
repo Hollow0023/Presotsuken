@@ -45,6 +45,22 @@ public interface MenuRepository extends JpaRepository<Menu, Integer> {
 
     // isPlanStarterがtrueで、特定のplanIdを持つメニューをmenu_nameでソートして取得
     List<Menu> findByIsPlanStarterTrueAndPlanIdOrderByMenuNameAsc(Integer planId); // ★ 修正
-
+    
+    
+//    List<Menu> findByStore_StoreIdAndIsSoldOutFalseAndIsPlanTargetFalseAndTimeSlot_TimeSlotIdInOrderByMenuNameAsc(
+//            Integer storeId, List<Integer> timeSlotIds);
+//
+//    @Query("SELECT m FROM Menu m " +
+//           "JOIN m.menuGroup mg " +
+//           "WHERE m.store.storeId = :storeId " +
+//           "AND m.isSoldOut = FALSE " +
+//           "AND m.timeSlot.timeSlotId IN :timeSlotIds " +
+//           "AND mg.groupId IN :menuGroupIds " + // ★ここを mg.groupId に修正するよ！
+//           "ORDER BY m.menuName ASC")
+//    List<Menu> findByStoreIdAndSoldOutFalseAndMenuGroupIdsInAndTimeSlotIdsIn(
+//            @Param("storeId") Integer storeId,
+//            @Param("menuGroupIds") Set<Integer> menuGroupIds,
+//            @Param("timeSlotIds") List<Integer> timeSlotIds);
+//
 
 }

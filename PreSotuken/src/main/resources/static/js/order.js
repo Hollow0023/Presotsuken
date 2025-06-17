@@ -840,21 +840,20 @@ function switchTab(tabElement) {
     // 全てのタブからactiveクラスを削除
     document.querySelectorAll('.menu-tab').forEach(t => t.classList.remove('active'));
     tabElement.classList.add('active'); // クリックされたタブにactiveクラスを追加
-    
+
     const groupId = tabElement.getAttribute('data-group-id'); // タブのgroup-idを取得
-    
+
     // 関連するメニューアイテムのみ表示し、他は非表示にする
     document.querySelectorAll('.menu-item').forEach(item => {
         const itemGroupId = item.getAttribute('data-group-id');
-        const isPlanTargetMenu = item.getAttribute('data-is-plan-target') === 'true';
-        const isActivePlanMenu = item.classList.contains('active-plan-menu'); // WebSocketで追加されるクラス
 
-        if (isActivePlanMenu) { // ★修正点1: 飲み放題でアクティブなら常に表示を優先
-            item.style.display = 'block'; 
-        } else if (isPlanTargetMenu) { // ★修正点2: 飲み放題対象で、かつアクティブでないものは非表示
-//            item.style.display = 'none';
-        } else { // ★修正点3: 通常メニューは選択されたタブのグループIDに一致するものだけ表示
-            item.style.display = (itemGroupId === groupId) ? 'block' : 'none';
+        // ★変更点: 現在選択されているタブのグループIDに一致するメニューアイテムのみを表示
+        // 飲み放題のアクティブ状況によるメニューアイテム個別の表示制御は、
+        // そもそもバックエンドが送ってこない or CSSでタブが非表示になることで間接的に制御される
+        if (itemGroupId === groupId) {
+            item.style.display = 'block';
+        } else {
+            item.style.display = 'none';
         }
     });
 }

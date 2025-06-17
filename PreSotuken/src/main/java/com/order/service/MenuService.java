@@ -35,8 +35,9 @@ public class MenuService {
 
 
     // 時間帯を絞って表示 (品切れは表示しない)
-    public List<MenuWithOptionsDTO> getMenusWithOptions(Integer storeId, Integer seatId) {
+    public List<MenuWithOptionsDTO> getMenusWithOptions(Integer storeId) {
         LocalTime now = LocalTime.now();
+        
 
         List<MenuTimeSlot> allTimeSlots = menuTimeSlotRepository.findByStoreStoreId(storeId);
         

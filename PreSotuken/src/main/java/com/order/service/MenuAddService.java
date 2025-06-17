@@ -22,7 +22,6 @@ import com.order.entity.Payment;
 import com.order.entity.PaymentDetail;
 import com.order.entity.PrinterConfig;
 import com.order.entity.Store;
-import com.order.entity.Visit;
 import com.order.repository.MenuGroupRepository;
 import com.order.repository.MenuOptionRepository;
 import com.order.repository.MenuPrinterMapRepository;
@@ -52,6 +51,7 @@ public class MenuAddService {
     private final PaymentRepository paymentRepository;
     private final VisitRepository visitRepository;
     private final PlanMenuGroupMapRepository planMenuGroupMapRepository;
+    private final PaymentLookupService paymentLookup;
     
     
     // MenuエンティティをMenuForm DTOに変換して返すメソッド
@@ -162,27 +162,21 @@ public class MenuAddService {
     
     
 
-    public Set<Integer> getActivePlanIdsForSeat(Integer seatId, Integer storeId) {
-        Visit currentVisit = visitRepository.findTopByStore_StoreIdAndSeat_SeatIdOrderByVisitTimeDesc(storeId, seatId);
-        if (currentVisit == null) {
-            return new HashSet<>(); // Visitがなければ空のSetを返す
-        }
+    private Set<Integer> getActivePlanIdsForSeat(Integer seatId, Integer storeId) {
+        // PaymentをLookupPaymentから取得
+        Payment payment = paymentLookup.findPaymentBySeatId(seatId); // storeIdはseatIdで特定できるなら不要
 
-        Payment payment = paymentRepository.findByVisitVisitId(currentVisit.getVisitId());
-        if (payment == null) {
-            return new HashSet<>(); // Paymentがなければ空のSetを返す
-        }
+        Set<Integer> activePlanIds = new HashSet<>();
+        if (payment != null) {
+            // そのPaymentに紐づくPaymentDetailの中から、is_plan_starterがtrueのメニューを検索
+            List<PaymentDetail> planStarterOrders = paymentDetailRepository.findByPaymentPaymentIdAndMenuIsPlanStarterTrue(payment.getPaymentId());
 
-        List<PaymentDetail> planStarterOrders = paymentDetailRepository.findByPaymentPaymentIdAndMenuIsPlanStarterTrue(payment.getPaymentId());
-
-        if (!planStarterOrders.isEmpty()) {
-            // ★修正！全てのisPlanStarterメニューからplanIdを収集し、Setで重複排除して返す
-            return planStarterOrders.stream()
+            activePlanIds = planStarterOrders.stream()
                 .map(pd -> pd.getMenu().getPlanId())
-                .filter(java.util.Objects::nonNull) // nullのplanIdは除外
+                .filter(java.util.Objects::nonNull) // nullチェックは重要
                 .collect(Collectors.toSet());
         }
-        return new HashSet<>(); // 飲み放題開始メニューがなければ空のSetを返す
+        return activePlanIds;
     }
 
 
