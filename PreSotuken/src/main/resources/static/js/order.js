@@ -852,7 +852,7 @@ function switchTab(tabElement) {
         if (isActivePlanMenu) { // ★修正点1: 飲み放題でアクティブなら常に表示を優先
             item.style.display = 'block'; 
         } else if (isPlanTargetMenu) { // ★修正点2: 飲み放題対象で、かつアクティブでないものは非表示
-            item.style.display = 'none';
+//            item.style.display = 'none';
         } else { // ★修正点3: 通常メニューは選択されたタブのグループIDに一致するものだけ表示
             item.style.display = (itemGroupId === groupId) ? 'block' : 'none';
         }

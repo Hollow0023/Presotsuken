@@ -44,4 +44,5 @@ public class PaymentDetail {
 
     private Double subtotal;
     private LocalDateTime orderTime;
+    private Double discount;
 }

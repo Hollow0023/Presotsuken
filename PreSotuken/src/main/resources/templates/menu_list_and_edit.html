@@ -131,7 +131,7 @@
                 <div class="form-group dynamic-select-group">
                     <label>印刷プリンター選択:</label>
                     <div id="printerSelectsContainer">
-                        <select name="printerId" class="printer-select-template" required style="display: none;">
+                        <select name="printerId" class="printer-select-template" style="display: none;">
                             <option value="">選択してください</option>
                             <option th:each="printer : ${printers}"
                                     th:value="${printer.printerId}"
