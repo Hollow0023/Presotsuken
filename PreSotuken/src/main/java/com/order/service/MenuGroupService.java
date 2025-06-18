@@ -55,7 +55,7 @@ public class MenuGroupService {
 
     // グループ名編集
     @Transactional
-    public MenuGroup updateGroupName(Integer groupId, String newGroupName, Integer storeId) {
+    public MenuGroup updateGroupName(Integer groupId, String newGroupName, Integer storeId, boolean forAdminOnly) {
         Store store = storeRepository.findById(storeId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "店舗が見つかりません。"));
 
@@ -72,7 +72,7 @@ public class MenuGroupService {
         if (existingGroup.isPresent() && !existingGroup.get().getGroupId().equals(groupId)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "そのグループ名は既に存在します。");
         }
-
+        menuGroup.setForAdminOnly(forAdminOnly);
         menuGroup.setGroupName(newGroupName);
         return menuGroupRepository.save(menuGroup);
     }

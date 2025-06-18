@@ -50,6 +50,8 @@ public class MenuGroupController {
     public Map<String, Object> addGroup(@RequestBody Map<String, String> body) {
         int storeId = Integer.parseInt(body.get("storeId"));
         String groupName = body.get("groupName");
+        boolean forAdminOnly = Boolean.parseBoolean(body.getOrDefault("forAdminOnly", "false")); 
+
 
         Store store = storeRepository.findById(storeId).orElse(null);
         if (store == null) return Map.of("success", false, "error", "not_found");
@@ -60,6 +62,7 @@ public class MenuGroupController {
         MenuGroup group = new MenuGroup();
         group.setStore(store);
         group.setGroupName(groupName);
+        group.setForAdminOnly(forAdminOnly); // forAdminOnlyをセット
         menuGroupRepository.save(group);
 
         return Map.of("success", true);
@@ -98,8 +101,10 @@ public class MenuGroupController {
         try {
             String newGroupName = body.get("groupName");
             int storeId = Integer.parseInt(body.get("storeId"));
+            boolean newForAdminOnly = Boolean.parseBoolean(body.getOrDefault("forAdminOnly", "false")); 
 
-            menuGroupService.updateGroupName(groupId, newGroupName, storeId);
+
+            menuGroupService.updateGroupName(groupId, newGroupName, storeId, newForAdminOnly); 
             return ResponseEntity.ok(Map.of("success", true));
         } catch (NumberFormatException e) {
             return ResponseEntity.badRequest().body(Map.of("success", false, "error", "invalid_input"));

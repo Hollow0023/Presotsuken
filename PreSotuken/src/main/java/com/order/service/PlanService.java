@@ -116,43 +116,46 @@ public class PlanService {
         return dto;
     }
 
-    // PlanMenuGroupMapの更新（新規作成・削除）ヘルパーメソッド
+ // PlanMenuGroupMapの更新（新規作成・削除）ヘルパーメソッド
     private void updatePlanMenuGroupMaps(Integer planId, List<Integer> newMenuGroupIds) {
-        // 既存の紐付けを全て削除
-        planMenuGroupMapRepository.deleteByPlanId(planId);
+        // ① まず、更新前の既存の紐付け情報を取得しておく
         List<PlanMenuGroupMap> oldMaps = planMenuGroupMapRepository.findByPlanId(planId);
         List<Integer> oldMenuGroupIds = oldMaps.stream()
-                                            .map(PlanMenuGroupMap::getMenuGroupId)
-                                            .collect(Collectors.toList());
+                                                .map(PlanMenuGroupMap::getMenuGroupId)
+                                                .collect(Collectors.toList());
 
-        // 新しい紐付けを追加
+        // ② 既存の紐付けを全て削除
+        planMenuGroupMapRepository.deleteByPlanId(planId); 
+
+        // ③ 新しい紐付けを追加
         if (newMenuGroupIds != null && !newMenuGroupIds.isEmpty()) {
             List<PlanMenuGroupMap> mapsToSave = newMenuGroupIds.stream()
                     .map(menuGroupId -> new PlanMenuGroupMap(planId, menuGroupId))
                     .collect(Collectors.toList());
             planMenuGroupMapRepository.saveAll(mapsToSave);
         }
-        // --- ここから追加したロジック ---
-        // 関連付けが解除されたグループの isPlanTarget を false に設定
-        // ただし、そのグループが他のプランに紐づいていない場合のみ
+
+        // ④ 関連付けが解除されたグループの isPlanTarget を false に設定
+        // oldMenuGroupIds にあって、newMenuGroupIds にないものが「解除された」グループ
         oldMenuGroupIds.forEach(oldGroupId -> {
-            // ★ ここが重要！
-            // planId以外のプランで、oldGroupIdがまだ紐づいているかチェック
-            boolean isStillAssociatedWithOtherPlans = planMenuGroupMapRepository.existsByMenuGroupIdAndPlanIdNot(oldGroupId, planId);
-            
-            // isStillAssociatedWithOtherPlans が false （他のプランには紐づいていない） かつ 
-            // newMenuGroupIds に oldGroupId が含まれていない（今回の更新でこのプランからも紐付け解除）場合
-            if (!isStillAssociatedWithOtherPlans && (newMenuGroupIds == null || !newMenuGroupIds.contains(oldGroupId))) {
-                menuGroupRepository.findById(oldGroupId).ifPresent(group -> {
-                    if (group.getIsPlanTarget() != null && group.getIsPlanTarget()) {
-                        group.setIsPlanTarget(false);
-                        menuGroupRepository.save(group);
-                    }
-                });
+            // 今回の更新でこのプランから紐付けが解除されたかチェック
+            boolean isRemovedFromThisPlan = (newMenuGroupIds == null || !newMenuGroupIds.contains(oldGroupId));
+
+            // 他のプランには紐づいていない かつ 今回の更新でこのプランからも紐付け解除された場合
+            if (isRemovedFromThisPlan) { // この条件だけじゃ足りない。他のプランに紐づいてないことを確認しないと
+                boolean isStillAssociatedWithOtherPlans = planMenuGroupMapRepository.existsByMenuGroupIdAndPlanIdNot(oldGroupId, planId);
+                if (!isStillAssociatedWithOtherPlans) {
+                    menuGroupRepository.findById(oldGroupId).ifPresent(group -> {
+                        if (group.getIsPlanTarget() != null && group.getIsPlanTarget()) {
+                            group.setIsPlanTarget(false);
+                            menuGroupRepository.save(group);
+                        }
+                    });
+                }
             }
         });
 
-        // 新しく紐付けられたグループの isPlanTarget を true に設定
+        // ⑤ 新しく紐付けられたグループの isPlanTarget を true に設定
         if (newMenuGroupIds != null) {
             newMenuGroupIds.forEach(newGroupId -> {
                 menuGroupRepository.findById(newGroupId).ifPresent(group -> {

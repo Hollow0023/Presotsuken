@@ -125,7 +125,7 @@ function updateSeatTile(seatId) {
 					.then(res => res.json())
 					.then(amountData => {
 						if (amountData.total && amountData.total > 0) {
-							totalDiv.innerText = `\\ ${amountData.total}`;
+							totalDiv.innerHTML = `&yen; ${amountData.total.toLocaleString()}`;
 						} else {
 							totalDiv.innerText = '';
 						}
