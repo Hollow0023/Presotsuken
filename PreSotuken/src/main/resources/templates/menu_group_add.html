@@ -8,6 +8,21 @@
     const storeId = /*[[${storeId}]]*/ null; 
   </script>
   <style>
+  .group-actions label {
+    margin-left: 10px;
+    font-size: 0.9em;
+    color: #555;
+    white-space: nowrap; /* 折り返しを防ぐ */
+}
+.admin-badge {
+    background-color: #f0ad4e; /* オレンジ系 */
+    color: white;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.8em;
+    margin-left: 10px;
+    white-space: nowrap;
+}
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f4f7f6; color: #333; }
     .container { 
       max-width: 800px; 
@@ -82,6 +97,10 @@
   <div class="input-section">
     <h3>新しいグループを追加</h3>
     <input type="text" id="groupNameInput" placeholder="新しいグループ名を入力" maxlength="50" />
+    <div style="margin-top: 10px;">
+	    <input type="checkbox" id="forAdminOnlyAdd" />
+	    <label for="forAdminOnlyAdd">卓上端末から見えなくします</label>
+ 	 </div>
     <button id="addGroupButton" onclick="addGroup()">追加</button>
   </div>
 
@@ -115,6 +134,7 @@
   const addGroupButton = document.getElementById('addGroupButton');
   const menuGroupList = document.getElementById('menuGroupList');
   const noGroupsMessage = document.getElementById('noGroupsMessage');
+  const forAdminOnlyAddCheckbox = document.getElementById('forAdminOnlyAdd'); // ★追加：新規追加用のチェックボックス
 
   // グループデータの一時保存用（並び替え時に便利）
   let currentGroups = [];
@@ -160,13 +180,23 @@
   function appendGroupItem(group, maxSortOrder) {
     const li = document.createElement('li');
     li.className = 'group-item';
-    li.dataset.groupId = group.groupId; // ★ ここが 'groupId' に変更
-    li.dataset.sortOrder = group.sortOrder; // ★ ここが 'sortOrder' に変更
+    li.dataset.groupId = group.groupId;
+    li.dataset.sortOrder = group.sortOrder;
+    li.dataset.forAdminOnly = group.forAdminOnly; // forAdminOnly の値もデータセットに追加
+
 
     const groupNameSpan = document.createElement('span');
     groupNameSpan.className = 'group-name';
     groupNameSpan.textContent = group.groupName;
     li.appendChild(groupNameSpan);
+    
+    // ここから追加：管理者限定バッジの表示
+    if (group.forAdminOnly) {
+        const adminBadge = document.createElement('span');
+        adminBadge.className = 'admin-badge';
+        adminBadge.textContent = '管理者限定';
+        groupNameSpan.appendChild(adminBadge); // グループ名の隣に表示
+    }
 
     const actionsDiv = document.createElement('div');
     actionsDiv.className = 'group-actions';
@@ -174,7 +204,8 @@
     // 編集ボタン
     const editButton = document.createElement('button');
     editButton.textContent = '編集';
-    editButton.onclick = () => enableEditMode(li, groupNameSpan, editButton);
+    // ★修正：enableEditMode に group を引数として渡す
+    editButton.onclick = () => enableEditMode(li, groupNameSpan, editButton, group); 
     actionsDiv.appendChild(editButton);
 
     // 並び順変更ボタン (一番上/下では非活性化)
@@ -212,13 +243,15 @@
       return;
     }
     
+    const forAdminOnly = forAdminOnlyAddCheckbox.checked; // チェックボックスの状態を取得
+
     addGroupButton.disabled = true; // ボタンを無効化して多重送信防止
 
     try {
       const response = await fetch("/menu/group/api/add", { 
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ storeId: storeId, groupName: groupName })
+        body: JSON.stringify({ storeId: storeId, groupName: groupName, forAdminOnly: forAdminOnly })
       });
 
       const data = await response.json(); 
@@ -236,8 +269,9 @@
 
       // 成功時
       if (data.success) { 
-        alert("グループを追加しました！");
+        showToast("グループを追加しました！", 3000, 'success'); // alertをToastに変更
         groupNameInput.value = ''; // 入力フィールドをクリア
+        forAdminOnlyAddCheckbox.checked = false; // ★追加：チェックボックスもクリア
         await fetchAndDisplayGroups(); // リストを再読み込みして最新の状態を表示
       } else {
         alert("グループの追加に失敗しました。");
@@ -252,7 +286,8 @@
 
 
   // --- 3. グループ名の編集 ---
-  function enableEditMode(liElement, groupNameSpan, editButton) {
+  // ★修正：groupData を引数に追加
+  function enableEditMode(liElement, groupNameSpan, editButton, groupData) {
     const currentName = groupNameSpan.textContent;
     
     groupNameSpan.style.display = 'none';
@@ -260,35 +295,63 @@
     const editInput = document.createElement('input');
     editInput.type = 'text';
     editInput.className = 'edit-input';
-    editInput.value = currentName;
+    editInput.value = groupData.groupName; // ★修正：groupData からグループ名を取得
     editInput.maxLength = 50; 
     liElement.insertBefore(editInput, groupNameSpan); 
     editInput.focus();
     editInput.select(); // 全選択状態にする
+    
+    // ここから追加：管理者限定チェックボックスを生成
+    const adminCheckboxDiv = document.createElement('div');
+    adminCheckboxDiv.style.marginTop = '10px'; // スタイル調整
+    adminCheckboxDiv.style.marginBottom = '10px';
+
+    const adminEditCheckbox = document.createElement('input');
+    adminEditCheckbox.type = 'checkbox';
+    adminEditCheckbox.id = `adminEditCheckbox-${groupData.groupId}`; // IDをユニークにする
+    adminEditCheckbox.checked = groupData.forAdminOnly; // 現在の forAdminOnly の値をセット
+
+    const adminLabel = document.createElement('label');
+    adminLabel.htmlFor = adminEditCheckbox.id;
+    adminLabel.textContent = '卓上端末から見えなくします'; // ★変更：文言を合わせる
+    
+    adminCheckboxDiv.appendChild(adminEditCheckbox);
+    adminCheckboxDiv.appendChild(adminLabel);
+    
+    // editInput のすぐ後にチェックボックスを追加
+    liElement.insertBefore(adminCheckboxDiv, editInput.nextSibling); 
+    // ここまで追加
 
     // 編集ボタンを「保存」と「キャンセル」に切り替え
     editButton.textContent = '保存';
     editButton.className = 'save-button';
-    editButton.onclick = () => saveGroup(liElement, editInput, groupNameSpan, editButton);
+    // ★修正：adminEditCheckbox を引数に追加
+    editButton.onclick = () => saveGroup(liElement, editInput, groupNameSpan, editButton, adminEditCheckbox);
 
     const cancelButton = document.createElement('button');
     cancelButton.textContent = 'キャンセル';
     cancelButton.className = 'cancel-button';
-    cancelButton.onclick = () => disableEditMode(liElement, editInput, groupNameSpan, editButton, cancelButton, currentName);
+    // ★修正：adminCheckboxDiv を引数に追加
+    cancelButton.onclick = () => disableEditMode(liElement, editInput, groupNameSpan, editButton, cancelButton, currentName, adminCheckboxDiv);
     editButton.parentNode.insertBefore(cancelButton, editButton.nextSibling); 
   }
 
-  async function saveGroup(liElement, editInput, groupNameSpan, saveButton) {
-    const groupId = liElement.dataset.groupId; // ★ ここも 'groupId'
+  // ★修正：adminEditCheckbox を引数に追加
+  async function saveGroup(liElement, editInput, groupNameSpan, saveButton, adminEditCheckbox) {
+    const groupId = liElement.dataset.groupId;
     const newName = editInput.value.trim();
     const cancelButton = saveButton.nextSibling;
+    // ★修正：adminEditCheckbox から値を取得
+    const newForAdminOnly = adminEditCheckbox.checked;
 
     if (!newName) {
       alert("グループ名を入力してください。");
       return;
     }
-    if (newName === groupNameSpan.textContent) {
-        disableEditMode(liElement, editInput, groupNameSpan, saveButton, cancelButton, groupNameSpan.textContent);
+    // ★修正：forAdminOnly の変更もチェック
+    if (newName === groupNameSpan.textContent && newForAdminOnly == (liElement.dataset.forAdminOnly === 'true')) {
+        // ★修正：adminEditCheckboxDiv を渡す
+        disableEditMode(liElement, editInput, groupNameSpan, saveButton, cancelButton, groupNameSpan.textContent, adminEditCheckbox.parentNode);
         return;
     }
 
@@ -296,10 +359,10 @@
     if (cancelButton) cancelButton.disabled = true;
 
     try {
-      const response = await fetch(`/menu/group/api/edit/${groupId}`, { // ★ URLも 'groupId'
+      const response = await fetch(`/menu/group/api/edit/${groupId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ groupName: newName, storeId: storeId }) 
+        body: JSON.stringify({ groupName: newName, storeId: storeId, forAdminOnly: newForAdminOnly }) 
       });
 
       const data = await response.json();
@@ -317,9 +380,14 @@
         return;
       }
       
-      alert("グループ名を更新しました！");
+      showToast("グループ名を更新しました！", 3000, 'success'); // alertをToastに変更
       groupNameSpan.textContent = newName;
-      disableEditMode(liElement, editInput, groupNameSpan, saveButton, cancelButton, newName);
+      // ★修正：liElementのdatasetも更新
+      liElement.dataset.forAdminOnly = newForAdminOnly;
+      // ★修正：adminEditCheckboxDiv を渡す
+      disableEditMode(liElement, editInput, groupNameSpan, saveButton, cancelButton, newName, adminEditCheckbox.parentNode);
+      // 再表示して「管理者限定」バッジを更新するために再フェッチ
+      await fetchAndDisplayGroups(); 
     } catch (error) {
       console.error('グループ名更新中にエラーが発生しました:', error);
       alert('グループ名の更新に失敗しました。');
@@ -330,14 +398,23 @@
   }
 
   // 編集モードを終了するヘルパー関数
-  function disableEditMode(liElement, editInput, groupNameSpan, saveButton, cancelButton, originalName) {
+  // ★修正：adminCheckboxDiv を引数に追加
+  function disableEditMode(liElement, editInput, groupNameSpan, saveButton, cancelButton, originalName, adminCheckboxDiv) {
     editInput.remove(); 
     groupNameSpan.textContent = originalName; 
     groupNameSpan.style.display = 'inline'; 
 
+    // ここから追加：管理者限定チェックボックスを削除
+    if (adminCheckboxDiv) {
+        adminCheckboxDiv.remove();
+    }
+    // ここまで追加
+
     saveButton.textContent = '編集';
     saveButton.className = ''; 
-    saveButton.onclick = () => enableEditMode(liElement, groupNameSpan, saveButton);
+    // ★修正：fetchAndDisplayGroups を直接呼ぶことで、最新のデータでリスト全体を再描画する
+    saveButton.onclick = () => fetchAndDisplayGroups(); 
+
 
     if (cancelButton) {
       cancelButton.remove(); 
@@ -346,7 +423,7 @@
 
 
   // --- 4. 並び順の変更 ---
-  async function moveGroup(groupId, direction) { // ★ ここも 'groupId'
+  async function moveGroup(groupId, direction) {
     if (storeId === null || isNaN(storeId)) {
       alert('店舗IDが取得できませんでした。');
       return;
@@ -359,7 +436,7 @@
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          groupId: groupId, // ★ リクエストボディのキーも 'groupId'
+          groupId: groupId, 
           direction: direction, 
           storeId: storeId 
         }) 
@@ -370,7 +447,7 @@
         throw new Error('サーバーエラー: ' + response.status + ' - ' + (errorData.message || '未知のエラー'));
       }
       
-      showToast('並び順を更新しました！', 3000);
+      showToast('並び順を更新しました！', 3000, 'success'); // ★追加：Toastのtype指定
       await fetchAndDisplayGroups(); // 更新後にリストを再読み込みして最新の並び順を表示
     } catch (error) {
       console.error('並び順更新中にエラーが発生しました:', error);
@@ -385,10 +462,10 @@
   // ページ読み込み時にグループ一覧を取得・表示
   document.addEventListener('DOMContentLoaded', fetchAndDisplayGroups);
   function showToast(message, duration = 2000, type = 'success') {
-      const toast = document.getElementById("toast"); // toast要素もこのHTMLに追加する必要がある
-      if (!toast) { // toast要素がない場合のガード
+      const toast = document.getElementById("toast");
+      if (!toast) {
           console.warn("Toast element not found.");
-          alert(message); // fallbackとしてalert
+          alert(message);
           return;
       }
       toast.textContent = message;
@@ -399,13 +476,13 @@
 
       // タイプに応じたスタイルを設定
       if (type === 'error') {
-          toast.style.backgroundColor = '#dc3545'; // 赤色
-          toast.style.color = '#fff'; // 白文字
+          toast.style.backgroundColor = '#dc3545';
+          toast.style.color = '#fff';
       } else if (type === 'success') {
-          toast.style.backgroundColor = '#28a745'; // 緑色
+          toast.style.backgroundColor = '#28a745';
           toast.style.color = '#fff';
       } else if (type === 'info') {
-          toast.style.backgroundColor = '#007bff'; // 青色
+          toast.style.backgroundColor = '#007bff';
           toast.style.color = '#fff';
       }
 

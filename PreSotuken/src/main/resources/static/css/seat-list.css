@@ -1,7 +1,12 @@
 @charset "UTF-8";
+html{
+	height:100vh;
+}
+
 body{
 	margin: 0;
 	font-family: "Hiragino Kaku Gothic ProN", "メイリオ", Meiryo, "ＭＳ ゴシック", "MS Gothic", sans-serif;
+	
 }
 
 #userSelect{
@@ -35,7 +40,6 @@ body{
 	top: 0;
 	left: -100%;
 	width: 300px;
-	height: 100vh;
 	background-color: #333;
 	color: white;
 	padding: 80px 20px 20px;
@@ -47,7 +51,7 @@ body{
     justify-content: space-between; /* 上：リンク群、下：ログアウト */
     box-sizing: border-box;
     overflow-y: auto;       /* 縦方向にスクロール許可 */
-	max-height: 100vh; 
+	height: 100vh; 
 }
 
 .menu-drawer.open {

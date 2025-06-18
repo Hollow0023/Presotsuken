@@ -3,47 +3,20 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
+   	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
     <title>メニュー一覧と編集</title>
     <link rel="stylesheet" th:href="@{/css/menu-management.css}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
 
-    <style>
-        /* 新しい要素のためのスタイルを既存のCSSに追加または別ファイルに */
-        .plan-starter-section {
-            border: 1px solid #ccc;
-            padding: 15px;
-            margin-top: 20px;
-            border-radius: 5px;
-            background-color: #f9f9f9;
-        }
-        .plan-starter-section label {
-            display: inline-flex;
-            align-items: center;
-            font-weight: bold;
-        }
-        .plan-starter-section input[type="checkbox"] {
-            margin-right: 8px;
-            width: 20px;
-            height: 20px;
-        }
-        .plan-id-group {
-            margin-top: 10px;
-            /* 初期は非表示 */
-            display: none; 
-        }
-    </style>
 </head>
 <body>
-
-    <h1>メニュー管理</h1>
-    <a href="/">← トップに戻る</a>
-
-    <div th:if="${message}" th:text="${message}" class="message"></div>
-    <div th:if="${error}" th:text="${error}" class="error-message"></div>
-
     <div class="container">
+        <div th:if="${message}" th:text="${message}" class="message"></div>
+    	<div th:if="${error}" th:text="${error}" class="error-message"></div>
         <div class="menu-list-section">
             <h2>登録済みメニュー一覧</h2>
+             <a href="/">← トップに戻る</a>
             <button id="addNewMenuBtn" class="btn btn-primary" style="margin-bottom: 20px;">新規メニュー登録</button>
             <div id="menuList">
                 </div>
