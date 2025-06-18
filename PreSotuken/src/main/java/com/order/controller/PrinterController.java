@@ -68,4 +68,16 @@ public class PrinterController {
         redirectAttributes.addFlashAttribute("message", "削除しました！");
         return "redirect:/admin/printers";
     }
+    
+    //プリンター設定用PostMapping
+    @PostMapping("/update-receipt")
+    public String updateReceiptPrinter(@RequestParam("receiptPrinterId") Integer selectedPrinterId,
+                                       @CookieValue("storeId") Integer storeId,
+                                       RedirectAttributes redirectAttributes) {
+
+        printerConfigService.updateReceiptPrinterForStore(storeId, selectedPrinterId);
+        redirectAttributes.addFlashAttribute("message", "レシート出力プリンタを更新しました！");
+        return "redirect:/admin/printers";
+    }
+
 }

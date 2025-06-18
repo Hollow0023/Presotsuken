@@ -38,4 +38,14 @@ public class PrinterConfigService {
     public void deleteById(Integer printerId) {
         printerConfigRepository.deleteById(printerId);
     }
+    
+    //レシート印刷用プリンター保存
+    public void updateReceiptPrinterForStore(Integer storeId, Integer selectedPrinterId) {
+        List<PrinterConfig> printers = printerConfigRepository.findByStoreId(storeId);
+        for (PrinterConfig printer : printers) {
+            printer.setReceiptOutput(printer.getPrinterId().equals(selectedPrinterId));
+        }
+        printerConfigRepository.saveAll(printers);
+    }
+
 }

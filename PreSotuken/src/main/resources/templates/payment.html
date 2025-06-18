@@ -78,6 +78,10 @@
 			display: none;
 			margin-bottom: 10px;
 		}
+		.tyuuki{
+			margin-top:-20px;
+			font-size:small;
+		}
 	</style>
 </head>
 
@@ -91,7 +95,7 @@
 		<p id="errorMessage"></p>
 		<div class="payment-row"><label>人数:</label><span th:text="${visit.numberOfPeople} + '名'"></span></div>
 		<div class="payment-row"><label>小計:</label><span id="subtotal" th:text="${subtotal} + '円'">0円</span></div>
-		<div class="payment-row"><label>値引/割引:</label><span id="discount">0円</span><button class="detail-button" onclick="openDiscountModal()">変更</button></div>
+		<div class="payment-row"><label>値引/値増 :</label><span id="discount">0円</span><button class="detail-button" onclick="openDiscountModal()">変更</button></div>
 		<div class="payment-row"><label>合計:</label><span id="total">0円</span></div>
 		<div class="payment-row"><label>お預かり:</label><input type="number" id="receivedInput" min="0" value="0" oninput="updateReceived()">円
 </div>
@@ -115,27 +119,7 @@
 		<button class="detail-button" onclick="goBackToSeats()">キャンセル</button>
 	</div>
 	<div class="payment-details">
-		<h3>備考や操作スペース</h3>
-		<p>ここにボタン配置や印刷など追加可能</p>
-	</div>
-
-	<!-- 割引モーダル -->
-	<div id="discountModal" class="modal">
-		<div class="modal-content">
-			<span class="close" onclick="closeDiscountModal()">&times;</span>
-			<h3>割引を入力</h3>
-			<label>割引金額:</label><input type="number" id="discountInput" min="0" placeholder="割引金額を入力"><br>
-			<label>割引理由:</label><input type="text" id="discountReasonInput" placeholder="割引理由を入力"><br>
-			<button onclick="applyDiscount()">保存</button>
-		</div>
-	</div>
-	
-	<!-- 金額詳細モーダル -->
-	<div id="detailModal" class="modal">
-		<div class="modal-content">
-			<span class="close" onclick="closeDetailModal()">&times;</span>
-			<h3>金額詳細</h3>
-			<table border="1" style="width:100%">
+		<table border="1" style="width:100%">
 				<thead>
 					<tr>
 						<th>商品</th>
@@ -155,6 +139,16 @@
 					</tr>
 				</tbody>
 			</table>
+	</div>
+
+	<!-- 割引モーダル -->
+	<div id="discountModal" class="modal">
+		<div class="modal-content">
+			<span class="close" onclick="closeDiscountModal()">&times;</span>
+			<h3>割引を入力</h3><p class="tyuuki">*値増は-を付ける</p>
+			<label>割引金額:</label><input type="number" id="discountInput" min="0" placeholder="割引金額を入力"><br>
+			<label>割引理由:</label><input type="text" id="discountReasonInput" placeholder="割引理由を入力"><br>
+			<button onclick="applyDiscount()">保存</button>
 		</div>
 	</div>
 
