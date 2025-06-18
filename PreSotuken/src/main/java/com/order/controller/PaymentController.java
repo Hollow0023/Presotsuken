@@ -109,9 +109,28 @@ public class PaymentController {
         payment.setPaymentTime(req.getPaymentTime());
         payment.setDeposit(req.getDeposit());
         payment.setCashier(staff);
+        
+        
+        if (req.getDetails() != null && !req.getDetails().isEmpty()) {
+            for (PaymentFinalizeRequest.PaymentDetailRequest detailReq : req.getDetails()) {
+                // 既存のPaymentDetailレコードを更新する場合
+                // detailReq.getPaymentDetailId() が送られてくることを前提
+                if (detailReq.getPaymentDetailId() != null) {
+                    PaymentDetail existingDetail = paymentDetailRepository.findById(detailReq.getPaymentDetailId())
+                            .orElseThrow(() -> new IllegalArgumentException("Invalid paymentDetailId: " + detailReq.getPaymentDetailId()));
+                    existingDetail.setDiscount(detailReq.getDiscountAmount());
+                    // 必要であれば、quantityなども更新
+                    paymentDetailRepository.save(existingDetail); // 更新を保存
+                }
+                // もし新しいPaymentDetailを作成する場合は別途ロジックが必要
+            }
+        }
 
         //  Visit 退店時刻を設定
         Visit visit = payment.getVisit();
+        if(req.getPeople() != null) {
+            visit.setNumberOfPeople(req.getPeople());
+        }
         visit.setLeaveTime(req.getPaymentTime());
         
         Map<String, Object> payload = new HashMap<>();

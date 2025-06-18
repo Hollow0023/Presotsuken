@@ -1,6 +1,7 @@
 @charset "UTF-8";
 body{
 	margin: 0;
+	font-family: "Hiragino Kaku Gothic ProN", "メイリオ", Meiryo, "ＭＳ ゴシック", "MS Gothic", sans-serif;
 }
 
 #userSelect{
