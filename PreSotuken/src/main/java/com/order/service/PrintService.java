@@ -55,11 +55,11 @@ public class PrintService {
 
     // --- 印字幅に関する定数 (半角換算、プリンターのフォントに合わせて調整が必要) ---
     private static final int INDENT_SPACES = 0;
-    private static final int ITEM_NAME_COL_WIDTH = 18;
-    private static final int QUANTITY_COL_WIDTH = 6;
+    private static final int ITEM_NAME_COL_WIDTH = 12;
+    private static final int QUANTITY_COL_WIDTH = 10;
     private static final int UNIT_PRICE_COL_WIDTH = 10;
-    private static final int SUBTOTAL_LABEL_WIDTH = 6;
-    private static final int SUB_TOTAL_AMOUNT_WIDTH = 10;
+    private static final int SUBTOTAL_LABEL_WIDTH = 14;
+    private static final int SUB_TOTAL_AMOUNT_WIDTH = 14;
     private static final int TAX_DETAIL_LABEL_WIDTH = 18;
     private static final int TAX_AMOUNT_WIDTH = 10;
     private static final int TOTAL_LABEL_WIDTH = 10;
