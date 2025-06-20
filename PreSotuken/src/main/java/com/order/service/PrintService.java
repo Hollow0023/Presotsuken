@@ -62,8 +62,16 @@ public class PrintService {
     private static final int SUB_TOTAL_AMOUNT_WIDTH = 14;
     private static final int TAX_DETAIL_LABEL_WIDTH = 18;
     private static final int TAX_AMOUNT_WIDTH = 10;
-    private static final int TOTAL_LABEL_WIDTH = 10;
-    private static final int GRAND_TOTAL_AMOUNT_WIDTH = 10;
+    // ★★★ 新しい定数: 小計伝票のレイアウト用 (半角換算) ★★★
+    /** レシート全体の幅 (全角17文字) */
+    private static final int RECEIPT_TOTAL_WIDTH_HALF = 34;
+    /** 品名エリアの最大幅 (全角9文字分)。この幅で数量の開始位置が決まる */
+    private static final int RECEIPT_ITEM_NAME_MAX_WIDTH_HALF = 18;
+    /** 数量エリアの幅 (品名エリアの右隣) */
+    private static final int RECEIPT_QUANTITY_WIDTH_HALF = 6;
+    /** 単価エリアの幅 (数量エリアの右隣) */
+    private static final int RECEIPT_PRICE_WIDTH_HALF = 10;
+    // ★★★ ここまで新しい定数 ★★★
     // --- ここまで定数定義 ---
 
     // ヘルパー関数: 全角文字を2バイト、半角文字を1バイトとして計算
@@ -105,6 +113,26 @@ public class PrintService {
         }
         int paddingLength = targetHalfWidth - currentByteLength;
         return " ".repeat(Math.max(0, paddingLength)) + safeS;
+    }
+    
+    /**
+     * ★★★ 新しいヘルパー関数 ★★★
+     * 指定した全体幅の中で、文字列を左寄せと右寄せに配置して返す
+     * @param leftText 左側に配置する文字列
+     * @param rightText 右側に配置する文字列
+     * @param totalWidth 全体の半角幅
+     * @return フォーマットされた文字列
+     */
+    private String formatToLeftAndRight(String leftText, String rightText, int totalWidth) {
+        int leftBytes = calculateEpsonPrintByteLength(leftText);
+        int rightBytes = calculateEpsonPrintByteLength(rightText);
+        int paddingBytes = totalWidth - leftBytes - rightBytes;
+
+        if (paddingBytes < 0) {
+            // 幅が足りない場合は、とりあえず連結して返す（あるいは別の方法も検討可）
+            return leftText + rightText;
+        }
+        return leftText + " ".repeat(paddingBytes) + rightText;
     }
 
     // 単品伝票印刷 (変更後)
@@ -238,17 +266,13 @@ public class PrintService {
 //        return commands;
     
     
-    // 小計伝票印刷メソッド (printReceiptForPayment) も同様にJSONを組み立てる
+    // ★★★ 小計伝票印刷メソッド (ここを修正) ★★★
     public void printReceiptForPayment(
-    		List<PaymentDetail> detailsForReceipt, 
-    		Integer seatId,
-    		Integer storeId) {
-//        if (detailsForReceipt == null || detailsForReceipt.isEmpty()) {
-//            System.out.println("印刷するPaymentDetailがありません。小計伝票の生成をスキップします。");
-//            
-//        }
+            List<PaymentDetail> detailsForReceipt,
+            Integer seatId,
+            Integer storeId) {
 
-        // --- 伝票に必要な情報の計算 (既存ロジックそのまま) ---
+        // --- 伝票に必要な情報の計算 (変更なし) ---
         BigDecimal subtotalExcludingTax = BigDecimal.ZERO;
         BigDecimal subtotalIncludingTax = BigDecimal.ZERO;
         Map<BigDecimal, BigDecimal> taxRateToAmountMap = new TreeMap<>();
@@ -270,62 +294,39 @@ public class PrintService {
             taxRateToTaxAmountMap.merge(taxRateValueFromDb, taxAmount, BigDecimal::add);
         }
 
-        BigDecimal totalTaxOnly = taxRateToTaxAmountMap.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal grandTotalIncludingTax = subtotalIncludingTax;
-
-        // --- 共通情報取得 (既存ロジックそのまま) ---
-        String seatName = seatRepo.findById(seatId)
-                .map(Seat::getSeatName)
-                .orElse("不明な席");
-
-        String timeStr = LocalDateTime.now().format(DateTimeFormatter.ofPattern("MM/dd HH:mm"));
-
-        User user = detailsForReceipt.get(0).getUser();
-        String username = (user != null) ? user.getUserName() : "卓上端末";
-
+        // --- 共通情報取得 (変更なし) ---
+        String seatName = seatRepo.findById(seatId).map(Seat::getSeatName).orElse("不明な席");
+        String timeStr = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm"));
         String logoImageBase64 = logoService.getLogoBase64Data((long)storeId);
 
-        // JSONコマンドを格納するArrayNode
+        // --- JSONコマンド組み立て開始 ---
         ArrayNode commands = objectMapper.createArrayNode();
-
-        // 初期設定系
         commands.add(createSoundCommand("pattern_a", 1));
         commands.add(createAddTextLangCommand("ja"));
-        commands.add(createAddTextFontCommand("FONT_A")); // フォントA
+        commands.add(createAddTextFontCommand("FONT_A"));
         commands.add(createTextAlignCommand("center"));
-//        commands.add(createFeedCommand());
 
         // ロゴ画像
-        // imageはBase64データを直接渡す形にする
-        // ロゴが登録されている場合のみ印刷する
         if(logoImageBase64 != null) {
             commands.add(createAddImageCommand(logoImageBase64, 0, 0, 256, 60, "COLOR_1", "MONO"));
             commands.add(createFeedUnitCommand(10));
         }
 
-
-        // テキストアラインメントをセンターに (上の画像のアラインメント設定を引き継ぐ可能性があるので明示的に)
-//        commands.add(createTextAlignCommand("center"));
-//        commands.add(createFeedUnitCommand(5));
-
-        // テーブルと日時 (Java側でパディング処理済み文字列を生成)
-        String tableAndTimeLine = " ".repeat(INDENT_SPACES)
-                                + padRightHalfWidth("テーブル:" + seatName, calculateEpsonPrintByteLength("テーブル:") + calculateEpsonPrintByteLength(seatName) + 10)
-                                + timeStr; // XMLエンティティ化は不要になる
-        commands.add(createTextAlignCommand("left")); // 左寄せに戻す
-        commands.add(createTextCommand(tableAndTimeLine));
+        // テーブルと日時
+        commands.add(createTextAlignCommand("left"));
+        String tableLine = "テーブル: " + seatName;
+        commands.add(createTextCommand(formatToLeftAndRight(tableLine, timeStr, RECEIPT_TOTAL_WIDTH_HALF)));
         commands.add(createFeedUnitCommand(5));
         commands.add(createFeedCommand());
-
-        // 品名、数量、単価ヘッダー
-        commands.add(createTextAlignCommand("left"));
-        String itemHeaderLine = " ".repeat(INDENT_SPACES)
-                                + padRightHalfWidth("品名", ITEM_NAME_COL_WIDTH)
-                                + padRightHalfWidth("数量", QUANTITY_COL_WIDTH)
-                                + padLeftHalfWidth("単価", UNIT_PRICE_COL_WIDTH);
+        
+        // --- ★★★ ヘッダーのレイアウトを修正 ★★★ ---
+        String itemHeaderLine = padRightHalfWidth("品名", RECEIPT_ITEM_NAME_MAX_WIDTH_HALF)
+                            + padRightHalfWidth("数量", RECEIPT_QUANTITY_WIDTH_HALF)
+                            + padLeftHalfWidth("単価", RECEIPT_PRICE_WIDTH_HALF);
         commands.add(createTextCommand(itemHeaderLine));
+        commands.add(createTextCommand("-".repeat(RECEIPT_TOTAL_WIDTH_HALF))); // 罫線
 
-        // 商品詳細
+        // --- ★★★ 商品詳細のループ (改行処理を追加) ★★★ ---
         for (PaymentDetail detail : detailsForReceipt) {
             Menu menu = detail.getMenu();
             List<PaymentDetailOption> optionList = paymentDetailOptionRepo.findByPaymentDetail(detail);
@@ -345,20 +346,54 @@ public class PrintService {
                     .multiply(BigDecimal.ONE.add(BigDecimal.valueOf(detail.getTaxRate().getRate())))
                     .setScale(0, RoundingMode.HALF_UP);
             String unitPriceStr = "\\" + String.format("%,d", unitPriceIncludingTax.longValue());
+            
+            String remainingItemName = displayItemName;
+            boolean isFirstLine = true;
 
-            String itemLine = " ".repeat(INDENT_SPACES)
-                            + padRightHalfWidth(displayItemName, ITEM_NAME_COL_WIDTH)
-                            + padRightHalfWidth(quantityStr, QUANTITY_COL_WIDTH)
-                            + padLeftHalfWidth(unitPriceStr, UNIT_PRICE_COL_WIDTH);
-            commands.add(createTextCommand(itemLine));
+            // 品名がなくなるまでループして、複数行に分割する
+            while (!remainingItemName.isEmpty()) {
+                int currentLineByteLength = 0;
+                int cutIndex = 0;
+                // RECEIPT_ITEM_NAME_MAX_WIDTH_HALF を超えないギリギリの文字数を探す
+                for (int i = 0; i < remainingItemName.length(); i++) {
+                    char c = remainingItemName.charAt(i);
+                    int charBytes = 1;
+                    try {
+                        charBytes = String.valueOf(c).getBytes("Shift_JIS").length > 1 ? 2 : 1;
+                    } catch (UnsupportedEncodingException e) { /* ignore */ }
+
+                    if (currentLineByteLength + charBytes > RECEIPT_ITEM_NAME_MAX_WIDTH_HALF) {
+                        break; // 幅を超えるのでここでカット
+                    }
+                    currentLineByteLength += charBytes;
+                    cutIndex++;
+                }
+
+                String itemNameForThisLine = remainingItemName.substring(0, cutIndex);
+                remainingItemName = remainingItemName.substring(cutIndex);
+
+                // 品名部分を作成 (右側を空白で埋める)
+                String paddedItemName = padRightHalfWidth(itemNameForThisLine, RECEIPT_ITEM_NAME_MAX_WIDTH_HALF);
+
+                if (isFirstLine) {
+                    // 1行目: 品名 + 数量 + 単価
+                    String paddedQuantity = padRightHalfWidth(quantityStr, RECEIPT_QUANTITY_WIDTH_HALF);
+                    String paddedPrice = padLeftHalfWidth(unitPriceStr, RECEIPT_PRICE_WIDTH_HALF);
+                    commands.add(createTextCommand(paddedItemName + paddedQuantity + paddedPrice));
+                    isFirstLine = false;
+                } else {
+                    // 2行目以降: 品名の続きのみ
+                    commands.add(createTextCommand(paddedItemName));
+                }
+            }
         }
+        commands.add(createTextCommand("-".repeat(RECEIPT_TOTAL_WIDTH_HALF))); // 罫線
         commands.add(createFeedUnitCommand(10));
-        commands.add(createFeedCommand());
 
+        // --- ★★★ 小計・税額表示のレイアウトを修正 ★★★ ---
         // 小計 (税込)
-        String subtotalLine = " ".repeat(INDENT_SPACES) + padRightHalfWidth("小計", SUBTOTAL_LABEL_WIDTH + 14)
-                            + padLeftHalfWidth("\\" + String.format("%,d", subtotalIncludingTax.longValue()), SUB_TOTAL_AMOUNT_WIDTH);
-        commands.add(createTextCommand(subtotalLine));
+        String subtotalAmount = "\\" + String.format("%,d", subtotalIncludingTax.longValue());
+        commands.add(createTextCommand(formatToLeftAndRight("小計", subtotalAmount, RECEIPT_TOTAL_WIDTH_HALF)));
 
         // 税率ごとの対象額
         List<BigDecimal> sortedTaxRates = new ArrayList<>(taxRateToAmountMap.keySet());
@@ -367,34 +402,31 @@ public class PrintService {
         for (BigDecimal rate : sortedTaxRates) {
             BigDecimal amountForRate = taxRateToAmountMap.get(rate);
             String taxRateLabel = "(" + rate.multiply(BigDecimal.valueOf(100)).stripTrailingZeros().toPlainString() + "%対象";
-            String taxRateAmountLine = " ".repeat(INDENT_SPACES)
-                                    + padRightHalfWidth(taxRateLabel, TAX_DETAIL_LABEL_WIDTH)
-                                    + padLeftHalfWidth("\\" + String.format("%,d", amountForRate.longValue()) + ")", TAX_AMOUNT_WIDTH + 1);
-            commands.add(createTextCommand(taxRateAmountLine));
+            String taxRateAmount = "\\" + String.format("%,d", amountForRate.longValue()) + ")";
+            commands.add(createTextCommand(formatToLeftAndRight(taxRateLabel, taxRateAmount, RECEIPT_TOTAL_WIDTH_HALF)));
         }
 
         // 「内税」テキスト
-        commands.add(createTextCommand(" ".repeat(INDENT_SPACES) + "内税"));
+        commands.add(createTextCommand("内税"));
 
         // 各税率ごとの税額
         for (BigDecimal rate : sortedTaxRates) {
             BigDecimal taxAmountForRate = taxRateToTaxAmountMap.get(rate);
             String taxRateTaxLabel = "(" + rate.multiply(BigDecimal.valueOf(100)).stripTrailingZeros().toPlainString() + "%税";
-            String taxRateTaxLine = " ".repeat(INDENT_SPACES)
-                                + padRightHalfWidth(taxRateTaxLabel, TAX_DETAIL_LABEL_WIDTH)
-                                + padLeftHalfWidth("\\" + String.format("%,d", taxAmountForRate.longValue()) + ")", TAX_AMOUNT_WIDTH + 1);
-            commands.add(createTextCommand(taxRateTaxLine));
+            String taxRateTaxAmount = "\\" + String.format("%,d", taxAmountForRate.longValue()) + ")";
+            commands.add(createTextCommand(formatToLeftAndRight(taxRateTaxLabel, taxRateTaxAmount, RECEIPT_TOTAL_WIDTH_HALF)));
         }
+        
+        commands.add(createFeedUnitCommand(15));
+        commands.add(createCutCommand("feed"));
 
-//        commands.add(createFeedUnitCommand(15));
-        commands.add(createCutCommand("feed")); // 最後はfeedカット
-//        commands.add(createFeedCommand()); // 最後の改行
         PrinterConfig printer = printerConfigRepository.findByStoreIdAndReceiptOutput(storeId,true);
         String printerIp = printer.getPrinterIp();
+        
         // フロントエンドに送信
-        sendPrintCommandsToFrontend(printerIp, seatId,commands.toString());
-//        return commands;
+        sendPrintCommandsToFrontend(printerIp, seatId, commands.toString());
     }
+
 
     // JSONコマンドをフロントエンドに送信するヘルパーメソッド
     public void sendPrintCommandsToFrontend(String printerIp, Integer seatId, String jsonCommands) {
