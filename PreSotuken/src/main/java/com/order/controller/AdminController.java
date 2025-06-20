@@ -1,5 +1,7 @@
 package com.order.controller;
 
+//import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -13,6 +15,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -31,11 +34,12 @@ import com.order.repository.SeatRepository;
 import com.order.repository.StoreRepository;
 import com.order.repository.TerminalRepository;
 import com.order.service.LogoService;
+import com.order.service.StoreService;
 
 import lombok.RequiredArgsConstructor;
 
 @Controller
-@RequestMapping("/admin/terminals")
+@RequestMapping("/admin")
 @RequiredArgsConstructor
 public class AdminController { // クラス名はAdminControllerではなくAdminTerminalControllerにした方が役割が明確
 
@@ -43,14 +47,15 @@ public class AdminController { // クラス名はAdminControllerではなくAdmi
     private final SeatRepository seatRepository;
     private final StoreRepository storeRepository;
     private final LogoService logoService;
+    private final StoreService storeService;
 
 
-    @GetMapping
+    @GetMapping("/terminals")
     public String showTerminalManagementPage(Model model) {
         return "admin_terminals"; // src/main/resources/templates/admin_terminals.html を参照
     }
 
-    @PostMapping
+    @PostMapping("/terminals")
     @ResponseBody
     public ResponseEntity<Map<String, String>> addTerminal(@RequestBody TerminalCreationDto dto,
                                                            @CookieValue("storeId") Integer storeId) {
@@ -100,12 +105,52 @@ public class AdminController { // クラス名はAdminControllerではなくAdmi
         }
     }
     
+    // 店舗編集フォームを表示する
+    // storeId を Cookie から取得するように変更
+    @GetMapping("/store/edit") // パス変数からCookie取得に変更したので、URLからIDを削除
+    public String showEditForm(
+            @CookieValue(name = "storeId", required = false) Integer storeId, // ここを修正！
+            Model model) {
+
+        if (storeId == null) {
+            // Cookieに storeId がない場合のエラーハンドリング
+            model.addAttribute("store", new Store());
+            model.addAttribute("errorMessage", "店舗IDがCookieから見つかりませんでした。");
+            return "storeEdit";
+        }
+
+        storeService.getStoreById(storeId).ifPresentOrElse(
+            store -> model.addAttribute("store", store),
+            () -> {
+                // CookieのIDで店舗が見つからなかった場合
+                model.addAttribute("store", new Store());
+                model.addAttribute("errorMessage", "指定された店舗（ID: " + storeId + "）が見つかりませんでした。");
+            }
+        );
+        return "storeEdit"; // storeEdit.html を表示
+    }
+
+    // 店舗情報を更新する
+    @PostMapping("/store/edit")
+    public String updateStore(@ModelAttribute Store store, RedirectAttributes redirectAttributes) {
+        // 更新対象の店舗IDがセットされているか確認
+        // ここはフォームから hidden フィールドで storeId が送られてくるので、CookieValueは不要だよ
+        if (store.getStoreId() == null) {
+            redirectAttributes.addFlashAttribute("errorMessage", "店舗IDが指定されていません。");
+            return "redirect:/admin/store/edit"; // Cookieから取得するので、IDなしのURLにリダイレクト
+        }
+
+        storeService.updateStore(store);
+        redirectAttributes.addFlashAttribute("successMessage", "店舗情報を更新しました！");
+        return "redirect:/admin/store/edit"; // 更新後もCookieのIDを使うので、IDなしのURLにリダイレクト
+    }
+    
     // ★★★ 端末編集 (PUT) API ★★★
     // DTOは追加時と同じTerminalCreationDtoを使うか、またはTerminalエンティティをRequestBodyとして直接受け取る
     // ここではIDを含めて更新するため、TerminalCreationDtoUpdateなどの新しいDTOを作るか、
     // あるいはTerminalエンティティを直接RequestBodyとして受け取るのがシンプル。
     // 仮にTerminalエンティティを直接受け取るとして、IDはパス変数から取得する
-    @PutMapping("/{terminalId}") // ★ PUT /admin/terminals/{terminalId}
+    @PutMapping("/terminals/{terminalId}") // ★ PUT /admin/terminals/{terminalId}
     @ResponseBody
     public ResponseEntity<Map<String, String>> updateTerminal(@PathVariable Integer terminalId,
                                                               @RequestBody TerminalCreationDto dto, // 更新用のDTO
@@ -164,7 +209,7 @@ public class AdminController { // クラス名はAdminControllerではなくAdmi
 
 
     // ★★★ 端末削除 (DELETE) API ★★★
-    @DeleteMapping("/{terminalId}") // ★ DELETE /admin/terminals/{terminalId}
+    @DeleteMapping("/terminals/{terminalId}") // ★ DELETE /admin/terminals/{terminalId}
     @ResponseBody
     public ResponseEntity<Map<String, String>> deleteTerminal(@PathVariable Integer terminalId,
                                                               @CookieValue("storeId") Integer storeId) {
@@ -199,7 +244,7 @@ public class AdminController { // クラス名はAdminControllerではなくAdmi
         }
     }
 
-    @GetMapping("/seats")
+    @GetMapping("/terminals/seats")
     @ResponseBody
     public ResponseEntity<List<Map<String, Object>>> getSeatsByStoreId(@CookieValue("storeId") Integer storeId) {
         if (storeId == null) {
@@ -231,7 +276,7 @@ public class AdminController { // クラス名はAdminControllerではなくAdmi
      * @param storeId 店舗ID
      * @return 端末情報のリスト
      */
-    @GetMapping("/list") // ★★★ ここを /list に変更！ ★★★
+    @GetMapping("/terminals/list") // ★★★ ここを /list に変更！ ★★★
     @ResponseBody
     public ResponseEntity<List<Terminal>> getTerminalsByStoreId(@CookieValue("storeId") Integer storeId) {
         if (storeId == null) {
@@ -248,7 +293,7 @@ public class AdminController { // クラス名はAdminControllerではなくAdmi
      * ロゴ設定画面を表示する。
      * 既存のロゴがあれば表示し、なければデフォルト画像を示す。
      */
-    @GetMapping("/logo") // ★ /admin/terminals/logo へのGETリクエストを処理
+    @GetMapping("/terminals/logo") // ★ /admin/terminals/logo へのGETリクエストを処理
     public String showLogoSettingPage(Model model) {
         Long storeId = 1L; // 例: 固定の店舗ID。陽翔君のシステムに合わせて調整してね！
 
@@ -276,7 +321,7 @@ public class AdminController { // クラス名はAdminControllerではなくAdmi
      * ロゴ画像を保存または更新する。
      * フロントエンドからBASE64エンコードされた文字列を受け取る。
      */
-    @PostMapping("/logo/upload") // ★ /admin/terminals/logo/upload へのPOSTリクエストを処理
+    @PostMapping("/terminals/logo/upload") // ★ /admin/terminals/logo/upload へのPOSTリクエストを処理
     public String uploadLogo(@RequestParam("storeId") Long storeId,
                              @RequestParam("logoBase64") String logoBase64,
                              RedirectAttributes redirectAttributes) {

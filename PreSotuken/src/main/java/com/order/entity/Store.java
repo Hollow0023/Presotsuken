@@ -17,4 +17,6 @@ public class Store {
 
     private String storeName;
     private String note;
+    private String receiptHeader;
+    private String receiptFooter;
 }

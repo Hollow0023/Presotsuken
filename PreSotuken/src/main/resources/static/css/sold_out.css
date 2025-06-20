@@ -1,31 +1,44 @@
-/* style.css */
-
 body {
     font-family: 'Arial', sans-serif;
     background-color: #f4f4f4;
     margin: 0;
-    padding: 20px;
     color: #333;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .container {
     max-width: 900px;
-    margin: 20px auto;
+    width: 90%;
     background-color: #fff;
     padding: 30px;
-    border-radius: 8px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    max-height: 95vh;
+    overflow: hidden; /* コンテナ自体はスクロールさせない */
 }
 
 h1 {
     text-align: center;
     color: #0056b3;
     margin-bottom: 25px;
+    flex-shrink: 0;
+}
+
+.container > a {
+    margin-bottom: 15px;
+    display: inline-block;
+    flex-shrink: 0;
 }
 
 .action-buttons {
     text-align: right;
     margin-bottom: 15px;
+    flex-shrink: 0;
 }
 
 .action-buttons button {
@@ -39,7 +52,7 @@ h1 {
 }
 
 #bulkSoldOutBtn {
-    background-color: #dc3545; /* 赤系 */
+    background-color: #dc3545;
     color: white;
 }
 
@@ -48,7 +61,7 @@ h1 {
 }
 
 #bulkAvailableBtn {
-    background-color: #28a745; /* 緑系 */
+    background-color: #28a745;
     color: white;
 }
 
@@ -57,22 +70,76 @@ h1 {
 }
 
 table {
-    width: 100%;
+    width: 100%; /* 親要素の幅いっぱいに */
     border-collapse: collapse;
     margin-top: 20px;
     box-shadow: 0 0 5px rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    min-height: 0;
+    /* テーブル全体の横スクロールを防ぐために overflow-x: hidden; を追加 */
+    overflow-x: hidden;
+}
+
+table thead {
+    flex-shrink: 0;
+    display: table;
+    /* スクロールバーの幅の分だけ幅を狭める */
+    width: calc(100% - 17px); /* ここを修正！ 17pxは一般的なスクロールバーの幅 */
+    table-layout: fixed;
+}
+
+table tbody {
+    display: block;
+    overflow-y: auto; /* 垂直スクロールを有効にする */
+    flex-grow: 1;
+    -webkit-overflow-scrolling: touch;
 }
 
 table th, table td {
     padding: 12px 15px;
     border: 1px solid #ddd;
     text-align: left;
+    /* 列の幅を明示的に指定 */
+    /* これらを全体の幅に合わせて調整する */
 }
 
-table th {
-    background-color: #e9ecef;
-    font-weight: bold;
-    color: #555;
+/* 各列の幅を指定 */
+table th:nth-child(1),
+table td:nth-child(1) {
+    width: 8%; /* チェックボックス */
+}
+
+table th:nth-child(2),
+table td:nth-child(2) {
+    width: 12%; /* メニューID */
+}
+
+table th:nth-child(3),
+table td:nth-child(3) {
+    width: 40%; /* メニュー名 */
+}
+
+table th:nth-child(4),
+table td:nth-child(4) {
+    width: 15%; /* 価格 */
+}
+
+table th:nth-child(5),
+table td:nth-child(5) {
+    width: 15%; /* 品切れ中 */
+}
+
+table th:nth-child(6),
+table td:nth-child(6) {
+    width: 10%; /* 個別操作 */
+}
+
+table tbody tr {
+    display: table;
+    width: 100%; /* tbodyの幅を100%にすることで親の幅に合わせる */
+    table-layout: fixed;
 }
 
 table tbody tr:nth-child(even) {
@@ -83,7 +150,6 @@ table tbody tr:hover {
     background-color: #f1f1f1;
 }
 
-/* 品切れ切り替えボタン (個別操作) */
 .toggle-button {
     padding: 8px 12px;
     border: none;
@@ -95,7 +161,7 @@ table tbody tr:hover {
 }
 
 .toggle-button.sold-out {
-    background-color: #ffc107; /* 黄色系 */
+    background-color: #ffc107;
     color: #333;
 }
 
@@ -104,7 +170,7 @@ table tbody tr:hover {
 }
 
 .toggle-button.available {
-    background-color: #17a2b8; /* 青系 */
+    background-color: #17a2b8;
     color: white;
 }
 
@@ -112,9 +178,8 @@ table tbody tr:hover {
     background-color: #138496;
 }
 
-/* チェックボックスのスタイル調整 */
 input[type="checkbox"] {
-    transform: scale(1.2); /* 少し大きく表示 */
+    transform: scale(1.2);
     margin-right: 5px;
     vertical-align: middle;
 }
