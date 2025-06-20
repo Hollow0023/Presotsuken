@@ -79,5 +79,16 @@ public class PrinterController {
         redirectAttributes.addFlashAttribute("message", "レシート出力プリンタを更新しました！");
         return "redirect:/admin/printers";
     }
+    
+    @PostMapping("/update-account")
+    public String updateAccountPrinter(@RequestParam("accountPrinterId") Integer selectedPrinterId,
+                                       @CookieValue("storeId") Integer storeId,
+                                       RedirectAttributes redirectAttributes) {
+
+        // Serviceに新しいメソッドを呼び出す（後でServiceも修正が必要だよ）
+        printerConfigService.updateAccountPrinterForStore(storeId, selectedPrinterId);
+        redirectAttributes.addFlashAttribute("message", "会計伝票出力プリンタを更新しました！");
+        return "redirect:/admin/printers";
+    }
 
 }

@@ -33,5 +33,6 @@ public class PrinterConfig {
     
     @Column(name = "receipt_output", nullable = false)
     private boolean receiptOutput;  // ← これがレシート出力フラグ！
+    private boolean accountPrinter;
 
 }
