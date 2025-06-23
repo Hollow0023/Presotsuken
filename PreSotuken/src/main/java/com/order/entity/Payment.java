@@ -28,8 +28,8 @@ public class Payment {
     @JoinColumn(name = "visit_id")
     private Visit visit;
     
-    @Column(name = "visit_cancel", nullable = false) // DBのカラム名に合わせて修正
-    private Boolean visitCancel = false; // デフォルト値を0(false)に設定
+    @Column(name = "visit_cancel", nullable = false)
+    private Boolean visitCancel;
 
     private LocalDateTime paymentTime;
     private Double subtotal;

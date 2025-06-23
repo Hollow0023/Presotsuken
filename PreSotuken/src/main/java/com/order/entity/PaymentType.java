@@ -25,6 +25,9 @@ public class PaymentType {
 
     @Column(name = "type_name")
     private String typeName;
+    
+    @Column(name = "is_inspection_target")
+    private Boolean isInspectionTarget;
 
     // getter/setter...
 }

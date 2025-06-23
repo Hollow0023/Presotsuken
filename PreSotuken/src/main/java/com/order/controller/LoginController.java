@@ -27,7 +27,7 @@ public class LoginController {
 	private final StoreRepository storeRepository;
 	private final TerminalRepository terminalRepository;
 
-	@GetMapping("/")
+	@GetMapping({"/login", "/"})
 	public String showLoginForm(HttpServletRequest request, HttpServletResponse response, Model model) {
 		Cookie[] cookies = request.getCookies();
 		Integer storeId = null;
@@ -74,7 +74,7 @@ public class LoginController {
 			HttpServletResponse response) {
 
 		boolean isLoginSuccess = storeRepository.existsByStoreIdAndStoreName(storeId, storeName);
-		if (isLoginSuccess) {
+		if (!isLoginSuccess) {
 			return "redirect:/login?error=true";
 		}
 
@@ -90,6 +90,7 @@ public class LoginController {
 		addCookie(response, "storeId", String.valueOf(storeId));
 		addCookie(response, "terminalId", String.valueOf(terminal.getTerminalId()));
 		addCookie(response, "adminFlag", String.valueOf(terminal.isAdmin()));
+		addCookie(response, "storeName", storeName);
 		if (!terminal.isAdmin()) {
 			addCookie(response, "seatId", String.valueOf(terminal.getSeat().getSeatId()));
 		}
@@ -104,15 +105,23 @@ public class LoginController {
 	private void addCookie(HttpServletResponse response, String name, String value) {
 		Cookie cookie = new Cookie(name, value);
 		cookie.setPath("/");
+		cookie.setMaxAge(15_552_000);
 		response.addCookie(cookie);
 	}
 
-	// IPアドレス取得
 	private String getClientIp(HttpServletRequest request) {
-		String xfHeader = request.getHeader("X-Forwarded-For");
-		return (xfHeader == null) ? request.getRemoteAddr() : xfHeader.split(",")[0];
-	}
+	    String xfHeader = request.getHeader("X-Forwarded-For");
+	    String ip = (xfHeader == null) ? request.getRemoteAddr() : xfHeader.split(",")[0];
 
+	    // IPv6のループバックアドレスをIPv4形式に変換
+	    if ("0:0:0:0:0:0:0:1".equals(ip) || "::1".equals(ip)) {
+	        ip = "127.0.0.1";
+	    }
+
+	    return ip;
+	}
+	
+	
 	@GetMapping("/api/stores/check")
 	@ResponseBody
 	public Map<String, Boolean> checkStore(@RequestParam Integer storeId, @RequestParam String storeName) {
