@@ -25,4 +25,5 @@ public class Terminal {
     @JoinColumn(name = "store_id")
     private Store store;
     private String ipAddress;
+    private boolean isAdmin;
 }
