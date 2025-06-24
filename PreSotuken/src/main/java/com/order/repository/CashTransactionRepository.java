@@ -12,6 +12,8 @@ import com.order.entity.CashTransaction;
 
 public interface CashTransactionRepository extends JpaRepository<CashTransaction, Integer> {
     List<CashTransaction> findByStore_StoreIdAndTransactionTimeBetween(Integer storeId, LocalDateTime start, LocalDateTime end);
+    List<CashTransaction> findByStore_StoreIdAndTypeAndTransactionTimeBetween(Integer storeId, String type, LocalDateTime start, LocalDateTime end);
+
     
     @Query("""
             SELECT COALESCE(SUM(ct.amount), 0)

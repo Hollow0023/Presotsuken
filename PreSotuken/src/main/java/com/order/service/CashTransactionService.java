@@ -44,6 +44,35 @@ public class CashTransactionService {
 
         transactionRepo.save(transaction);
     }
+    
+    
+    /**
+     * 指定された店舗IDと期間で入出金履歴を取得します。（タイプによる絞り込みなし）
+     * @param storeId 店舗ID
+     * @param startOfPeriod 検索期間の開始日時
+     * @param endOfPeriod 検索期間の終了日時
+     * @return 入出金履歴のリスト
+     */
+    public List<CashTransaction> getCashTransactionsByDate(
+            Integer storeId, LocalDateTime startOfPeriod, LocalDateTime endOfPeriod) {
+        return transactionRepo.findByStore_StoreIdAndTransactionTimeBetween(
+                storeId, startOfPeriod, endOfPeriod);
+    }
+
+    /**
+     * 指定された店舗ID、期間、タイプで入出金履歴を取得します。（タイプによる絞り込みあり）
+     * @param storeId 店舗ID
+     * @param startOfPeriod 検索期間の開始日時
+     * @param endOfPeriod 検索期間の終了日時
+     * @param type 入出金タイプ ("IN" or "OUT")
+     * @return 入出金履歴のリスト
+     */
+    public List<CashTransaction> getCashTransactionsByDateAndType(
+            Integer storeId, LocalDateTime startOfPeriod, LocalDateTime endOfPeriod, String type) {
+        return transactionRepo.findByStore_StoreIdAndTypeAndTransactionTimeBetween(
+                storeId, type, startOfPeriod, endOfPeriod);
+    }
+
 
     private Integer getCookieValue(HttpServletRequest request, String name) {
         if (request.getCookies() == null) return null;
