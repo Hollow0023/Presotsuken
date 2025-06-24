@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import com.order.dto.InspectionLogRequest;
 import com.order.service.CookieUtil;
@@ -41,9 +42,13 @@ public class InspectionLogController {
 
     @PostMapping
     public String registerInspection(HttpServletRequest request,
-                                     @ModelAttribute InspectionLogRequest inspectionLogRequest) {
+                                     @ModelAttribute InspectionLogRequest inspectionLogRequest,
+                                     @RequestParam(name = "performWithdrawal", defaultValue = "false") boolean performWithdrawal
+                                     ) {
+    	
         Integer storeId = cookieUtil.getStoreIdFromCookie(request);
-        inspectionLogService.registerInspection(storeId, inspectionLogRequest);
+        
+        inspectionLogService.registerInspection(storeId, inspectionLogRequest, performWithdrawal);
         return "redirect:/admin/inspection/form?success";
     }
 }

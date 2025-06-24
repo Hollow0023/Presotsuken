@@ -29,7 +29,7 @@ public class Payment {
     private Visit visit;
     
     @Column(name = "visit_cancel", nullable = false)
-    private Boolean visitCancel;
+    private Boolean visitCancel = false;
 
     private LocalDateTime paymentTime;
     private Double subtotal;

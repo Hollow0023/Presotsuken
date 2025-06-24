@@ -125,6 +125,32 @@ public interface PaymentDetailRepository extends JpaRepository<PaymentDetail, In
     	    @Param("end") LocalDateTime end,
     	    @Param("rate") BigDecimal rate
     	);
+    
+    /**
+     * 指定された期間、店舗の支払いタイプおよび税率ごとの合計売上を取得します。
+     * @param storeId 店舗ID
+     * @param start 集計開始日時 (以上)
+     * @param end 集計終了日時 (未満)
+     * @return 支払いタイプ名、税率ID、合計金額のリスト (例: ["現金", 1, 1000.00], ["現金", 2, 50.00])
+     */
+    @Query("""
+        SELECT pt.typeName, tr.taxRateId, SUM(pd.subtotal)
+        FROM PaymentDetail pd
+        JOIN pd.payment p
+        JOIN p.paymentType pt
+        JOIN pd.taxRate tr
+        WHERE p.store.storeId = :storeId
+          AND p.paymentTime >= :start
+          AND p.paymentTime < :end
+          AND p.visitCancel = false
+        GROUP BY pt.typeName, tr.taxRateId
+        ORDER BY pt.typeName, tr.taxRateId
+    """)
+    List<Object[]> sumSalesByPaymentTypeAndTaxRate(
+        @Param("storeId") Integer storeId,
+        @Param("start") LocalDateTime start,
+        @Param("end") LocalDateTime end
+    );
 
 
 }
