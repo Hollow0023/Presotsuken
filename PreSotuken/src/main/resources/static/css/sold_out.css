@@ -3,11 +3,14 @@ body {
     background-color: #f4f4f4;
     margin: 0;
     color: #333;
-    height: 100vh;
-    overflow: hidden;
+    /* height: 100vh; ← 削除 */
+    /* overflow: hidden; ← 削除 */
     display: flex;
     justify-content: center;
-    align-items: center;
+    /* align-items: center; ← 削除 */ /* コンテンツが中央に固定されないようにする */
+    padding: 20px; /* 上下に余白を追加 */
+    box-sizing: border-box; /* paddingを含めて幅を計算 */
+    min-height: 100vh; /* 最低限の高さは確保しつつ、コンテンツが増えれば伸びる */
 }
 
 .container {
@@ -18,8 +21,9 @@ body {
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     display: flex;
     flex-direction: column;
-    max-height: 95vh;
-    overflow: hidden; /* コンテナ自体はスクロールさせない */
+    /* max-height: 95vh; ← 削除 */
+    /* overflow: hidden; ← 削除 */ /* コンテナ自体はスクロールさせない */
+    border-radius: 8px; /* 角を少し丸くする */
 }
 
 h1 {
@@ -33,6 +37,12 @@ h1 {
     margin-bottom: 15px;
     display: inline-block;
     flex-shrink: 0;
+    color: #007bff;
+    text-decoration: none;
+}
+
+.container > a:hover {
+    text-decoration: underline;
 }
 
 .action-buttons {
@@ -70,39 +80,36 @@ h1 {
 }
 
 table {
-    width: 100%; /* 親要素の幅いっぱいに */
+    width: 100%;
     border-collapse: collapse;
     margin-top: 20px;
     box-shadow: 0 0 5px rgba(0, 0, 0, 0.05);
-    display: flex;
-    flex-direction: column;
-    flex-grow: 1;
-    min-height: 0;
-    /* テーブル全体の横スクロールを防ぐために overflow-x: hidden; を追加 */
-    overflow-x: hidden;
+    /* display: flex; ← 削除 */
+    /* flex-direction: column; ← 削除 */
+    /* flex-grow: 1; ← 削除 */
+    /* min-height: 0; ← 削除 */
+    /* overflow-x: hidden; ← 削除 */
 }
 
 table thead {
-    flex-shrink: 0;
-    display: table;
-    /* スクロールバーの幅の分だけ幅を狭める */
-    width: calc(100% - 17px); /* ここを修正！ 17pxは一般的なスクロールバーの幅 */
-    table-layout: fixed;
+    /* flex-shrink: 0; ← 削除 */
+    /* display: table; ← 削除 */
+    /* width: calc(100% - 17px); ← 削除 */
+    /* table-layout: fixed; ← 削除 */
 }
 
 table tbody {
-    display: block;
-    overflow-y: auto; /* 垂直スクロールを有効にする */
-    flex-grow: 1;
-    -webkit-overflow-scrolling: touch;
+    /* display: block; ← 削除 */
+    /* overflow-y: auto; ← 削除 */
+    /* flex-grow: 1; ← 削除 */
+    /* -webkit-overflow-scrolling: touch; ← 削除 */
 }
 
 table th, table td {
     padding: 12px 15px;
     border: 1px solid #ddd;
     text-align: left;
-    /* 列の幅を明示的に指定 */
-    /* これらを全体の幅に合わせて調整する */
+    /* 列の幅は残しておく */
 }
 
 /* 各列の幅を指定 */
@@ -137,9 +144,9 @@ table td:nth-child(6) {
 }
 
 table tbody tr {
-    display: table;
-    width: 100%; /* tbodyの幅を100%にすることで親の幅に合わせる */
-    table-layout: fixed;
+    /* display: table; ← 削除 */
+    /* width: 100%; ← 削除 */
+    /* table-layout: fixed; ← 削除 */
 }
 
 table tbody tr:nth-child(even) {

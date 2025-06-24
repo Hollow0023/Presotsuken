@@ -2,50 +2,50 @@
 /* ----------------------------------------------------------------------------- */
 @charset "UTF-8";
 body {
-	font-family: sans-serif;
-	overflow: hidden; /* body全体のスクロールは禁止 */
-	margin: 0;
+    font-family: sans-serif;
+    /* overflow: hidden; */ /* body全体のスクロールは許可する */
+    margin: 0;
 }
 
 main {
-	display: flex;
-	height: 90dvh; /* 画面いっぱいの高さからボタン部分を引いた高さ */
+    display: flex;
+    height: 90vh; /* 90dvh を 90vh に変更 */
 }
 
 /* ヘッダー部分 (ボタン類) */
 /* ----------------------------------------------------------------------------- */
 .buttons {
-	display: flex;
-	background-color: rgb(77, 166, 180);
-	height: 10dvh; /* 画面高さの10% */
-	align-items: center;
-	justify-content: space-between;
-	padding-right: 10px;
+    display: flex;
+    background-color: rgb(77, 166, 180);
+    height: 10vh; /* 10dvh を 10vh に変更 */
+    align-items: center;
+    justify-content: space-between;
+    padding-right: 10px;
 }
 
 #seatInfo {
-	margin-left: 15px;
-	font-size: 25px;
-	font-weight: 800;
-	color: white;
+    margin-left: 15px;
+    font-size: 25px;
+    font-weight: 800;
+    color: white;
 }
 
 .cart-button, .history-button {
-	color: rgb(255, 255, 255);
-	width: 200px;
-	height: 35px;
-	font-weight: 600;
-	border: none; /* ボタンの枠線をなくす */
-	cursor: pointer; /* カーソルをポインターにする */
+    color: rgb(255, 255, 255);
+    width: 200px;
+    height: 35px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
 }
 
 .history-button {
-	background-color: rgb(65, 114, 228);
-	margin-right: 8px; /* 右側に少し余白 */
+    background-color: rgb(65, 114, 228);
+    margin-right: 8px;
 }
 
 .cart-button {
-	background-color: rgb(134, 203, 59);
+    background-color: rgb(134, 203, 59);
 }
 
 /* メニュータブとリスト */
@@ -64,36 +64,36 @@ main {
 }
 
 .menu-tabs {
-	width: 150px;
-	padding: 12px;
-	background-color: rgb(247, 247, 162);
-	overflow-y: auto; /* タブが多い場合にスクロールできるようにする */
-	overflow-x: hidden;
+    width: 150px;
+    padding: 12px;
+    background-color: rgb(247, 247, 162);
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
 #backToSeatList {
     margin-bottom: 12px;
 }
 #backToSeatList a {
-    color: #007bff; /* リンクの色 */
-    text-decoration: none; /* 下線なし */
+    color: #007bff;
+    text-decoration: none;
     font-weight: bold;
 }
 #backToSeatList a:hover {
-    text-decoration: underline; /* ホバーで下線 */
+    text-decoration: underline;
 }
 
 
 .menu-tab {
-	padding: 10px;
-	width: 130px;
-	cursor: pointer;
-	border: 1px solid #ccc;
-	margin-bottom: 5px;
-	background: #f2f2f2;
-	text-align: center;
-	border-radius: 4px; /* 角を丸くする */
-	transition: all 0.2s ease; /* ホバー時のアニメーション */
+    padding: 10px;
+    width: 130px;
+    cursor: pointer;
+    border: 1px solid #ccc;
+    margin-bottom: 5px;
+    background: #f2f2f2;
+    text-align: center;
+    border-radius: 4px;
+    transition: all 0.2s ease;
 }
 
 .menu-tab:hover {
@@ -102,112 +102,113 @@ main {
 }
 
 .menu-tab.active {
-	position: relative;
-	left: 10px; /* アクティブなタブを少し右にずらす */
-	font-weight: bold;
-	background-color: #fff; /* アクティブなタブの背景色 */
-	border-color: #888;
-	box-shadow: 1px 1px 3px rgba(0,0,0,0.1); /* 影をつけて立体感を出す */
+    position: relative;
+    left: 10px;
+    font-weight: bold;
+    background-color: #fff;
+    border-color: #888;
+    box-shadow: 1px 1px 3px rgba(0,0,0,0.1);
 }
 
 .menu-list {
-	flex: 1; /* 残りのスペースを全て占める */
-	display: flex;
-	flex-wrap: wrap; /* アイテムを折り返して配置 */
-	gap: 20px; /* アイテム間の隙間 */
-	background-color: antiquewhite;
-	align-content: flex-start; /* アイテムを上から順に配置 */
-	overflow-y: scroll; /* アイテムが多い場合にスクロールできるようにする */
-	padding: 15px;
+    flex: 1;
+    display: flex;
+    flex-wrap: wrap;
+    /* gap: 20px; ← 削除 */
+    background-color: antiquewhite;
+    align-content: flex-start;
+    overflow-y: scroll;
+    padding: 15px 5px 15px 15px; /* 右側のパディングを減らしてマージン分を確保 */
 }
 
 /* メニューアイテム (カード表示) */
 /* ----------------------------------------------------------------------------- */
 .menu-item {
-	width: 200px;
-	height: 180px; /* 閉じた時の初期高さ */
-	border: 1px solid #ccc;
-	border-radius: 8px;
-	background: #fff;
-	padding: 0;
-	margin: 0;
-	box-sizing: border-box;
-	overflow: hidden; /* 詳細がはみ出さないように隠す */
-	transition: max-height 0.3s ease, height 0.3s ease; /* 開閉アニメーション */
-	cursor: pointer;
-	box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* 影をつけて立体感を出す */
+    width: 200px;
+    height: 180px; /* 閉じた時の初期高さ */
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background: #fff;
+    padding: 0;
+    /* margin: 0; */
+    margin: 0 10px 20px 0; /* 右と下のマージンでgapの代わりをする */
+    box-sizing: border-box;
+    overflow: hidden;
+    transition: max-height 0.3s ease, height 0.3s ease;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
 .menu-image-wrapper {
-	height: 100px;
-	background: #f0f0f0;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	position: relative;
+    height: 100px;
+    background: #f0f0f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
 }
 
 .menu-image-wrapper img {
-	max-width: 100%;
-	max-height: 100%;
-	object-fit: contain; /* 画像をアスペクト比を保ちつつ表示 */
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
 }
 
 .info-btn {
-	position: absolute;
-	top: 6px;
-	right: 6px;
-	border: 1px solid #000;
-	background: white;
-	border-radius: 50%;
-	width: 22px;
-	height: 22px;
-	font-weight: bold;
-	font-size: 14px;
-	line-height: 1; /* テキストの縦位置調整 */
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	cursor: pointer;
-	box-shadow: 0 1px 3px rgba(0,0,0,0.2); /* 影を追加 */
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    border: 1px solid #000;
+    background: white;
+    border-radius: 50%;
+    width: 22px;
+    height: 22px;
+    font-weight: bold;
+    font-size: 14px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
 
 .menu-name {
-	font-weight: bold;
-	padding: 8px 10px 4px 10px;
-	font-size: 14px;
-	white-space: nowrap; /* テキストの折り返しを防ぐ */
-    overflow: hidden; /* はみ出したテキストを隠す */
-    text-overflow: ellipsis; /* はみ出したテキストを三点リーダーで表示 */
+    font-weight: bold;
+    padding: 8px 10px 4px 10px;
+    font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .menu-price {
-	border-top: 2px solid #ccc;
-	font-size: 13px;
-	font-weight: bold;
-	text-align: center;
-	color: red;
-	padding-bottom: 8px;
-	padding-top: 4px;
+    border-top: 2px solid #ccc;
+    font-size: 13px;
+    font-weight: bold;
+    text-align: center;
+    color: red;
+    padding-bottom: 8px;
+    padding-top: 4px;
 }
 
 .menu-detail {
-	display: none; /* 初期状態では非表示 */
-	text-align: center;
-	padding: 12px 8px;
-	overflow: hidden; /* 詳細内容がはみ出さないように隠す */
-	transition: max-height 0.3s ease; /* 開閉アニメーション */
-	background-color: #f9f9f9; /* 確認用 */
-	border-top: 1px solid #eee; /* 確認用 */
-	box-sizing: border-box; /* paddingを含めて幅を計算 */
+    display: none;
+    text-align: center;
+    padding: 12px 8px;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    background-color: #f9f9f9;
+    border-top: 1px solid #eee;
+    box-sizing: border-box;
 }
 
 .menu-item.expanded .menu-detail {
-	display: block; /* expandedクラスが付いたら表示 */
+    display: block;
 }
 
 .menu-detail .option-select {
-    width: calc(100% - 16px); /* paddingを考慮した幅 */
+    width: calc(100% - 16px);
     margin-bottom: 10px;
     padding: 8px;
     border: 1px solid #ccc;
@@ -243,47 +244,55 @@ main {
 /* カートパネル (固定表示) */
 /* ----------------------------------------------------------------------------- */
 .cart {
-	top: 10dvh;
-	bottom: 0;
-	width: 360px;
-	height: 90dvh;
-	background: white;
-	display: flex;
-	flex-direction: column;
-	justify-content: space-between;
-	overflow-y: auto; /* カートの中身が多い場合にスクロール */
-		
-	position: fixed;
-	right: -420px; /* 画面外に隠す */
-	border-left: 2px solid #ccc;
-	box-shadow: -2px 0 6px rgba(0, 0, 0, 0.1);
-	transition: right 0.4s ease; /* スライドイン/アウトのアニメーション */
-	z-index: 1000;
+    top: 10vh; /* 10dvh を 10vh に変更 */
+    bottom: 0;
+    width: 360px;
+    height: 90vh; /* 90dvh を 90vh に変更 */
+    background: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    /* overflow-y: auto; */ /* 個別のスクロールはラッパーに任せる */
+        
+    position: fixed;
+    right: -420px;
+    border-left: 2px solid #ccc;
+    box-shadow: -2px 0 6px rgba(0, 0, 0, 0.1);
+    transition: right 0.4s ease;
+    z-index: 1000;
 }
 
 .cart.show {
-  right: 0; /* showクラスが付いたら画面内に表示 */
+  right: 0;
 }
 
 .cartContent {
-	margin: 20px 20px 0 20px; /* 上右左の余白 */
-	flex-grow: 1; /* 内容が領域を埋めるようにする */
+    margin: 20px 20px 0 20px;
+    flex-grow: 1;
+    overflow-y: auto; /* ★追加: ここでコンテンツをスクロールさせる */
 }
 
 .cartContent h4 {
-	margin-top: 0;
+    margin-top: 0;
+}
+
+/* カートテーブルを囲むラッパーを追加する前提 */
+.cart-table-wrapper {
+    overflow-y: auto; /* ★追加: このラッパーで縦スクロールを制御 */
+    max-height: calc(100% - 100px); /* ★調整: 必要に応じて高さ調整。合計価格やボタンの高さ次第 */
+    margin-bottom: 10px; /* 必要なら */
 }
 
 #cartMiniList {
-	width: 100%;
-	border-collapse: collapse;
-	margin-bottom: 10px;
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 0; /* ラッパーにマージンを持たせるのでテーブルは0に */
 }
 
 #cartMiniList th, #cartMiniList td {
-	padding: 8px;
-	text-align: left;
-	border-bottom: 1px solid #eee;
+    padding: 8px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
 }
 
 #cartMiniList input[type="number"] {
@@ -295,7 +304,7 @@ main {
 }
 
 #cartMiniList button {
-    background-color: #f44336; /* 赤色の削除ボタン */
+    background-color: #f44336;
     color: white;
     border: none;
     padding: 5px 10px;
@@ -310,36 +319,37 @@ main {
 }
 
 .panelFooter {
-	background-color: lightgray;
-	padding: 15px 20px; /* 上下のpaddingを調整 */
-	border-top: 1px solid #ccc; /* 上部に境界線 */
+    background-color: lightgray;
+    padding: 15px 20px;
+    border-top: 1px solid #ccc;
+    flex-shrink: 0; /* ★追加: フッターが縮まないように */
 }
 
 .totalPrice {
-	display: flex;
-	flex-direction: column;
-	gap: 4px;
-	background-color: white;
-	border-radius: 5px;
-	margin: 10px 0;
-	padding: 10px; /* 内側の余白 */
-	box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    background-color: white;
+    border-radius: 5px;
+    margin: 10px 0;
+    padding: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
 .priceContent {
-	display: flex;
-	justify-content: space-between;
+    display: flex;
+    justify-content: space-between;
 }
 
 .priceContent span {
-	font-weight: bold;
+    font-weight: bold;
 }
 
 #cartMiniTotal, #historyTotal {
-	text-align: right;
-	font-weight: bold;
-	color: #d32f2f; /* 目立つ色 */
-	font-size: 1.2em;
+    text-align: right;
+    font-weight: bold;
+    color: #d32f2f;
+    font-size: 1.2em;
 }
 
 #cartMiniCount, #historyCount {
@@ -347,46 +357,46 @@ main {
 }
 
 #cartMiniTax, #historyTax {
-	text-align: right;
-	font-size: 0.9em;
-	color: #555;
-	border-top: 1px dashed #eee; /* 税率情報の区切り線 */
-	padding-top: 5px;
-	margin-top: 5px;
+    text-align: right;
+    font-size: 0.9em;
+    color: #555;
+    border-top: 1px dashed #eee;
+    padding-top: 5px;
+    margin-top: 5px;
 }
 
 .cart-check-button {
-	width: 100%;
-	padding: 12px 0; /* ボタンのサイズを大きく */
-	background-color: #4CAF50;
-	color: white;
-	border: none;
-	border-radius: 5px;
-	font-size: 1.2em;
-	font-weight: bold;
-	cursor: pointer;
-	transition: background-color 0.2s ease;
+    width: 100%;
+    padding: 12px 0;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 1.2em;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
 }
 
 .cart-check-button:hover {
-	background-color: #45a049;
+    background-color: #45a049;
 }
 
 /* トースト通知 */
 /* ----------------------------------------------------------------------------- */
 #toast {
-	position: fixed;
-	bottom: 20px;
-	left: 50%;
-	transform: translateX(-50%);
-	background: #333;
-	color: #fff;
-	padding: 12px 20px;
-	border-radius: 4px;
-	display: none; /* 初期状態は非表示 */
-	z-index: 1000;
-	box-shadow: 0 0 8px rgba(0,0,0,0.3);
-	transition: opacity 0.5s ease;
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: #fff;
+    padding: 12px 20px;
+    border-radius: 4px;
+    display: none;
+    z-index: 1000;
+    box-shadow: 0 0 8px rgba(0,0,0,0.3);
+    transition: opacity 0.5s ease;
 }
 
 
@@ -394,22 +404,29 @@ main {
 /* ----------------------------------------------------------------------------- */
 /* #historyModal は .cart クラスを共有しているため、個別のスタイルはほぼ不要 */
 /* ただし、テーブルのスクロール設定はここで行う */
-#historyTable tbody {
-	display: block; /* スクロール可能にするために必要 */
-	max-height: 300px; /* 最大の高さ */
-	overflow-y: auto; /* 縦スクロール */
+
+/* 履歴テーブルを囲むラッパーを追加する前提 */
+.history-table-wrapper {
+    overflow-y: auto; /* ★追加: このラッパーで縦スクロールを制御 */
+    max-height: calc(100% - 100px); /* ★調整: 必要に応じて高さ調整。合計価格やボタンの高さ次第 */
+    margin-bottom: 10px; /* 必要なら */
+}
+
+#historyTable {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 0; /* ラッパーにマージンを持たせるのでテーブルは0に */
 }
 
 #historyTable thead, #historyTable tbody tr {
-	display: table; /* 固定レイアウトのために必要 */
-	width: 100%;
-	table-layout: fixed; /* テーブルの列幅を固定 */
+    /* display: block; を削除 */
+    /* display: table; を削除 */
+    /* width: 100%; を削除 */
+    /* table-layout: fixed; を削除 */
 }
 #historyModal {
     width: 420px;
 }
-
-
 
 
 /* カートのテーブルの調整 */
@@ -417,46 +434,46 @@ main {
     width: 420px;
 }
 #cartMiniList {
-    width: 100%; /* テーブルの幅を100%にする */
-    border-collapse: collapse; /* セルの境界線を結合 */
-    margin-bottom: 10px; /* 下に少しスペースを開ける */
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 10px;
 }
 
 #cartMiniList th,
 #cartMiniList td {
-    padding: 8px; /* パディング */
-    border-bottom: 1px solid #eee; /* 下線 */
-    vertical-align: middle; /* セル内のテキストを中央揃え */
+    padding: 8px;
+    border-bottom: 1px solid #eee;
+    vertical-align: middle;
 }
 
 #cartMiniList th {
-    background-color: #f8f8f8; /* ヘッダーの背景色 */
+    background-color: #f8f8f8;
     font-weight: bold;
 }
 
 /* カートテーブルの列幅調整 */
-#cartMiniList th:nth-child(1), /* 商品名 */
+#cartMiniList th:nth-child(1),
 #cartMiniList td:nth-child(1) {
-    width: auto; /* 自動で幅を調整 (残りスペースを使う) */
-    text-align: left; /* 商品名は左揃え */
-    white-space: normal; /* テキストがはみ出る場合に改行を許可 */
+    width: auto;
+    text-align: left;
+    white-space: normal;
 }
 
-#cartMiniList th:nth-child(2), /* 数量 */
+#cartMiniList th:nth-child(2),
 #cartMiniList td:nth-child(2) {
-    width: 45px; /* 数量の幅をさらに狭める */
+    width: 45px;
     text-align: center;
 }
 
-#cartMiniList th:nth-child(3), /* 小計 */
+#cartMiniList th:nth-child(3),
 #cartMiniList td:nth-child(3) {
-    width: 70px; /* 小計の幅をさらに狭める */
+    width: 70px;
     text-align: right;
 }
 
 /* 数量入力欄の幅も再調整 */
 #cartMiniList input[type="number"] {
-    width: 40px; /* 数量入力欄の幅を調整 */
+    width: 40px;
     padding: 4px;
     border: 1px solid #ccc;
     border-radius: 3px;
@@ -464,16 +481,16 @@ main {
 }
 
 /* 削除ボタンの幅も調整するなら */
-#cartMiniList th:nth-child(4), /* 削除ボタン */
+#cartMiniList th:nth-child(4),
 #cartMiniList td:nth-child(4) {
-    width: 45px; /* 削除ボタンの幅を少し狭める */
+    width: 45px;
     text-align: center;
 }
 
 
 /* 数量入力欄の幅調整 */
 #cartMiniList input[type="number"] {
-    width: 50px; /* 数量入力欄の幅を調整 */
+    width: 50px;
     padding: 4px;
     border: 1px solid #ccc;
     border-radius: 3px;
@@ -483,7 +500,7 @@ main {
 /* 削除ボタンのスタイルも少し調整すると良いかも */
 #cartMiniList button {
     padding: 4px 8px;
-    background-color: #dc3545; /* 赤色 */
+    background-color: #dc3545;
     color: white;
     border: none;
     border-radius: 4px;
@@ -514,20 +531,20 @@ main {
     font-weight: bold;
 }
 
-#historyTable th:nth-child(1), /* 商品名 */
+#historyTable th:nth-child(1),
 #historyTable td:nth-child(1) {
     width: auto;
     text-align: left;
     white-space: normal;
 }
 
-#historyTable th:nth-child(2), /* 数量 */
+#historyTable th:nth-child(2),
 #historyTable td:nth-child(2) {
     width: 60px;
     text-align: center;
 }
 
-#historyTable th:nth-child(3), /* 小計 */
+#historyTable th:nth-child(3),
 #historyTable td:nth-child(3) {
     width: 90px;
     text-align: right;
@@ -536,38 +553,38 @@ main {
 
 /* 注文履歴テーブルの調整 */
 #historyTable {
-    width: 100%; /* テーブルの幅を100%にする */
-    border-collapse: collapse; /* セルの境界線を結合 */
-    margin-bottom: 10px; /* 下に少しスペースを開ける */
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 10px;
 }
 
 #historyTable th,
 #historyTable td {
-    padding: 8px; /* パディング */
-    border-bottom: 1px solid #eee; /* 下線 */
-    vertical-align: middle; /* セル内のテキストを中央揃え */
+    padding: 8px;
+    border-bottom: 1px solid #eee;
+    vertical-align: middle;
 }
 
 #historyTable th {
-    background-color: #f8f8f8; /* ヘッダーの背景色 */
+    background-color: #f8f8f8;
     font-weight: bold;
 }
 
 /* 注文履歴テーブルの列幅調整 */
-#historyTable th:nth-child(1), /* 商品名 */
+#historyTable th:nth-child(1),
 #historyTable td:nth-child(1) {
-    width: auto; /* 自動で幅を調整 (残りスペースを使う) */
-    text-align: left; /* 商品名は左揃え */
-    white-space: normal; /* テキストがはみ出る場合に改行を許可 */
+    width: auto;
+    text-align: left;
+    white-space: normal;
 }
-#historyTable th:nth-child(2), /* 数量 */
+#historyTable th:nth-child(2),
 #historyTable td:nth-child(2) {
-    width: 45px; /* 数量の幅をさらに狭める */
+    width: 45px;
     text-align: center;
 }
 
-#historyTable th:nth-child(3), /* 小計 */
+#historyTable th:nth-child(3),
 #historyTable td:nth-child(3) {
-    width: 70px; /* 小計の幅をさらに狭める */
+    width: 70px;
     text-align: right;
 }
