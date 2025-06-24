@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<title>点検入力</title>
+<style>
+body {
+	font-family: sans-serif;
+	padding: 20px;
+}
+
+h1, h2 {
+	margin-top: 30px;
+}
+
+table {
+	width: 100%;
+	border-collapse: collapse;
+	margin-top: 10px;
+}
+
+th, td {
+	padding: 8px;
+	text-align: right;
+}
+
+.currency-input input {
+	width: 60px;
+	text-align: right;
+}
+
+.summary-box {
+	margin-top: 20px;
+	padding: 10px;
+	border: 1px solid #ccc;
+	border-radius: 6px;
+	background-color: #f9f9f9;
+}
+
+.summary-box div {
+	margin-bottom: 6px;
+	font-size: 16px;
+}
+
+#submitBtn {
+	margin-top: 30px;
+	padding: 10px 20px;
+	font-size: 16px;
+}
+</style>
+</head>
+
+<body>
+	<h1>点検フォーム</h1>
+	<div th:if="${param.success}" style="color: green;">点検データを登録しました！</div>
+	<div th:if="${inspectionCompletedToday}"
+		style="color: orange; font-weight: bold; margin-bottom: 15px; padding: 10px; border: 1px solid orange; border-radius: 5px;">
+		⚠️ 本日は点検処理が完了しています。複数回の点検登録は推奨されません。</div>
+
+	<!-- ▼ 売上サマリー -->
+	<div class="summary-box">
+		<div>
+			総売上（合計）: <span th:text="${total ?: 0}">0</span> 円
+		</div>
+		<div>
+			10%対象: <span th:text="${tax10 ?: 0}">0</span> 円
+		</div>
+		<div>
+			8%対象: <span th:text="${tax8 ?: 0}">0</span> 円
+		</div>
+		<div>
+			現金売上: <span id="cashSales" th:text="${cashSalesPure ?: 0}">0</span> 円
+		</div>
+
+		<th:block th:each="paymentType : ${allPaymentTypes}">
+			<div>
+				<b><span th:text="${paymentType.typeName}">支払いタイプ名</span></b>
+			</div>
+			<div>
+				合計: <span
+					th:text="${(T(java.util.Optional).ofNullable(#vars['salesByPaymentType_' + paymentType.typeName + '_10%']).orElse(0)) + (T(java.util.Optional).ofNullable(#vars['salesByPaymentType_' + paymentType.typeName + '_8%']).orElse(0))}">0</span>
+				円
+			</div>
+			<div>
+				10%対象: <span
+					th:text="${T(java.util.Optional).ofNullable(#vars['salesByPaymentType_' + paymentType.typeName + '_10%']).orElse(0)}">0</span>
+				円
+			</div>
+			<div>
+				8%対象: <span
+					th:text="${T(java.util.Optional).ofNullable(#vars['salesByPaymentType_' + paymentType.typeName + '_8%']).orElse(0)}">0</span>
+				円
+			</div>
+		</th:block>
+		<div>
+			消費税 10%: <span th:text="${taxAmount10 ?: 0}">0</span> 円
+		</div>
+		<div>
+			消費税 8%: <span th:text="${taxAmount8 ?: 0}">0</span> 円
+		</div>
+		<div>
+			割引（現金）: <span th:text="${discountCash ?: 0}">0</span> 円
+		</div>
+		<div>
+			割引（カード）: <span th:text="${discountCard ?: 0}">0</span> 円
+		</div>
+		<div>
+			客数: <span th:text="${guestCount ?: 0}">0</span> 人
+		</div>
+	</div>
+
+	<span id="expectedCashCalculated" th:text="${expectedCash ?: 0}"
+		style="display: none;">0</span>
+
+	<!-- ▼ 入力フォーム -->
+	<form th:action="@{/admin/inspection}" method="post">
+		<h2>レジ内の現金枚数入力</h2>
+		<table>
+			<tr>
+				<th>種類</th>
+				<th>単価</th>
+				<th>枚数</th>
+			</tr>
+
+			<tr class="currency-input">
+				<td>10,000円札</td>
+				<td>10000</td>
+				<td><input type="number" name="yen10000" min="0" value="0"
+					data-unit="10000"></td>
+			</tr>
+			<tr class="currency-input">
+				<td>5,000円札</td>
+				<td>5000</td>
+				<td><input type="number" name="yen5000" min="0" value="0"
+					data-unit="5000"></td>
+			</tr>
+			<tr class="currency-input">
+				<td>1,000円札</td>
+				<td>1000</td>
+				<td><input type="number" name="yen1000" min="0" value="0"
+					data-unit="1000"></td>
+			</tr>
+			<tr class="currency-input">
+				<td>500円玉</td>
+				<td>500</td>
+				<td><input type="number" name="yen500" min="0" value="0"
+					data-unit="500"></td>
+			</tr>
+			<tr class="currency-input">
+				<td>100円玉</td>
+				<td>100</td>
+				<td><input type="number" name="yen100" min="0" value="0"
+					data-unit="100"></td>
+			</tr>
+			<tr class="currency-input">
+				<td>50円玉</td>
+				<td>50</td>
+				<td><input type="number" name="yen50" min="0" value="0"
+					data-unit="50"></td>
+			</tr>
+			<tr class="currency-input">
+				<td>10円玉</td>
+				<td>10</td>
+				<td><input type="number" name="yen10" min="0" value="0"
+					data-unit="10"></td>
+			</tr>
+			<tr class="currency-input">
+				<td>5円玉</td>
+				<td>5</td>
+				<td><input type="number" name="yen5" min="0" value="0"
+					data-unit="5"></td>
+			</tr>
+			<tr class="currency-input">
+				<td>1円玉</td>
+				<td>1</td>
+				<td><input type="number" name="yen1" min="0" value="0"
+					data-unit="1"></td>
+			</tr>
+		</table>
+
+		<!-- ▼ 合計・差額 -->
+		<div class="summary-box">
+			<div>
+				現金合計: <span id="cashTotal">0</span> 円
+			</div>
+			<div>
+				想定金額: <span id="expectedTotal">0</span> 円
+			</div>
+			<div>
+				差額: <span id="difference">0</span> 円
+			</div>
+		</div>
+
+
+		<!-- ▼ 実施者 -->
+		<h2>点検実施者</h2>
+		<select name="userId" required>
+			<option value="" disabled selected>選択してください</option>
+			<option th:each="user : ${users}" th:value="${user.userId}"
+				th:text="${user.userName}"></option>
+		</select>
+
+		<div style="margin-top: 20px;">
+			<label> <input type="checkbox" id="performWithdrawalCheck"
+				name="performWithdrawal" value="true" /> 出金も行う (現金合計をレジから出金)
+			</label>
+		</div>
+		<button id="submitBtn" type="submit" disabled>登録</button>
+		<span id="expectedCashCalculated" th:text="${expectedCash ?: 0}"
+			style="display: none;">0</span>
+
+	</form>
+	<script>
+    const inputs = document.querySelectorAll('.currency-input input');
+    const cashTotalEl = document.getElementById('cashTotal');
+    const expectedTotalEl = document.getElementById('expectedTotal');
+    const differenceEl = document.getElementById('difference');
+    const expectedCashEl = document.getElementById('expectedCashCalculated'); // IDを修正済みだね！
+    
+    // 新しく追加
+    const submitBtn = document.getElementById('submitBtn');
+    const performWithdrawalCheck = document.getElementById('performWithdrawalCheck');
+
+    function calculate() {
+        let total = 0;
+        inputs.forEach(input => {
+            const count = parseInt(input.value) || 0;
+            const unit = parseInt(input.dataset.unit);
+            total += count * unit;
+        });
+
+        const expected = parseInt(expectedCashEl ? expectedCashEl.textContent.replace(/,/g, '') : '0') || 0;
+        const diff = total - expected;
+
+        cashTotalEl.textContent = total.toLocaleString();
+        expectedTotalEl.textContent = expected.toLocaleString();
+        differenceEl.textContent = diff.toLocaleString();
+
+        // ★差額が0でない場合は登録ボタンを無効にするロジック★
+        if (diff !== 0) {
+            submitBtn.disabled = true;
+        } else {
+            submitBtn.disabled = false;
+        }
+    }
+
+    inputs.forEach(input => {
+        input.addEventListener('input', calculate);
+    });
+
+    window.addEventListener('DOMContentLoaded', calculate);
+    // ページロード時にもボタンの状態を初期設定
+    window.addEventListener('DOMContentLoaded', () => {
+        calculate(); // これで差額とボタンの状態が初期設定される
+    });
+
+    // ★チェックボックスの変更を検知するイベントリスナーを追加 (今はまだボタン制御だけ) ★
+    performWithdrawalCheck.addEventListener('change', () => {
+        // 必要に応じて、ここで何かUIの変更やメッセージ表示を行うこともできる
+        console.log("「出金も行う」チェックボックスの状態: " + performWithdrawalCheck.checked);
+    });
+
+</script>
+</body>
+</html>

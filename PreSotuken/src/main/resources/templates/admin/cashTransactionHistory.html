@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>入出金履歴</title>
+    <style>
+        /* 簡単なCSS */
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 900px; margin: auto; }
+        .filter-form { margin-bottom: 20px; padding: 15px; border: 1px solid #ccc; border-radius: 5px; background-color: #f9f9f9; display: flex; align-items: center; }
+        .filter-form label { margin-right: 10px; }
+        .filter-form input, .filter-form select { padding: 8px; margin-right: 10px; border: 1px solid #ddd; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>入出金履歴</h1>
+
+        <div class="filter-form">
+            <label for="date">日付:</label>
+            <input type="date" id="date" name="date" th:value="${selectedDate != null ? selectedDate : ''}">
+
+            <label for="type">区分:</label>
+            <select id="type" name="type">
+                <option value="">すべて</option>
+                <option value="IN" th:selected="${selectedType == 'IN'}">入金</option>
+                <option value="OUT" th:selected="${selectedType == 'OUT'}">出金</option>
+            </select>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>日付</th>
+                    <th>区分</th>
+                    <th>金額</th>
+                    <th>理由</th>
+                    <th>担当者</th>
+                    </tr>
+            </thead>
+            <tbody>
+                <tr th:each="transaction : ${transactions}">
+                    <td th:text="${#temporals.format(transaction.transactionTime, 'yyyy/MM/dd HH:mm')}">2025/06/24 10:30</td>
+                    <td th:text="${transaction.type == 'IN' ? '入金' : '出金'}">入金</td>
+                    <td th:text="${#numbers.formatDecimal(transaction.amount, 0, 'COMMA', 0, 'POINT')}">1,000</td>
+                    <td th:text="${transaction.reason}">売上</td>
+                    <td th:text="${transaction.user.userName}">山田太郎</td>
+                    </tr>
+                <tr th:if="${transactions.empty}">
+                    <td colspan="5">該当する入出金履歴はありません。</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script th:inline="javascript">
+        document.addEventListener('DOMContentLoaded', function() {
+            var dateInput = document.getElementById('date');
+            var typeSelect = document.getElementById('type');
+
+            function performSearch() {
+                var selectedDate = dateInput.value;
+                var selectedType = typeSelect.value;
+
+                var baseUrl = /*[[@{/admin/cash/history}]]*/ '/admin/cash/history';
+                var newUrl = baseUrl + '?date=' + selectedDate;
+
+                if (selectedType) {
+                    newUrl += '&type=' + selectedType;
+                }
+                
+                window.location.href = newUrl;
+            }
+
+            dateInput.addEventListener('change', performSearch);
+            typeSelect.addEventListener('change', performSearch);
+
+            if (!dateInput.value) {
+                var today = new Date();
+                var yyyy = today.getFullYear();
+                var mm = String(today.getMonth() + 1).padStart(2, '0');
+                var dd = String(today.getDate()).padStart(2, '0');
+                dateInput.value = yyyy + '-' + mm + '-' + dd;
+            }
+        });
+    </script>
+</body>
+</html>

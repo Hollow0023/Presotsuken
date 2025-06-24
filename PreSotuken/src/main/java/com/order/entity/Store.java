@@ -1,5 +1,7 @@
 package com.order.entity;
 
+import java.time.LocalTime;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -19,4 +21,5 @@ public class Store {
     private String note;
     private String receiptHeader;
     private String receiptFooter;
+    private LocalTime transitionTime;
 }

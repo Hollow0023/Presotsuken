@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>入出金登録</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        form { max-width: 400px; margin: 0 auto; }
+        label { display: block; margin-top: 12px; font-weight: bold; }
+        input, select, textarea { width: 100%; padding: 8px; box-sizing: border-box; }
+        button { margin-top: 20px; padding: 10px; width: 100%; }
+    </style>
+</head>
+<body>
+    <h2>入出金登録</h2>
+
+    <form th:action="@{/admin/cash/transaction}" method="post" th:object="${cashTransactionRequest}">
+<!--        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />-->
+
+        <label>入出金区分</label>
+        <select th:field="*{type}" required>
+            <option value="">選択してください</option>
+            <option value="IN">入金</option>
+            <option value="OUT">出金</option>
+        </select>
+
+        <label>金額</label>
+        <input type="number" th:field="*{amount}" required min="1" />
+
+        <label>理由（任意）</label>
+        <textarea th:field="*{reason}" rows="3"></textarea>
+
+        <label>登録者</label>
+        <select th:field="*{userId}" required>
+            <option th:each="user : ${users}" th:value="${user.userId}" th:text="${user.userName}"></option>
+        </select>
+
+        <button type="submit">登録</button>
+    </form>
+
+    <div th:if="${param.success}">
+        <p style="color: green;">登録しました！</p>
+    </div>
+</body>
+</html>
