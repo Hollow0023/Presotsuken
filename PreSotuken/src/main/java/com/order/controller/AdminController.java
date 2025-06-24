@@ -72,27 +72,40 @@ public class AdminController { // クラス名はAdminControllerではなくAdmi
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
         }
 
-        Seat seat = seatRepository.findById(dto.getSeatId()).orElse(null);
-        if (seat == null) {
-            response.put("message", "指定された座席が見つかりません。");
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+        // 管理者端末の場合は座席IDが不要になるため、nullチェックをdto.isAdmin()で条件分岐
+        Seat seat = null;
+        if (!dto.isAdmin()) { // 管理者端末ではない場合のみ座席IDが必須
+            if (dto.getSeatId() == null) {
+                response.put("message", "座席IDが指定されていません。");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+            }
+            seat = seatRepository.findById(dto.getSeatId()).orElse(null);
+            if (seat == null) {
+                response.put("message", "指定された座席が見つかりません。");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+            }
+            // 座席が現在の店舗に属しているかのチェックも管理者端末ではない場合のみ
+            if (!seat.getStore().getStoreId().equals(storeId)) {
+                response.put("message", "選択された座席は現在の店舗に属していません。");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+            }
         }
-        
-        if (!seat.getStore().getStoreId().equals(storeId)) {
-            response.put("message", "選択された座席は現在の店舗に属していません。");
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-        }
+        // 管理者端末の場合はseatはnullのまま、または適切に処理されるようにする
+
 
         Terminal newTerminal = new Terminal();
-        newTerminal.setSeat(seat);
+        newTerminal.setSeat(seat); // 管理者端末の場合はnullになる可能性がある
         newTerminal.setStore(store);
-     // 修正後のaddTerminalの該当部分
-        String ipAddress = dto.getIpAddress(); // DTOから直接IPアドレスを取得
-        if (ipAddress == null || ipAddress.isEmpty()) { // nullチェックも追加
+        
+        String ipAddress = dto.getIpAddress();
+        // ★★★ IPアドレスのチェックをisAdmin()の値で条件分岐するように修正（IPは常に必須） ★★★
+        if (ipAddress == null || ipAddress.isEmpty()) { // 管理者端末かどうかにかかわらずIPアドレスは常に必須
             response.put("message", "IPアドレスが不正です。");
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
-        newTerminal.setIpAddress(ipAddress); // DTOから取得したIPアドレスを設定
+        newTerminal.setIpAddress(ipAddress);
+
+        newTerminal.setAdmin(dto.isAdmin()); // DTOからisAdminの値を取得してエンティティに設定
 
         try {
             terminalRepository.save(newTerminal);
