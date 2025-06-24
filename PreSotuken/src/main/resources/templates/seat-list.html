@@ -17,6 +17,7 @@
            <option th:each="user : ${users}" th:value="${user.userId}" th:text="${user.userName}"></option>
        </select>
     </div>
+    <button onclick="openCallListModal()">呼び出し状況確認</button>
     
     
 	<nav id="menuDrawer" class="menu-drawer">
@@ -97,6 +98,19 @@
 		</div>
 	</div>
 	
+	
+
+<div id="callListModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeCallListModal()">&times;</span>
+        <h3>呼び出し中の座席</h3>
+        <ul id="callingSeatsList">
+            </ul>
+    </div>
+</div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.0/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+	<audio id="chimeSound" src="/chime.mp3" preload="auto"></audio>
 	<script src="/js/seat-list.js"></script>
 	
 </body>

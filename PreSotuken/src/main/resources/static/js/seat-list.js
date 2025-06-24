@@ -12,6 +12,39 @@ function decrease() {
   }
 }
 
+/**
+ * メニュー外のクリックを検知してメニューを閉じる関数
+ * @param {Event} event - クリックイベントオブジェクト
+ */
+function handleOutsideMenuClick(event) {
+    const drawer = document.getElementById("menuDrawer");
+    const burger = document.querySelector(".burger");
+
+    // クリックされた要素がドロワーメニュー内、またはバーガーボタン自身でない場合
+    if (!drawer.contains(event.target) && event.target !== burger) {
+        toggleMenu(); // メニューを閉じる
+    }
+}
+
+
+function toggleMenu() {
+    const drawer = document.getElementById("menuDrawer");
+    const burger = document.querySelector(".burger");
+
+    drawer.classList.toggle("open");
+
+    if (drawer.classList.contains("open")) {
+        // メニューが開いたら、メニュー以外のクリックを検知するイベントリスナーを追加
+        // capture: true にすることで、他のイベントハンドラよりも先にイベントを捕捉する
+        document.addEventListener("click", handleOutsideMenuClick, true); 
+        burger.style.color = "white"; // ハンバーガーメニューの色を白に
+    } else {
+        // メニューが閉じたら、イベントリスナーを削除
+        document.removeEventListener("click", handleOutsideMenuClick, true);
+        burger.style.color = "black"; // ハンバーガーメニューの色を黒に
+    }
+}
+
 function clearUserIdCookie() {
     document.cookie = "userId=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
 }
@@ -49,6 +82,7 @@ function openSeat(elem) {
 			} else {
 				document.getElementById("modalSeatId").value = seatId;
 				document.getElementById("modalSeatName").innerText = seatName;
+                document.getElementById("peopleCount").value = 1; // モーダルを開くときに人数を1にリセット
 				document.getElementById("seatModal").style.display = "block";
 			}
 		});
@@ -77,12 +111,15 @@ document.getElementById('deleteVisitBtn').onclick = () => {
 function closeModal() {
 	document.getElementById("seatModal").style.display = "none";
 	document.getElementById("activeModal").style.display = "none";
+	document.getElementById("callListModal").style.display ="none";
+	
 }
 
 window.onclick = function (event) {
 	const seatModal = document.getElementById("seatModal");
 	const activeModal = document.getElementById("activeModal");
-	if (event.target === seatModal || event.target === activeModal) {
+	const callListModal = document.getElementById("callListModal");
+	if (event.target === seatModal || event.target === activeModal || event.target === callListModal) {
 		closeModal();
 	}
 }
@@ -157,42 +194,32 @@ function resetSeatTile(seatId) {
 	if (statusDiv) statusDiv.style.display = 'none';
 }
 
-function toggleMenu() {
-	const drawer = document.getElementById("menuDrawer");
-	const burger = document.querySelector(".burger");
 
-	drawer.classList.toggle("open");
+document.getElementById("orderBtn").addEventListener("click", () => {
+    const userSelect = document.getElementById('userSelect');
+    if (!userSelect || userSelect.value === "") { // 担当者選択チェック
+        alert("担当者を選択してください。"); 
+        return; // 担当者が選択されていなければ処理を中断
+         
+    }
 
-	burger.style.color = drawer.classList.contains("open") ? "white" : "black";
-}
-
-
-
-
-	document.getElementById("orderBtn").addEventListener("click", () => {
-        if  (!userSelect || userSelect.value === ""){ // 担当者選択チェック
-      		alert("担当者を選択してください。"); 
-            return; // 担当者が選択されていなければ処理を中断
-             
+    const seatId = document.getElementById("activeModal").getAttribute("data-seat-id");
+    const storeId = getCookie("storeId"); 
+    
+    fetch(`/api/visit-info?seatId=${seatId}&storeId=${storeId}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.visiting && data.visitId) {
+            document.cookie = `visitId=${data.visitId}; path=/; max-age=3600`;
         }
 
-        const seatId = document.getElementById("activeModal").getAttribute("data-seat-id");
-        const storeId = getCookie("storeId"); 
-        
-        fetch(`/api/visit-info?seatId=${seatId}&storeId=${storeId}`)
-          .then(res => res.json())
-          .then(data => {
-            if (data.visiting && data.visitId) {
-                document.cookie = `visitId=${data.visitId}; path=/; max-age=3600`;
-            }
-
-            window.location.href = `/order?seatId=${seatId}&admin=true&from=seatlist`;
-          })
-          .catch(error => {
-            console.error("注文画面への遷移中にエラー:", error);
-            alert("注文画面への遷移中にエラーが発生しました。");
-          });
+        window.location.href = `/order?seatId=${seatId}&admin=true&from=seatlist`;
+      })
+      .catch(error => {
+        console.error("注文画面への遷移中にエラー:", error);
+        alert("注文画面への遷移中にエラーが発生しました。");
       });
+});
       
 // ユーザーIDをCookieに保存する関数
 function setUserIdCookie(userId) {
@@ -224,3 +251,111 @@ window.onload = function() {
     // setInterval の設定
     setInterval(fetchVisitInfo, 60000);
 };
+
+
+
+
+
+
+
+//呼び出し処理
+// チャイム音のDOM要素を取得
+const chime = document.getElementById('chimeSound');
+
+// 呼び出し中の座席データを保持する配列 (レジ端末のメモリ上で管理)
+let callingSeats = [];
+
+// --- WebSocket接続と購読 ---
+// SockJSとStomp.jsを使ってWebSocketサーバーに接続
+// WebSocketConfigで設定したエンドポイントに合わせてね
+const socket = new SockJS('/ws-endpoint'); 
+const stompClient = Stomp.over(socket);
+
+stompClient.connect({}, function (frame) {
+    console.log('Connected to WebSocket: ' + frame);
+
+    // ★ サーバーからの呼び出し通知を購読する処理 ★
+    // /topic/seatCalls からメッセージが来たら、第2引数の関数が実行される
+    stompClient.subscribe('/topic/seatCalls', function (notification) {
+        // メッセージボディ（JSON文字列）をJavaScriptオブジェクトに変換
+        const callData = JSON.parse(notification.body);
+        console.log('呼び出し通知を受信しました:', callData);
+
+        // 1. チャイムを鳴らす
+        playChimeSound(); // 後述の関数
+
+        // 2. 呼び出しリストに追加（重複は避ける）
+        const existingCall = callingSeats.find(item => item.seatId === callData.seatId);
+        if (!existingCall) {
+            // 新しい呼び出しの場合のみ追加
+            callingSeats.push(callData);
+            updateCallListModal(); // モーダル表示を更新
+            openCallListModal();   // 新規呼び出しがあればモーダルを開く
+        }
+    });
+}, function(error) {
+    console.error('WebSocket接続エラー:', error);
+});
+
+
+// --- チャイム音の再生関数 ---
+function playChimeSound() {
+    // ブラウザの自動再生ポリシーを考慮する必要がある
+    // ユーザーインタラクションがないと再生できない場合があるため、注意
+    chime.play().catch(function(error) {
+        console.warn("チャイム音の再生に失敗しました: ", error);
+        // エラーハンドリング（例: ユーザーに音が出ないことを通知など）
+    });
+}
+
+// --- 呼び出しリストモーダルの管理関数 ---
+const callListModal = document.getElementById('callListModal');
+const callingSeatsList = document.getElementById('callingSeatsList');
+
+function openCallListModal() {
+    callListModal.style.display = 'block';
+    updateCallListModal(); // モーダルを開くたびに最新の状態に更新
+}
+
+function closeCallListModal() {
+    callListModal.style.display = 'none';
+}
+
+function updateCallListModal() {
+    callingSeatsList.innerHTML = ''; // 一度リストを空にする
+
+    if (callingSeats.length === 0) {
+        callingSeatsList.innerHTML = '<li>現在、呼び出し中の座席はありません。</li>';
+        return;
+    }
+
+    callingSeats.forEach(call => {
+        const listItem = document.createElement('li');
+        // 日時フォーマット (必要ならもっと詳細に)
+        const callTime = new Date(call.callTime).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        
+        listItem.innerHTML = `
+            <div class="call-item">
+                <span class="call-item-name">${call.seatName}</span>
+                <span class="call-item-time">(${callTime} 呼び出し)</span>
+                <button class="complete-button" data-seat-id="${call.seatId}">完了</button>
+            </div>
+        `;
+        callingSeatsList.appendChild(listItem);
+    });
+
+    // 動的に生成した完了ボタンにイベントリスナーを設定
+    callingSeatsList.querySelectorAll('.complete-button').forEach(button => {
+        button.addEventListener('click', function() {
+            const seatIdToComplete = this.dataset.seatId;
+            completeCall(seatIdToComplete);
+        });
+    });
+}
+
+// --- 完了ボタンが押された時の処理 ---
+function completeCall(seatId) {
+    // callingSeats 配列から該当する座席を削除
+    callingSeats = callingSeats.filter(call => call.seatId !== seatId);
+    updateCallListModal(); // リストを更新
+}

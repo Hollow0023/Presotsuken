@@ -1144,3 +1144,33 @@ function activatePlanGroups(groupIds) {
         });
     });
 }
+
+
+//スタッフ呼び出し
+function sendCallRequest() {
+    const seatId = getCookie('seatId'); // Cookieから座席IDを取得
+    if (!seatId) {
+        alert('座席情報が見つかりません。');
+        return;
+    }
+
+    fetch('/callSeat', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        // 送信したい座席IDをリクエストボディに含める
+        body: JSON.stringify({ seatId: seatId }) 
+    })
+    .then(response => {
+        if (response.ok) {
+            alert('店員を呼び出しました。少々お待ちください。');
+        } else {
+            alert('呼び出しに失敗しました。');
+        }
+    })
+    .catch(error => {
+        console.error('呼び出しエラー:', error);
+        alert('呼び出し中にエラーが発生しました。');
+    });
+}

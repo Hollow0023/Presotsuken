@@ -2,6 +2,9 @@
 html{
 	height:100vh;
 }
+#seatModal, #activeModal {
+    touch-action: manipulation;
+}
 
 body{
 	margin: 0;
@@ -51,7 +54,7 @@ body{
     justify-content: space-between; /* 上：リンク群、下：ログアウト */
     box-sizing: border-box;
     overflow-y: auto;       /* 縦方向にスクロール許可 */
-	height: 100vh; 
+	height: 92vh; 
 }
 
 .menu-drawer.open {
@@ -63,7 +66,10 @@ body{
 	color: white;
 	text-decoration: none;
 	margin-bottom: 16px;
-	font-size: 16px;
+	font-size: 20px;
+	margin-bottom:15px;
+	
+
 }
 
 .menu-drawer a:hover {
@@ -169,6 +175,19 @@ body{
 	justify-content: space-between;
 	flex-wrap: wrap;
 }
+.counter{
+	margin-bottom:25px;
+}
+
+.counter button{
+	font-size: 25px;
+	padding:15px 20px;
+}
+
+.counter input{
+	font-size: 30px;
+	width:100px;
+}
 
 .modalButton {
 	max-width:330px;
@@ -180,6 +199,7 @@ body{
 	display: block;   /* インラインからブロック要素に */
 	font-weight: bold;
 	border-style: none;
+	font-size: large;
 }
 #deleteVisitBtn{
 	background-color:#b22222 ;
