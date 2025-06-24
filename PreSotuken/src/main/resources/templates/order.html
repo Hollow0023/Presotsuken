@@ -11,7 +11,7 @@
 		<div id="seatInfo"></div>
 		<div>
 			<!--			<button class="history-button" onclick="openHistoryModal()" style="margin-right: 8px;">注文履歴</button>-->
-			<button type="button" onclick="sendCallRequest()">店員を呼ぶ</button>
+			<button class="call-button" type="button" onclick="sendCallRequest()">店員を呼ぶ</button>
 			
 			<button id="historyToggleButton" class="history-button"
 				onclick="toggleHistory()">注文履歴</button>
@@ -62,7 +62,12 @@
                 </select>
             </div>
 
-            数量:<input type="number" class="quantity-input" min="1" value="1">
+            数量:            
+            <div class="quantity-control">
+                <button class="quantity-btn minus-btn">-</button>
+                <input type="number" class="quantity-input" min="1" value="1">
+                <button class="quantity-btn plus-btn">+</button>
+            </div>
             <button class="add-cart-btn"
                 th:attr="data-menu-id=${menu.menuId}, data-tax-rate-id=${menu.taxRateId}, data-price=${menu.price}, data-name=${menu.menuName}">
                 カートに追加</button>

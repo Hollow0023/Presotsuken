@@ -498,7 +498,7 @@ function toggleDetails(elem) {
         elem.addEventListener('transitionend', onTransitionEnd);
 
         requestAnimationFrame(() => {
-            elem.style.height = '180px'; // 閉じた時の初期の高さに戻す
+            elem.style.height = '200px'; // 閉じた時の初期の高さに戻す
         });
 
     } else {
@@ -511,6 +511,9 @@ function toggleDetails(elem) {
                 let fullHeight = elem.scrollHeight; // コンテンツ全体の高さを取得
 
                 elem.style.height = fullHeight + "px"; // 全体の高さに設定して展開
+                 setTimeout(() => {
+                    elem.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                 }, 300); 
             });
         });
     }
@@ -627,8 +630,13 @@ function addToCart(button) {
     const taxRateId = button.getAttribute('data-tax-rate-id');
     const price = parseFloat(button.getAttribute('data-price'));
     const name = button.getAttribute('data-name');
-    const quantityInput = button.previousElementSibling; // 数量入力欄はボタンの直前にある
-    const quantity = parseInt(quantityInput.value);
+
+    // ★★★ここを修正するよ！★★★
+    // ボタンの親要素（menu-detail）から quantity-input を探す
+    const menuDetail = button.closest('.menu-detail'); // 親の.menu-detail要素を取得
+    const quantityInput = menuDetail.querySelector('.quantity-input'); // その中から.quantity-inputを探す
+    
+    const quantity = parseInt(quantityInput.value, 10); // 10進数として数値に変換
 
     // 数量のバリデーション
     if (isNaN(quantity) || quantity <= 0) {
@@ -656,7 +664,7 @@ function addToCart(button) {
     });
 
     if (!optionsAllSelected) {
-        showToast('全てのオプションを選択してください。');
+        showToast('全てのオプションを選択してください。',4000,'error');
         return; // カート追加処理を中断
     }
 
@@ -864,6 +872,25 @@ function switchTab(tabElement) {
 
 // DOMコンテンツが完全にロードされた後に実行される処理
 window.addEventListener('DOMContentLoaded', () => {
+	document.querySelectorAll('.menu-item').forEach(menuItem => {
+        const quantityInput = menuItem.querySelector('.quantity-input');
+        const minusBtn = menuItem.querySelector('.minus-btn');
+        const plusBtn = menuItem.querySelector('.plus-btn');
+
+        // マイナスボタンのクリックイベント
+        minusBtn.addEventListener('click', () => {
+            let currentValue = parseInt(quantityInput.value);
+            if (currentValue > parseInt(quantityInput.min)) { // min属性の値より大きい場合のみ減らす
+                quantityInput.value = currentValue - 1;
+            }
+        });
+
+        // プラスボタンのクリックイベント
+        plusBtn.addEventListener('click', () => {
+            let currentValue = parseInt(quantityInput.value);
+            quantityInput.value = currentValue + 1; // 常に増やす
+        });
+    });
     // 税率情報をサーバーから取得してtaxRateMapに格納
     fetch('/taxrates')
         .then(res => res.json())

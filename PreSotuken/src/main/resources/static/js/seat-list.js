@@ -298,6 +298,28 @@ stompClient.connect({}, function (frame) {
 });
 
 
+
+// ユーザーがどこかをクリックしたときに一度だけ実行されるようにする
+let hasInteracted = false;
+
+document.addEventListener('click', function setupAudio() {
+    if (!hasInteracted) {
+        // 音源をロードして、ミュートで一度再生を試みる（Safariに再生を許可してもらうため）
+        chime.muted = true;
+        chime.play().then(() => {
+            chime.pause();
+            chime.currentTime = 0;
+            chime.muted = false; // 再生準備ができたらミュートを解除
+            console.log('チャイム音源の準備ができました！');
+        }).catch(error => {
+            console.warn("初期音声再生の試行に失敗しました:", error);
+            // ここでユーザーに「音を出すには、一度クリックしてください」とか促すのもアリかも
+        });
+        hasInteracted = true;
+        document.removeEventListener('click', setupAudio); // 一度実行したらイベントリスナーは不要
+    }
+});
+
 // --- チャイム音の再生関数 ---
 function playChimeSound() {
     // ブラウザの自動再生ポリシーを考慮する必要がある

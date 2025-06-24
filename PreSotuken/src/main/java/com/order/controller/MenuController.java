@@ -82,7 +82,7 @@ public class MenuController {
         model.addAttribute("printers", printerConfigRepository.findByStoreId(storeId));
 
         List<Plan> plans = menuService.getAllPlans(storeId);
-        System.out.println("DEBUG: MenuController - Found " + plans.size() + " plans for storeId: " + storeId);
+//        System.out.println("DEBUG: MenuController - Found " + plans.size() + " plans for storeId: " + storeId);
         model.addAttribute("plans", plans);
 
         model.addAttribute("menuForm", new MenuForm());
