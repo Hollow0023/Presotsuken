@@ -78,6 +78,7 @@ main {
     width: 150px;
     padding: 12px;
     background-color: rgb(247, 247, 162);
+    font-size:18px;
     overflow-y: auto;
     overflow-x: hidden;
 }
@@ -187,7 +188,7 @@ main {
 .menu-name {
     font-weight: bold;
     padding: 8px 10px 4px 10px;
-    font-size: 14px;
+    font-size: 20px;
     white-space: normal; /* テキストの折り返しを有効にする */
     overflow: visible;   /* コンテンツが要素からはみ出しても表示する（ellipsisを打ち消す） */
     text-overflow: clip; /* テキストの省略を無効にする（ellipsisを打ち消す） */
