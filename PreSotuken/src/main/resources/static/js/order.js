@@ -56,9 +56,6 @@ async function processPrintJobs() {
     processPrintJobs(); // 次のジョブを処理
 }
 
-
-
-
 // UIステータス表示用の要素
 // HTMLのbodyタグ直後などに <p id="statusMessage">プリンタステータス: 初期化中...</p> を追加してください
 const statusMessageElement = document.getElementById("statusMessage"); 
@@ -291,8 +288,162 @@ async function executeCommands(commandsJson) {
 
 // ここまで↑、Epson EPOS SDK関連の関数群をグローバルスコープに配置
 
-// グローバル変数と初期設定 (ここから下は既存のコード)
-// -----------------------------------------------------------------------------
+//---
+//## WebSocket再接続ロジック用のグローバル変数
+//---
+let stompClient = null; // STOMPクライアントインスタンスを保持
+let reconnectAttempts = 0; // 現在の再接続試行回数
+const maxReconnectAttempts = 5; // 最大再接続回数を5回に設定
+const reconnectInterval = 5000; // 再接続間隔を5秒に設定 (5000ミリ秒)
+let isManualReloadPrompted = false; // 手動リロードのアラートがすでに表示されたかどうかのフラグ
+
+// WebSocket接続とSTOMPクライアントの接続を試みる関数
+function tryConnectStomp() {
+    // すでに最大試行回数に達してアラートを出している場合は、それ以上何もしない
+    if (isManualReloadPrompted) {
+        return;
+    }
+
+    // 最大再接続回数を超えたら、手動リロードを促す
+    if (reconnectAttempts >= maxReconnectAttempts) {
+        console.log("最大再接続回数に達しました。手動リロードを促します。");
+        // ここでUIに「接続失敗」などのメッセージを表示する場所があれば更新
+        if (document.getElementById('statusMessage')) {
+            document.getElementById('statusMessage').textContent = "WebSocket接続に失敗しました。ページをリロードしてください。";
+        }
+        showManualReloadPrompt(); // 手動リロードのアラートを出す
+        return; // これ以上再接続は試みない
+    }
+
+    console.log(`STOMP接続試行中... (${reconnectAttempts + 1}/${maxReconnectAttempts}回目)`);
+    // UIに現在の試行回数を表示する場所があれば更新
+    if (document.getElementById('statusMessage')) {
+        document.getElementById('statusMessage').textContent = `STOMP接続試行中... (${reconnectAttempts + 1}/${maxReconnectAttempts}回目)`;
+    }
+
+    const socket = new SockJS('/ws-endpoint');
+    stompClient = Stomp.over(socket);
+
+    // STOMPのデバッグログを抑制したい場合はコメント解除（本番環境では推奨）
+    // stompClient.debug = null;
+
+    // STOMPクライアントの接続
+    stompClient.connect({}, function (frame) {
+        // 接続成功時の処理
+        console.log('STOMP Connection established: ' + frame);
+        if (document.getElementById('statusMessage')) {
+            document.getElementById('statusMessage').textContent = "WebSocket接続中...";
+        }
+        reconnectAttempts = 0; // 接続成功したらリトライ回数をリセット
+        isManualReloadPrompted = false; // 接続成功したらアラートフラグもリセット
+
+        // ここから既存の購読処理
+        if (typeof seatId !== 'undefined' && seatId !== null) {
+            // Cookie整理処理
+            //            const rawUserId = getCookie("userId");
+            //            if (rawUserId === "null" || rawUserId === "undefined") {
+            //              document.cookie = "userId=; Max-Age=0; path=/"; // userIdが不正な値なら削除
+            //            }
+
+            // 指定された座席のトピックを購読
+           stompClient.subscribe(`/topic/seats/${seatId}`, function (message) {
+                const body = JSON.parse(message.body);
+                console.log("WebSocketメッセージ受信 (seatsトピック):", body);
+
+                if (body.type === 'LEAVE') {
+                    document.cookie = 'visitId=; Max-Age=0; path=/'; // visitIdを削除（セッション切れ用）
+                    window.location.href = '/visits/orderwait';
+                } else if (body.type === 'PLAN_ACTIVATED') {
+                    const activatedMenuGroupIds = body.activatedMenuGroupIds;
+                    const activatedPlanId = body.planId;
+                    
+                    console.log(`プラン ${activatedPlanId} がシート ${seatId} でアクティブ化されました。`);
+                    console.log("表示されるメニューグループID:", activatedMenuGroupIds);
+                    
+                    // Step 1: 全てのタブとメニューアイテムを初期状態（非表示）に戻す
+                    document.querySelectorAll('.menu-tab[data-is-plan-target="true"]').forEach(tab => {
+                        tab.classList.remove('active-plan-group');
+                    });
+                    document.querySelectorAll('.menu-item[data-is-plan-target="true"]').forEach(item => {
+                        item.classList.remove('active-plan-menu');
+                    });
+
+                    // Step 2: 活性化されたメニューグループのタブとメニューアイテムを表示する
+                    activatedMenuGroupIds.forEach(groupId => {
+                        const menuGroupTab = document.querySelector(`.menu-tab[data-group-id="${groupId}"]`);
+                        if (menuGroupTab) {
+                            menuGroupTab.classList.add('active-plan-group');
+                        }
+                        document.querySelectorAll(`.menu-item[data-group-id="${groupId}"]`).forEach(item => {
+                            item.classList.add('active-plan-menu');
+                        });
+                    });
+                    
+                    const currentUrl = new URL(window.location.href);
+		            currentUrl.searchParams.set('toastMessage', '飲み放題が開始されました！メニューが増えました！');
+		            window.location.href = currentUrl.toString(); // クエリパラメータ付きでリロード
+                }
+            }, function (error) { // seatsトピックの購読エラーハンドラ
+                console.error('STOMP subscribe error for /topic/seats:', error);
+            });
+
+            // printerトピックの購読
+            stompClient.subscribe(`/topic/printer/${seatId}`, function (message) {
+                const payload = JSON.parse(message.body);
+                console.log("WebSocketメッセージ受信 (printerトピック):", payload);
+                if (payload.type === 'PRINT_COMMANDS') {
+                    if (typeof enqueuePrintJob === 'function') {
+                        enqueuePrintJob(payload.ip, payload.commands);
+                    } else {
+                        console.warn("enqueuePrintJob関数が定義されていません。");
+                    }
+                } else if (payload.type === 'PRINT_ERROR') {
+                    alert('印刷エラー: ' + payload.message);
+                    console.error('印刷エラー:', payload.message);
+                    // if (typeof updateStatus === 'function') {
+                    //     updateStatus('エラー: ' + payload.message);
+                    // }
+                }
+            }, function (error) { // printerトピックの購読エラーハンドラ
+                console.error('STOMP error for /topic/printer:', error);
+                // updateStatus('WebSocket購読エラー (printer): ' + error);
+            });
+        }
+    }, function (error) {
+        // 接続失敗時、または接続が切れた時のエラーハンドラ
+        console.error('STOMP Connection error or disconnected:', error);
+        reconnectAttempts++; // 試行回数をインクリメント
+        console.log(`STOMP接続が切断されました。${reconnectInterval / 1000}秒後に再接続を試みます...`);
+        // 次の再接続をスケジュール
+        setTimeout(tryConnectStomp, reconnectInterval);
+    });
+}
+
+// 手動リロードを促すアラートを表示する関数
+function showManualReloadPrompt() {
+    // すでにアラートが表示されている場合は何もしない
+    if (isManualReloadPrompted) {
+        return;
+    }
+
+    isManualReloadPrompted = true; // アラート表示フラグを立てる
+
+    const warningMessage = "WebSocket接続が切断され、自動再接続に失敗しました。OKを押すとページをリロードします。";
+
+    // confirmダイアログでユーザーの操作を待つ
+    if (confirm(warningMessage)) {
+        // OKが押されたらページをリロード
+        location.reload();
+    } else {
+        // キャンセルが押された場合の処理（今回はリロードさせたいので基本的にはここには来ない想定）
+        console.log("ユーザーはリロードをキャンセルしました。");
+        // キャンセルの場合でも、このフラグはtrueのままにして、自動再接続が再開しないようにする
+    }
+}
+
+//---
+//## 既存のグローバル変数と初期設定
+//---
 const cart = []; // カートの中身を保持する配列
 let taxRateMap = {}; // 税率IDと税率をマッピングするオブジェクト
 
@@ -943,112 +1094,12 @@ window.addEventListener('DOMContentLoaded', () => {
     });
 
     // 最初のタブを自動的にクリックして表示
-    // ★修正：飲み放題開始後は、最初の飲み放題メニューグループをアクティブにする処理が必要
     const firstTab = document.querySelector('.menu-tab');
     if (firstTab) firstTab.click(); // 通常表示時の初期タブ選択
 
 
-    // WebSocket接続の確立と購読
-    const socket = new SockJS('/ws-endpoint');
-    const stompClient = Stomp.over(socket);
-    stompClient.connect({}, function () {
-        if (typeof seatId !== 'undefined' && seatId !== null) {
-            // Cookie整理処理
-//            const rawUserId = getCookie("userId");
-//            if (rawUserId === "null" || rawUserId === "undefined") {
-//              document.cookie = "userId=; Max-Age=0; path=/"; // userIdが不正な値なら削除
-//            }
-
-            // 指定された座席のトピックを購読
-           stompClient.subscribe(`/topic/seats/${seatId}`, function (message) {
-                const body = JSON.parse(message.body);
-                console.log("WebSocketメッセージ受信 (seatsトピック):", body);
-
-                if (body.type === 'LEAVE') {
-                    document.cookie = 'visitId=; Max-Age=0; path=/'; // visitIdを削除（セッション切れ用）
-                    window.location.href = '/visits/orderwait';
-                } else if (body.type === 'PLAN_ACTIVATED') {
-                    const activatedMenuGroupIds = body.activatedMenuGroupIds;
-                    const activatedPlanId = body.planId;
-                    
-                    console.log(`プラン ${activatedPlanId} がシート ${seatId} でアクティブ化されました。`);
-                    console.log("表示されるメニューグループID:", activatedMenuGroupIds);
-                    
-                    
-
-
-                    // Step 1: 全てのタブとメニューアイテムを初期状態（非表示）に戻す
-                    // （isPlanTargetでないものは、後でswitchTabで表示されるため、ここでは触らない）
-                    document.querySelectorAll('.menu-tab[data-is-plan-target="true"]').forEach(tab => {
-                        tab.classList.remove('active-plan-group');
-                        // ★修正: ここでstyle.display = 'none'; はCSSに任せる
-                    });
-                    document.querySelectorAll('.menu-item[data-is-plan-target="true"]').forEach(item => {
-                        item.classList.remove('active-plan-menu');
-                        // ★修正: ここでstyle.display = 'none'; はCSSに任せる
-                    });
-                    // もし、現在表示されているメニュー（activeクラスがついてるタブのメニュー）を一旦全部隠したいなら、
-                    // document.querySelectorAll('.menu-item').forEach(item => item.style.display = 'none');
-                    // のような処理も検討する。ただし、switchTabで表示されるはずなので、このままでOKの可能性が高い。
-
-
-                    // Step 2: 活性化されたメニューグループのタブとメニューアイテムを表示する
-                    activatedMenuGroupIds.forEach(groupId => {
-                        // メニューグループのタブを表示
-                        const menuGroupTab = document.querySelector(`.menu-tab[data-group-id="${groupId}"]`);
-                        if (menuGroupTab) {
-                            menuGroupTab.classList.add('active-plan-group'); // CSSで表示
-                            // ★修正: ここでstyle.display = 'block'; はCSSに任せる
-                        }
-                        // そのグループに属するメニューアイテムを表示
-                        document.querySelectorAll(`.menu-item[data-group-id="${groupId}"]`).forEach(item => {
-                            item.classList.add('active-plan-menu'); // CSSで表示
-                            // ★修正: ここでstyle.display = 'block'; はCSSに任せる
-                        });
-                    });
-                    
-                    
-                    const currentUrl = new URL(window.location.href);
-		            currentUrl.searchParams.set('toastMessage', '飲み放題が開始されました！メニューが増えました！');
-		            window.location.href = currentUrl.toString(); // クエリパラメータ付きでリロード
-
-//                    showToast("飲み放題が開始されました！メニューが増えました！", 3000);
-//
-//                    // Step 3: 最初の飲み放題対象グループのタブを自動でクリックする
-//                    if (activatedMenuGroupIds && activatedMenuGroupIds.length > 0) {
-//                        const firstActivatedTab = document.querySelector(`.menu-tab[data-group-id="${activatedMenuGroupIds[0]}"]`);
-//                        if (firstActivatedTab) {
-//                            switchTab(firstActivatedTab); 
-//                        }
-//                    }
-
-
-
-                }
-            }, function (error) {
-                console.error('STOMP error:', error);
-                // エラー処理、再接続の試行など
-            });
-            // ★★★ 新たに '/topic/printer/${seatId}' の購読を追加する ★★★
-        stompClient.subscribe(`/topic/printer/${seatId}`, function (message) { // <- ここを新たに追加
-            const payload = JSON.parse(message.body);
-            console.log("WebSocketメッセージ受信 (printerトピック):", payload); // ログで区別できるように変更
-			if (payload.type === 'PRINT_COMMANDS') {
-			        enqueuePrintJob(payload.ip, payload.commands);
-		    } else if (payload.type === 'PRINT_ERROR') {
-		        alert('印刷エラー: ' + payload.message);
-		        console.error('印刷エラー:', payload.message);
-		        updateStatus('エラー: ' + payload.message);
-		    }
-            
-            // ... (その他の printer トピックのメッセージタイプもここに追加) ...
-        }, function (error) { // printerトピックの購読エラーハンドラ
-            console.error('STOMP error for /topic/printer:', error);
-            updateStatus('WebSocket購読エラー (printer): ' + error);
-        });
-
-        }
-    });
+    // WebSocket接続の確立と購読部分をtryConnectStomp()に置き換え
+    tryConnectStomp(); 
 });
 
 // ウィンドウ全体のクリックイベントリスナー
@@ -1103,8 +1154,7 @@ window.onload = () => {
     // ページロード時にミニカートを初期化表示
     updateMiniCart();
     
-    
-    // ★URLパラメータにtoastMessageがあれば表示
+    // URLパラメータにtoastMessageがあれば表示
     const urlParams = new URLSearchParams(window.location.search);
     const message = urlParams.get('toastMessage');
     const type = urlParams.get('toastType') || 'success'; // デフォルトはsuccess
@@ -1113,40 +1163,21 @@ window.onload = () => {
         window.history.replaceState({}, document.title, window.location.pathname);
     }
 
-
-
-    // ★重要: ページロード時に現在の飲み放題状態に基づいてメニューグループの表示を調整
+    // 重要: ページロード時に現在の飲み放題状態に基づいてメニューグループの表示を調整
     // WebSocketからの通知だけでなく、初期表示でも正しい状態にする必要がある
     // サーバサイドから渡されたmenuGroupsの情報を使って処理する
     const allMenuTabs = document.querySelectorAll('.menu-tab');
     const allMenuItems = document.querySelectorAll('.menu-item');
 
-    // 初期表示時に、isPlanTarget="true" のものを非表示にする
-    // ★修正: ここでstyle.displayを直接操作するのをやめる。CSSに任せる
-    // allMenuTabs.forEach(tab => {
-    //     if (tab.getAttribute('data-is-plan-target') === 'true') {
-    //         tab.style.display = 'none'; // この行を削除
-    //     }
-    // });
-    // allMenuItems.forEach(item => {
-    //     if (item.getAttribute('data-is-plan-target') === 'true') {
-    //         item.style.display = 'none'; // この行を削除
-    //     }
-    // });
-
     // まずは、初回表示時に最初のタブをアクティブにする処理
     const firstNonPlanTargetTab = document.querySelector('.menu-tab:not([data-is-plan-target="true"])');
     if (firstNonPlanTargetTab) {
-        // ★修正: ここでstyle.displayを直接操作するのをやめる。CSSに任せる
-        // firstNonPlanTargetTab.style.display = 'block'; // この行を削除
         switchTab(firstNonPlanTargetTab);
     } else {
         // 全てがisPlanTarget=trueの場合（＝何も表示されない場合）
         // 最初のタブ（どれでもいい）をアクティブにする
         const anyTab = document.querySelector('.menu-tab');
         if (anyTab) {
-            // ★修正: ここでstyle.displayを直接操作するのをやめる。CSSに任せる
-            // anyTab.style.display = 'block'; // この行を削除
             switchTab(anyTab);
         }
     }
@@ -1162,16 +1193,13 @@ function activatePlanGroups(groupIds) {
         const menuGroupTab = document.querySelector(`.menu-tab[data-group-id="${groupId}"]`);
         if (menuGroupTab) {
             menuGroupTab.classList.add('active-plan-group'); // CSSで表示
-            // ★修正: ここでstyle.display = 'block'; はCSSに任せる
         }
         // そのグループに属するメニューアイテムを表示
         document.querySelectorAll(`.menu-item[data-group-id="${groupId}"]`).forEach(item => {
             item.classList.add('active-plan-menu'); // CSSで表示
-            // ★修正: ここでstyle.display = 'block'; はCSSに任せる
         });
     });
 }
-
 
 //スタッフ呼び出し
 function sendCallRequest() {
