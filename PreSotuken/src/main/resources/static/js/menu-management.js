@@ -432,61 +432,61 @@ addOptionSelectBtn.addEventListener('click', () => addDynamicSelect(optionSelect
 menuForm.addEventListener('submit', async (event) => {
     event.preventDefault(); // デフォルトのフォーム送信を防止
 
-    const formData = new FormData(menuForm); // フォームデータを取得 (ファイルも含む)
+    const formData = new FormData(menuForm); // フォームにあるすべてのname属性付きinput/textarea/selectを自動で取得！
 
-    // hiddenフィールドのmenuIdをFormDataに追加（これがないと更新対象が不明になる）
-    formData.append('menuId', document.getElementById('menuId').value);
+    // FormDataで自動収集されないものだけ手動追加する
+    const isSoldOutCheckbox = document.getElementById('isSoldOutInput'); // id="isSoldOutInput" に合わせる
+	const isPlanStarterCheckbox = document.getElementById('isPlanStarterInput'); // id="isPlanStarterInput" に合わせる
 
-    // プルダウンから選択された関連エンティティのIDもFormDataに追加
-    // ここは MenuForm のネストされたオブジェクトのIDを参照する必要がある
-    formData.append('taxRate.taxRateId', document.getElementById('taxRateSelect').value); // 正しい
-    formData.append('menuGroup.groupId', document.getElementById('menuGroupSelect').value); // 正しい
-    formData.append('timeSlot.timeSlotId', document.getElementById('timeSlotSelect').value); // 正しい
-    
-    // isSoldOut (チェックボックス) はチェックが入ってないとFormDataに含まれないので、明示的に追加
-    formData.append('isSoldOut', document.getElementById('isSoldOutInput').checked);
 
-    // ★★★ここから追加！isPlanStarterとplanIdをFormDataに追加★★★
-    formData.append('isPlanStarter', isPlanStarterInput.checked); // チェックボックスの値
-    if (isPlanStarterInput.checked) { // チェックされている場合のみplanIdを送信
-        formData.append('planId', planSelect.value);
-    } else {
-        formData.append('planId', ''); // チェックされていない場合は空文字列を送信
+	if (!isSoldOutCheckbox.checked) {
+	    formData.append('isSoldOut', false);
+	} else {
+	    formData.set('isSoldOut', true); // 'on'ではなくtrueを送信
+	}
+	
+	if (!isPlanStarterCheckbox.checked) {
+	    formData.append('isPlanStarter', false);
+	} else {
+	    formData.set('isPlanStarter', true); // 'on'ではなくtrueを送信
+	}
+
+    // planId は isPlanStarter が true のときだけ意味がある
+    if (!isPlanStarterInput.checked) {
+        formData.set('planId', '');
     }
 
-    // オプション選択の値を正しく FormData に追加
+    // オプション選択：複数項目に対応しているので一度消して再追加
+    formData.delete('optionGroupIds');
     const optionSelects = optionSelectsContainer.querySelectorAll('select[name="optionGroupIds"]');
-    formData.delete('optionGroupIds'); // 既存の formData の optionGroupIds を削除
     optionSelects.forEach(select => {
-        if (select.value) { // 選択されている値のみ
+        if (select.value) {
             formData.append('optionGroupIds', select.value);
         }
     });
 
-    // プリンター選択の値を正しく FormData に追加
-// submit時の処理を「1個だけ」に限定
-	const printerSelect = printerSelectsContainer.querySelector('select[name="printerIds"]');
-	formData.delete('printerId');
-	if (printerSelect && printerSelect.value) {
-	    formData.append('printerId', printerSelect.value); // ← 1件だけ送る
-	}
+    // プリンター選択（1つだけ送信）
+    formData.delete('printerId');
+    const printerSelect = printerSelectsContainer.querySelector('select[name="printerIds"]');
+    if (printerSelect && printerSelect.value) {
+        formData.append('printerId', printerSelect.value);
+    }
 
-    
-    // 画像ファイルの扱い:
+    // 画像ファイルの扱い
     if (!imageFileInput.files.length) {
         formData.append('currentMenuImage', currentMenuImageInput.value || '');
     } else {
+        formData.set('imageFile', imageFileInput.files[0]);
         formData.delete('currentMenuImage');
     }
 
-
+    // 送信！
     try {
         const response = await fetch('/menu/save', {
             method: 'POST',
             body: formData
         });
 
-        // レスポンスがJSONではない可能性があるので、response.json()をtry-catchで囲む
         let result;
         try {
             result = await response.json();
@@ -508,6 +508,7 @@ menuForm.addEventListener('submit', async (event) => {
         toastr.error('メニューの保存中に予期せぬエラーが発生しました。', "エラー");
     }
 });
+
 
 
 // ★★★ 削除ボタンのクリックイベントもAjaxに切り替える ★★★
