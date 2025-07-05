@@ -152,7 +152,7 @@ public class MenuController {
     @PostMapping(value = "/save", produces = MediaType.APPLICATION_JSON_VALUE) // ★JSONを返すことを明示
     @ResponseBody
     public ResponseEntity<Map<String, String>> saveMenu(@ModelAttribute("menuForm") MenuForm menuForm,
-    													@RequestParam(value = "imageFile", required = false) MultipartFile imageFile,
+                                                        @RequestParam("imageFile") MultipartFile imageFile,
                                                         @RequestParam(value = "optionGroupIds", required = false) List<Integer> optionGroupIds,
                                                         HttpServletRequest request,
                                                         @RequestParam(value = "printerId", required = false) Integer printerId,
@@ -174,13 +174,13 @@ public class MenuController {
 
         Map<String, String> response = new HashMap<>();
         try {
-        	String menuImageToSave = currentMenuImage;
+            String menuImageToSave = currentMenuImage;
 
-        	if (imageFile != null && !imageFile.isEmpty()) {
-        	    menuImageToSave = null;
-        	} else if (currentMenuImage == null || currentMenuImage.isEmpty()) {
-        	    menuImageToSave = null;
-        	}
+            if (!imageFile.isEmpty()) {
+                menuImageToSave = null;
+            } else if (currentMenuImage == null || currentMenuImage.isEmpty()) {
+                menuImageToSave = null;
+            }
 
             // ★MenuFormからMenuエンティティへの変換ロジックをここに書く
             Menu menu = new Menu();
