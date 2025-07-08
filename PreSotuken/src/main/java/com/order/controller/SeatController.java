@@ -12,6 +12,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
+import com.order.entity.Seat;
 import com.order.entity.SeatGroup;
 import com.order.entity.User;
 import com.order.entity.Visit;
@@ -33,6 +34,7 @@ public class SeatController {
     private final SeatRepository seatRepository;
     private final VisitRepository visitRepository;
     private final UserRepository userRepository;
+//    private final SeatService seatService;
 
     @GetMapping
     public String showSeatsByGroup(HttpServletRequest request, Model model) {
@@ -63,7 +65,7 @@ public class SeatController {
         for (SeatGroup group : groups) {
 //            List<com.order.entity.Seat> seats = seatRepository.findByStore_StoreIdAndSeatGroup_SeatGroupId(storeId, group.getSeatGroupId());
         	//たぶん↓でも動作変わらない
-        	List<com.order.entity.Seat> seats = seatRepository.findBySeatGroupId(group.getSeatGroupId());
+        	List<Seat> seats = seatRepository.findBySeatGroup_SeatGroupIdOrderBySeatNameAsc(group.getSeatGroupId());
             groupedSeats.put(group, seats);
         }
         
@@ -87,4 +89,7 @@ public class SeatController {
         model.addAttribute("groupedSeats", groupedSeats);
         return "seat-list"; //テストアクセス　http://localhost:8080/seats?storeId=1
     }
+    
+
+
 }

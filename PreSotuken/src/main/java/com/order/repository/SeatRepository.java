@@ -12,5 +12,6 @@ public interface SeatRepository extends JpaRepository<Seat, Integer> {
 //	List<Seat> findByStore_StoreIdAndSeatGroup_SeatGroupId(Integer storeId, Integer seatGroupId);
 	List<Seat> findByStore_StoreId(Integer storeId);
 	Seat findBySeatId(Integer seatId);
-	List<Seat> findBySeatGroupId(int seatGroupId);
+//	List<Seat> findBySeatGroup_SeatGroupId(int seatGroupId); 
+	List<Seat> findBySeatGroup_SeatGroupIdOrderBySeatNameAsc(Integer seatGroupId);
 }
