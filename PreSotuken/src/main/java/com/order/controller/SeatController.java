@@ -61,7 +61,9 @@ public class SeatController {
 
         Map<SeatGroup, List<com.order.entity.Seat>> groupedSeats = new LinkedHashMap<>();
         for (SeatGroup group : groups) {
-            List<com.order.entity.Seat> seats = seatRepository.findByStore_StoreIdAndSeatGroup_SeatGroupId(storeId, group.getSeatGroupId());
+//            List<com.order.entity.Seat> seats = seatRepository.findByStore_StoreIdAndSeatGroup_SeatGroupId(storeId, group.getSeatGroupId());
+        	//たぶん↓でも動作変わらない
+        	List<com.order.entity.Seat> seats = seatRepository.findBySeatGroupId(group.getSeatGroupId());
             groupedSeats.put(group, seats);
         }
         
