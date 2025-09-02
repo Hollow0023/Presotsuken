@@ -91,6 +91,7 @@ body{
 
 .menu-group-title::-webkit-details-marker,
 .menu-group-title::marker {
+
         display: none;
 }
 
