@@ -57,3 +57,8 @@ tbody tr:hover {
     font-weight: bold;
     cursor: pointer;
 }
+
+.discount-edit-btn {
+    margin-top: 10px;
+    padding: 6px 12px;
+}

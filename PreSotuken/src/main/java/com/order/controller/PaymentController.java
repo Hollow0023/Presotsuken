@@ -109,9 +109,25 @@ public class PaymentController {
         Map<String, Object> result = new HashMap<>();
         result.put("seatName", payment.getVisit().getSeat().getSeatName());
         result.put("paymentTime", payment.getPaymentTime());
+        result.put("discount", payment.getDiscount());
         result.put("total", payment.getTotal());
         result.put("details", detailList);
         return ResponseEntity.ok(result);
+    }
+
+    @PostMapping("/payments/history/{paymentId}/discount")
+    public ResponseEntity<Void> updateDiscount(@CookieValue(name = "storeId", required = false) Integer storeId,
+                                               @PathVariable("paymentId") Integer paymentId,
+                                               @RequestBody Map<String, Double> body) {
+        Payment payment = paymentRepository.findById(paymentId).orElse(null);
+        if (payment == null || !payment.getStore().getStoreId().equals(storeId)) {
+            return ResponseEntity.notFound().build();
+        }
+        Double discount = body.get("discount");
+        payment.setDiscount(discount);
+        payment.setTotal(payment.getSubtotal() - (discount != null ? discount : 0));
+        paymentRepository.save(payment);
+        return ResponseEntity.ok().build();
     }
 
 

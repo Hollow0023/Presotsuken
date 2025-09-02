@@ -47,23 +47,48 @@ window.onclick = event => {
     }
 };
 
+function loadDetail(id, row) {
+    fetch(`/payments/history/${id}`)
+        .then(res => res.json())
+        .then(data => {
+            let html = `<h2>会計詳細</h2>`;
+            html += `<p>席: ${data.seatName}</p>`;
+            html += `<p>割引: <span id="discountAmount">${data.discount || 0}</span>円</p>`;
+            html += `<p>合計: ${data.total}円</p>`;
+            html += `<table><tr><th>商品</th><th>数量</th><th>小計</th></tr>`;
+            data.details.forEach(d => {
+                html += `<tr><td>${d.menuName}</td><td>${d.quantity}</td><td>${d.subtotal}円</td></tr>`;
+            });
+            html += `</table>`;
+            html += `<button id="editDiscount" class="discount-edit-btn">割引を編集</button>`;
+            modalBody.innerHTML = html;
+            modal.style.display = 'block';
+            if (row) {
+                row.querySelector('td:nth-child(3)').textContent = `${data.total}円`;
+            }
+            const editBtn = document.getElementById('editDiscount');
+            editBtn.addEventListener('click', () => {
+                const current = document.getElementById('discountAmount').textContent;
+                const input = prompt('新しい割引額を入力してください', current);
+                if (input !== null) {
+                    fetch(`/payments/history/${id}/discount`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({discount: parseFloat(input)})
+                    }).then(res => {
+                        if (res.ok) {
+                            loadDetail(id, row);
+                        }
+                    });
+                }
+            });
+        });
+}
+
 document.querySelectorAll('#historyTable tbody tr').forEach(row => {
     row.addEventListener('click', () => {
         const id = row.dataset.paymentId;
-        fetch(`/payments/history/${id}`)
-            .then(res => res.json())
-            .then(data => {
-                let html = `<h2>会計詳細</h2>`;
-                html += `<p>席: ${data.seatName}</p>`;
-                html += `<p>合計: ${data.total}円</p>`;
-                html += `<table><tr><th>商品</th><th>数量</th><th>小計</th></tr>`;
-                data.details.forEach(d => {
-                    html += `<tr><td>${d.menuName}</td><td>${d.quantity}</td><td>${d.subtotal}円</td></tr>`;
-                });
-                html += `</table>`;
-                modalBody.innerHTML = html;
-                modal.style.display = 'block';
-            });
+        loadDetail(id, row);
     });
 });
 </script>
