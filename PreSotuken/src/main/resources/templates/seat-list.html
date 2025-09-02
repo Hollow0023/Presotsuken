@@ -22,24 +22,24 @@
     
         <nav id="menuDrawer" class="menu-drawer">
             <div>
-                <details class="menu-group" open>
-                    <summary class="menu-group-title">メニューに関する操作</summary>
+                <details class="menu-group" close>
+                    <summary class="menu-group-title">メニュー設定</summary>
                     <a href="/menu/list">メニュー管理</a>
                     <a href="/menu/group/add">メニューグループ管理</a>
                     <a href="/options">オプション管理</a>
                     <a href="/menu/sold-out-management">メニュー品切れ管理</a>
                 </details>
 
-                <details class="menu-group" open>
-                    <summary class="menu-group-title">お金に関する操作</summary>
+                <details class="menu-group" close>
+                    <summary class="menu-group-title">事務操作</summary>
                     <a th:href="@{/admin/cash/transaction}">入出金</a>
                     <a th:href="@{/admin/cash/history}">入出金履歴</a>
                     <a th:href="@{/payments/history}">会計履歴</a>
                     <a th:href="@{/payment-types}">支払い方法管理</a>
                 </details>
 
-                <details class="menu-group" open>
-                    <summary class="menu-group-title">店舗に関する操作</summary>
+                <details class="menu-group" close>
+                    <summary class="menu-group-title">店舗設定</summary>
                     <a href="/admin/printers" >プリンター管理</a>
                     <a href="/admin/plans">プラン管理</a>
                     <a href="/admin/terminals">端末管理</a>
