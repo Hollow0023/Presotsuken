@@ -81,6 +81,14 @@ public class PaymentController {
         return "payment";
     }
 
+    @GetMapping("/payments/history")
+    public String showPaymentHistory(@CookieValue(name = "storeId", required = false) Integer storeId,
+                                     Model model) {
+        List<Payment> payments = paymentRepository.findByStoreStoreIdOrderByPaymentTimeDesc(storeId);
+        model.addAttribute("payments", payments);
+        return "paymentHistory";
+    }
+
 
     //会計確定: Payment および Visit の退店時刻を更新
 
