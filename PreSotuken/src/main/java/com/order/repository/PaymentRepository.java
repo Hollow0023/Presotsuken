@@ -2,6 +2,7 @@ package com.order.repository;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -14,6 +15,8 @@ import com.order.entity.Payment;
 public interface PaymentRepository extends JpaRepository<Payment, Integer> {
 
     Payment findByVisitVisitId(int visitId);
+
+    List<Payment> findByStoreStoreIdOrderByPaymentTimeDesc(Integer storeId);
 
 
 

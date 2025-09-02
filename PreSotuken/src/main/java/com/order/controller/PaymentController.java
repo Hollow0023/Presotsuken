@@ -3,12 +3,14 @@ package com.order.controller;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.CookieValue;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -20,11 +22,14 @@ import com.order.entity.PaymentDetail;
 import com.order.entity.PaymentType;
 import com.order.entity.User;
 import com.order.entity.Visit;
+import com.order.entity.Seat;
+import com.order.dto.PaymentHistoryUpdateRequest;
 import com.order.repository.PaymentDetailRepository;
 import com.order.repository.PaymentRepository;
 import com.order.repository.PaymentTypeRepository;
 import com.order.repository.UserRepository;
 import com.order.repository.VisitRepository;
+import com.order.repository.SeatRepository;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +44,7 @@ public class PaymentController {
     private final PaymentTypeRepository paymentTypeRepository;
     private final SimpMessagingTemplate messagingTemplate;
     private final UserRepository userRepository;
+    private final SeatRepository seatRepository;
 
     @GetMapping("/payments")
     public String showPaymentDetail(@RequestParam("visitId") int visitId,
@@ -79,6 +85,148 @@ public class PaymentController {
         model.addAttribute("paymentTypeList", paymentTypeList);
 
         return "payment";
+    }
+
+    @GetMapping("/payments/history")
+    public String showPaymentHistory(@CookieValue(name = "storeId", required = false) Integer storeId,
+                                     Model model) {
+        List<Payment> payments = paymentRepository.findByStoreStoreIdOrderByPaymentTimeDesc(storeId);
+        model.addAttribute("payments", payments);
+        return "paymentHistory";
+    }
+
+    @GetMapping("/payments/history/{paymentId}")
+    public ResponseEntity<Map<String, Object>> getPaymentHistoryDetail(
+            @CookieValue(name = "storeId", required = false) Integer storeId,
+            @PathVariable("paymentId") Integer paymentId) {
+        Payment payment = paymentRepository.findById(paymentId).orElse(null);
+        if (payment == null || !payment.getStore().getStoreId().equals(storeId)) {
+            return ResponseEntity.notFound().build();
+        }
+
+        List<PaymentDetail> details = paymentDetailRepository.findByPaymentPaymentId(paymentId);
+        List<Map<String, Object>> detailList = details.stream().map(d -> {
+            Map<String, Object> m = new HashMap<>();
+            m.put("paymentDetailId", d.getPaymentDetailId());
+            m.put("menuName", d.getMenu().getMenuName());
+            m.put("quantity", d.getQuantity());
+            m.put("subtotal", d.getSubtotal());
+            m.put("price", d.getMenu().getPrice());
+            return m;
+        }).collect(Collectors.toList());
+
+        List<Map<String, Object>> seatList = seatRepository.findByStore_StoreIdOrderBySeatNameAsc(storeId).stream().map(s -> {
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", s.getSeatId());
+            m.put("name", s.getSeatName());
+            return m;
+        }).collect(Collectors.toList());
+
+        List<Map<String, Object>> userList = userRepository.findByStore_StoreId(storeId).stream().map(u -> {
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", u.getUserId());
+            m.put("name", u.getUserName());
+            return m;
+        }).collect(Collectors.toList());
+
+        List<Map<String, Object>> paymentTypeList = paymentTypeRepository.findByStoreId(storeId).stream().map(pt -> {
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", pt.getTypeId());
+            m.put("name", pt.getTypeName());
+            return m;
+        }).collect(Collectors.toList());
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("seatId", payment.getVisit().getSeat().getSeatId());
+        result.put("seatName", payment.getVisit().getSeat().getSeatName());
+        result.put("paymentTypeId", payment.getPaymentType() != null ? payment.getPaymentType().getTypeId() : null);
+        result.put("cashierId", payment.getCashier() != null ? payment.getCashier().getUserId() : null);
+        result.put("cashierName", payment.getCashier() != null ? payment.getCashier().getUserName() : null);
+        result.put("paymentTime", payment.getPaymentTime());
+        result.put("discount", payment.getDiscount());
+        result.put("total", payment.getTotal());
+        result.put("details", detailList);
+        result.put("seats", seatList);
+        result.put("users", userList);
+        result.put("paymentTypes", paymentTypeList);
+        return ResponseEntity.ok(result);
+    }
+
+    @PostMapping("/payments/history/{paymentId}/discount")
+    public ResponseEntity<Void> updateDiscount(@CookieValue(name = "storeId", required = false) Integer storeId,
+                                               @PathVariable("paymentId") Integer paymentId,
+                                               @RequestBody Map<String, Double> body) {
+        Payment payment = paymentRepository.findById(paymentId).orElse(null);
+        if (payment == null || !payment.getStore().getStoreId().equals(storeId)) {
+            return ResponseEntity.notFound().build();
+        }
+        Double discount = body.get("discount");
+        payment.setDiscount(discount);
+        payment.setTotal(payment.getSubtotal() - (discount != null ? discount : 0));
+        paymentRepository.save(payment);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/payments/history/{paymentId}/edit")
+    public ResponseEntity<Void> editPaymentHistory(
+            @CookieValue(name = "storeId", required = false) Integer storeId,
+            @PathVariable("paymentId") Integer paymentId,
+            @RequestBody PaymentHistoryUpdateRequest req) {
+
+        Payment payment = paymentRepository.findById(paymentId).orElse(null);
+        if (payment == null || !payment.getStore().getStoreId().equals(storeId)) {
+            return ResponseEntity.notFound().build();
+        }
+
+        if (req.getDiscount() != null) {
+            payment.setDiscount(req.getDiscount());
+        }
+
+        if (req.getPaymentTypeId() != null) {
+            PaymentType type = paymentTypeRepository.findById(req.getPaymentTypeId()).orElse(null);
+            payment.setPaymentType(type);
+        }
+
+        if (req.getCashierId() != null) {
+            User user = userRepository.findById(req.getCashierId()).orElse(null);
+            payment.setCashier(user);
+        }
+
+        if (req.getSeatId() != null) {
+            Seat seat = seatRepository.findById(req.getSeatId()).orElse(null);
+            Visit visit = payment.getVisit();
+            visit.setSeat(seat);
+            visitRepository.save(visit);
+        }
+
+        if (req.getDetails() != null) {
+            for (PaymentHistoryUpdateRequest.DetailUpdate d : req.getDetails()) {
+                if (Boolean.TRUE.equals(d.getDelete())) {
+                    paymentDetailRepository.deleteById(d.getPaymentDetailId());
+                } else {
+                    PaymentDetail detail = paymentDetailRepository.findById(d.getPaymentDetailId()).orElse(null);
+                    if (detail != null && d.getQuantity() != null) {
+                        detail.setQuantity(d.getQuantity());
+                        if (detail.getMenu() != null && detail.getMenu().getPrice() != null) {
+                            detail.setSubtotal(detail.getMenu().getPrice() * d.getQuantity());
+                        }
+                        paymentDetailRepository.save(detail);
+                    }
+                }
+            }
+        }
+
+        // recalc subtotal and total
+        List<PaymentDetail> remaining = paymentDetailRepository.findByPaymentPaymentId(paymentId);
+        double subtotal = remaining.stream()
+                .mapToDouble(pd -> pd.getSubtotal() != null ? pd.getSubtotal() : 0)
+                .sum();
+        payment.setSubtotal(subtotal);
+        double discount = payment.getDiscount() != null ? payment.getDiscount() : 0;
+        payment.setTotal(subtotal - discount);
+        paymentRepository.save(payment);
+
+        return ResponseEntity.ok().build();
     }
 
 
