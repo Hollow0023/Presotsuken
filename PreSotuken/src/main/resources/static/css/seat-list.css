@@ -81,13 +81,30 @@ body{
 }
 
 .menu-group-title {
-        margin: 0 0 8px;
+        margin: 0;
         font-size: 18px;
         font-weight: bold;
+        cursor: pointer;
+        margin-bottom: 8px;
+}
+
+.menu-group-title::-webkit-details-marker {
+        display: none;
+}
+
+.menu-group-title::before {
+        content: "\25B6"; /* ▶ */
+        display: inline-block;
+        margin-right: 6px;
+        transition: transform 0.2s;
+}
+
+.menu-group[open] > .menu-group-title::before {
+        transform: rotate(90deg);
 }
 
 .menu-group a {
-        padding-left: 10px;
+        padding-left: 20px;
 }
 
 /*↑↑↑↑メニュー部分↑↑↑↑*/
