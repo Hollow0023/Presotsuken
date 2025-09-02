@@ -107,6 +107,7 @@ public class PaymentController {
         payment.setDiscountReason(req.getDiscountReason());
         payment.setTotal(req.getTotal());
         payment.setPaymentTime(req.getPaymentTime());
+        System.out.println(req.getPaymentTime());
         payment.setDeposit(req.getDeposit());
         payment.setCashier(staff);
         
@@ -132,7 +133,7 @@ public class PaymentController {
             visit.setNumberOfPeople(req.getPeople());
         }
         visit.setLeaveTime(req.getPaymentTime());
-        
+        System.out.println(req.getPaymentTime());
         Map<String, Object> payload = new HashMap<>();
         payload.put("type", "LEAVE");
         payload.put("seatId", visit.getSeat().getSeatId()); // 離席した座席のIDもペイロードに含める

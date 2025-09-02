@@ -353,7 +353,7 @@
 					discount: discount, 
 					discountReason: discountReason,
 					total: total, 
-					paymentTime: new Date().toISOString(),
+					paymentTime: localIso(),
 					paymentTypeId,
 					deposit: received,
 					staffId,
@@ -442,6 +442,21 @@
 
 			closeModal('detailDiscountModal');
 			calculateTotals(); // 全体の合計を再計算（これでテーブルの割引表示も更新される）
+		}
+		
+		//時間の取得
+		function localIso(date = new Date()) {
+			  const d = new Date(); // ブラウザがJSTならこれでJSTのローカル時刻
+			  const pad = (n, z=2) => String(n).padStart(z, '0');
+			  return (
+			    d.getFullYear() + '-' +
+			    pad(d.getMonth()+1) + '-' +
+			    pad(d.getDate()) + 'T' +
+			    pad(d.getHours()) + ':' +
+			    pad(d.getMinutes()) + ':' +
+			    pad(d.getSeconds()) + '.' +
+			    pad(d.getMilliseconds(), 3)
+			  );
 		}
 		
 		// モーダルの外側をクリックしたら閉じるようにする

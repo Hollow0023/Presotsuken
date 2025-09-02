@@ -39,8 +39,8 @@ public class InspectionLogService {
     private final StoreRepository storeRepository;
     private final CashTransactionRepository cashTransactionRepository;
     private final PaymentTypeRepository paymentTypeRepository;
-
-    private static final int[] DENOMINATIONS = {10000, 5000, 1000, 500, 100, 50, 10, 5, 1};
+    
+//    private static final int[] DENOMINATIONS = {10000, 5000, 1000, 500, 100, 50, 10, 5, 1};
 
     @Transactional
     public void registerInspection(Integer storeId, InspectionLogRequest request, boolean performWithdrawal) {
