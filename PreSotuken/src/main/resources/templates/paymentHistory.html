@@ -36,6 +36,7 @@
 const modal = document.getElementById('detailModal');
 const modalBody = document.getElementById('modalBody');
 const closeBtn = modal.querySelector('.close');
+let deletedDetailIds = [];
 
 closeBtn.onclick = () => {
     modal.style.display = 'none';
@@ -48,39 +49,85 @@ window.onclick = event => {
 };
 
 function loadDetail(id, row) {
+    deletedDetailIds = [];
     fetch(`/payments/history/${id}`)
         .then(res => res.json())
         .then(data => {
             let html = `<h2>会計詳細</h2>`;
-            html += `<p>席: ${data.seatName}</p>`;
-            html += `<p>割引: <span id="discountAmount">${data.discount || 0}</span>円</p>`;
-            html += `<p>合計: ${data.total}円</p>`;
-            html += `<table><tr><th>商品</th><th>数量</th><th>小計</th></tr>`;
-            data.details.forEach(d => {
-                html += `<tr><td>${d.menuName}</td><td>${d.quantity}</td><td>${d.subtotal}円</td></tr>`;
+            html += `<p>席: <select id="seatSelect">`;
+            data.seats.forEach(s => {
+                html += `<option value="${s.id}" ${s.id===data.seatId?'selected':''}>${s.name}</option>`;
             });
-            html += `</table>`;
-            html += `<button id="editDiscount" class="discount-edit-btn">割引を編集</button>`;
+            html += `</select></p>`;
+            html += `<p>支払い方法: <select id="paymentTypeSelect">`;
+            data.paymentTypes.forEach(pt => {
+                html += `<option value="${pt.id}" ${pt.id===data.paymentTypeId?'selected':''}>${pt.name}</option>`;
+            });
+            html += `</select></p>`;
+            html += `<p>担当者: <select id="cashierSelect">`;
+            data.users.forEach(u => {
+                html += `<option value="${u.id}" ${u.id===data.cashierId?'selected':''}>${u.name}</option>`;
+            });
+            html += `</select></p>`;
+            html += `<p>割引: <input type="number" id="discountInput" value="${data.discount || 0}">円</p>`;
+            html += `<table id="detailTable"><thead><tr><th>商品</th><th>数量</th><th>小計</th><th></th></tr></thead><tbody>`;
+            data.details.forEach(d => {
+                html += `<tr data-detail-id="${d.paymentDetailId}" data-price="${d.price}"><td>${d.menuName}</td><td><input type="number" class="qty-input" min="1" value="${d.quantity}"></td><td class="subtotal">${d.subtotal}</td><td><button type="button" class="delete-detail">削除</button></td></tr>`;
+            });
+            html += `</tbody></table>`;
+            html += `<button id="saveChanges" class="save-btn">保存</button>`;
             modalBody.innerHTML = html;
             modal.style.display = 'block';
+
             if (row) {
+                row.querySelector('td:nth-child(2)').textContent = data.seatName;
                 row.querySelector('td:nth-child(3)').textContent = `${data.total}円`;
+                row.querySelector('td:nth-child(4)').textContent = data.cashierName || '';
             }
-            const editBtn = document.getElementById('editDiscount');
-            editBtn.addEventListener('click', () => {
-                const current = document.getElementById('discountAmount').textContent;
-                const input = prompt('新しい割引額を入力してください', current);
-                if (input !== null) {
-                    fetch(`/payments/history/${id}/discount`, {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({discount: parseFloat(input)})
-                    }).then(res => {
-                        if (res.ok) {
-                            loadDetail(id, row);
-                        }
+
+            document.querySelectorAll('.delete-detail').forEach(btn => {
+                btn.addEventListener('click', e => {
+                    const tr = e.target.closest('tr');
+                    deletedDetailIds.push(parseInt(tr.dataset.detailId));
+                    tr.remove();
+                });
+            });
+
+            document.querySelectorAll('.qty-input').forEach(input => {
+                input.addEventListener('input', e => {
+                    const tr = e.target.closest('tr');
+                    const price = parseFloat(tr.dataset.price);
+                    const qty = parseInt(e.target.value) || 0;
+                    tr.querySelector('.subtotal').textContent = price * qty;
+                });
+            });
+
+            document.getElementById('saveChanges').addEventListener('click', () => {
+                const payload = {
+                    seatId: parseInt(document.getElementById('seatSelect').value),
+                    paymentTypeId: parseInt(document.getElementById('paymentTypeSelect').value),
+                    cashierId: parseInt(document.getElementById('cashierSelect').value),
+                    discount: parseFloat(document.getElementById('discountInput').value) || 0,
+                    details: []
+                };
+                document.querySelectorAll('#detailTable tbody tr').forEach(tr => {
+                    payload.details.push({
+                        paymentDetailId: parseInt(tr.dataset.detailId),
+                        quantity: parseInt(tr.querySelector('.qty-input').value)
                     });
-                }
+                });
+                deletedDetailIds.forEach(id => {
+                    payload.details.push({paymentDetailId: id, delete: true});
+                });
+                fetch(`/payments/history/${id}/edit`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload)
+                }).then(res => {
+                    if (res.ok) {
+                        loadDetail(id, row);
+                    }
+                });
             });
         });
 }
