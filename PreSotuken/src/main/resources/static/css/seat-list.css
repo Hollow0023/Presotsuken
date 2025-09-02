@@ -73,7 +73,21 @@ body{
 }
 
 .menu-drawer a:hover {
-	text-decoration: underline;
+        text-decoration: underline;
+}
+
+.menu-group {
+        margin-bottom: 24px;
+}
+
+.menu-group-title {
+        margin: 0 0 8px;
+        font-size: 18px;
+        font-weight: bold;
+}
+
+.menu-group a {
+        padding-left: 10px;
 }
 
 /*↑↑↑↑メニュー部分↑↑↑↑*/
