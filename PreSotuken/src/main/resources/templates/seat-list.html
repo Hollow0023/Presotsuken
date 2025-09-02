@@ -32,11 +32,12 @@
 			<a th:href="@{/admin/terminals/logo}">ロゴ設定</a>
 			<a th:href="@{/admin/store/edit}">店舗設定</a>
 			<a th:href="@{/admin/inspection/form}">点検</a>
-			<a th:href="@{/admin/cash/transaction}">入出金</a>
-			<a th:href="@{/admin/cash/history}">入出金履歴</a>
-			
-			
-		</div>
+                        <a th:href="@{/admin/cash/transaction}">入出金</a>
+                        <a th:href="@{/admin/cash/history}">入出金履歴</a>
+                        <a href="/payments/history">会計履歴</a>
+
+
+                </div>
 		
 		<form th:action="@{/logout}" method="get" onsubmit="clearUserIdCookie()">
 		    <button type="submit">ログアウト</button>
