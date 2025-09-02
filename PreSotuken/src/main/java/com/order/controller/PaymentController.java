@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Comparator;
 import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
@@ -33,19 +34,22 @@ import com.order.repository.VisitRepository;
 import com.order.repository.SeatRepository;
 
 import jakarta.transaction.Transactional;
-import lombok.RequiredArgsConstructor;
-
-@RequiredArgsConstructor
 @Controller
 public class PaymentController {
-
-    private final VisitRepository visitRepository;
-    private final PaymentRepository paymentRepository;
-    private final PaymentDetailRepository paymentDetailRepository;
-    private final PaymentTypeRepository paymentTypeRepository;
-    private final SimpMessagingTemplate messagingTemplate;
-    private final UserRepository userRepository;
-    private final SeatRepository seatRepository;
+    @Autowired
+    private VisitRepository visitRepository;
+    @Autowired
+    private PaymentRepository paymentRepository;
+    @Autowired
+    private PaymentDetailRepository paymentDetailRepository;
+    @Autowired
+    private PaymentTypeRepository paymentTypeRepository;
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;
+    @Autowired
+    private UserRepository userRepository;
+    @Autowired
+    private SeatRepository seatRepository;
 
     @GetMapping("/payments")
     public String showPaymentDetail(@RequestParam("visitId") int visitId,
