@@ -1,8 +1,10 @@
 package com.order.controller;
 
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -18,11 +20,13 @@ import com.order.dto.PaymentFinalizeRequest;
 import com.order.entity.Payment;
 import com.order.entity.PaymentDetail;
 import com.order.entity.PaymentType;
+import com.order.entity.Seat;
 import com.order.entity.User;
 import com.order.entity.Visit;
 import com.order.repository.PaymentDetailRepository;
 import com.order.repository.PaymentRepository;
 import com.order.repository.PaymentTypeRepository;
+import com.order.repository.SeatRepository;
 import com.order.repository.UserRepository;
 import com.order.repository.VisitRepository;
 
@@ -39,6 +43,7 @@ public class PaymentController {
     private final PaymentTypeRepository paymentTypeRepository;
     private final SimpMessagingTemplate messagingTemplate;
     private final UserRepository userRepository;
+    private final SeatRepository seatRepository;
 
     @GetMapping("/payments")
     public String showPaymentDetail(@RequestParam("visitId") int visitId,
@@ -68,7 +73,21 @@ public class PaymentController {
         double total = subtotal - discount;
 
         List<PaymentType> paymentTypeList = paymentTypeRepository.findByStoreId(storeId);
-        
+
+        List<Map<String, Object>> seatList =
+            seatRepository.findByStore_StoreId(storeId).stream()
+                .sorted(
+                    Comparator
+                        .comparingInt((Seat s) -> extractSeatNumber(s.getSeatName()))
+                        .thenComparing(Seat::getSeatName))
+                .map(s -> {
+                    Map<String, Object> m = new HashMap<>();
+                    m.put("id", s.getSeatId());
+                    m.put("name", s.getSeatName());
+                    return m;
+                })
+                .collect(Collectors.toList());
+
         model.addAttribute("userList", userRepository.findByStore_StoreId(storeId));
         model.addAttribute("visit", visit);
         model.addAttribute("payment", payment);
@@ -77,6 +96,7 @@ public class PaymentController {
         model.addAttribute("discount", discount);
         model.addAttribute("total", total);
         model.addAttribute("paymentTypeList", paymentTypeList);
+        model.addAttribute("seatList", seatList);
 
         return "payment";
     }
@@ -87,8 +107,8 @@ public class PaymentController {
     @Transactional
     @PostMapping("/payments/finalize")
     public ResponseEntity<Void> finalizePayment(@RequestBody PaymentFinalizeRequest req) {
-    	//会計担当者を取得
-    	User staff = userRepository.findById(req.getStaffId()).orElse(null);
+        //会計担当者を取得
+        User staff = userRepository.findById(req.getStaffId()).orElse(null);
     	
         // Payment を取得
         Payment payment = paymentRepository.findById(req.getPaymentId())
@@ -144,5 +164,10 @@ public class PaymentController {
         paymentRepository.save(payment);
         visitRepository.save(visit);
         return ResponseEntity.ok().build();
+    }
+
+    private static int extractSeatNumber(String seatName) {
+        String digits = seatName.replaceAll("\\D+", "");
+        return digits.isEmpty() ? Integer.MAX_VALUE : Integer.parseInt(digits);
     }
 }
