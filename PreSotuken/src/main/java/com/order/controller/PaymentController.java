@@ -115,7 +115,7 @@ public class PaymentController {
             return m;
         }).collect(Collectors.toList());
 
-        List<Map<String, Object>> seatList = seatRepository.findByStore_StoreId(storeId).stream().map(s -> {
+        List<Map<String, Object>> seatList = seatRepository.findByStore_StoreIdOrderBySeatNameAsc(storeId).stream().map(s -> {
             Map<String, Object> m = new HashMap<>();
             m.put("id", s.getSeatId());
             m.put("name", s.getSeatName());

@@ -11,5 +11,6 @@ import com.order.entity.Seat;
 public interface SeatRepository extends JpaRepository<Seat, Integer> {
 	List<Seat> findByStore_StoreIdAndSeatGroup_SeatGroupId(Integer storeId, Integer seatGroupId);
 	List<Seat> findByStore_StoreId(Integer storeId);
+        List<Seat> findByStore_StoreIdOrderBySeatNameAsc(Integer storeId);
 	Seat findBySeatId(Integer seatId);
 }
