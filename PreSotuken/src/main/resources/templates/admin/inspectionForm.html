@@ -206,7 +206,7 @@ th, td {
 				name="performWithdrawal" value="true" /> 出金も行う (現金合計をレジから出金)
 			</label>
 		</div>
-		<button id="submitBtn" type="submit" disabled>登録</button>
+                <button id="submitBtn" type="submit">登録</button>
 		<span id="expectedCashCalculated" th:text="${expectedCash ?: 0}"
 			style="display: none;">0</span>
 
@@ -219,7 +219,6 @@ th, td {
     const expectedCashEl = document.getElementById('expectedCashCalculated'); // IDを修正済みだね！
     
     // 新しく追加
-    const submitBtn = document.getElementById('submitBtn');
     const performWithdrawalCheck = document.getElementById('performWithdrawalCheck');
 
     function calculate() {
@@ -236,13 +235,6 @@ th, td {
         cashTotalEl.textContent = total.toLocaleString();
         expectedTotalEl.textContent = expected.toLocaleString();
         differenceEl.textContent = diff.toLocaleString();
-
-        // ★差額が0でない場合は登録ボタンを無効にするロジック★
-        if (diff !== 0) {
-            submitBtn.disabled = true;
-        } else {
-            submitBtn.disabled = false;
-        }
     }
 
     inputs.forEach(input => {
