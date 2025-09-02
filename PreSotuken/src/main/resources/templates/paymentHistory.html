@@ -7,7 +7,8 @@
 </head>
 <body>
 <h1>会計履歴</h1>
-<table>
+<a href="/seats" class="back-button">座席一覧に戻る</a>
+<table id="historyTable">
     <thead>
     <tr>
         <th>日時</th>
@@ -17,7 +18,7 @@
     </tr>
     </thead>
     <tbody>
-    <tr th:each="payment : ${payments}">
+    <tr th:each="payment : ${payments}" th:attr="data-payment-id=${payment.paymentId}">
         <td th:text="${#temporals.format(payment.paymentTime, 'yyyy-MM-dd HH:mm')}"></td>
         <td th:text="${payment.visit.seat.seatName}"></td>
         <td th:text="${#numbers.formatDecimal(payment.total,0,0)} + '円'"></td>
@@ -25,5 +26,27 @@
     </tr>
     </tbody>
 </table>
+<div id="paymentDetail"></div>
+<script>
+document.querySelectorAll('#historyTable tbody tr').forEach(row => {
+    row.addEventListener('click', () => {
+        const id = row.dataset.paymentId;
+        fetch(`/payments/history/${id}`)
+            .then(res => res.json())
+            .then(data => {
+                const container = document.getElementById('paymentDetail');
+                let html = `<h2>会計詳細</h2>`;
+                html += `<p>席: ${data.seatName}</p>`;
+                html += `<p>合計: ${data.total}円</p>`;
+                html += `<table><tr><th>商品</th><th>数量</th><th>小計</th></tr>`;
+                data.details.forEach(d => {
+                    html += `<tr><td>${d.menuName}</td><td>${d.quantity}</td><td>${d.subtotal}円</td></tr>`;
+                });
+                html += `</table>`;
+                container.innerHTML = html;
+            });
+    });
+});
+</script>
 </body>
 </html>
