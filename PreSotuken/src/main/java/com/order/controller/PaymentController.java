@@ -3,14 +3,12 @@ package com.order.controller;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.CookieValue;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -89,29 +87,6 @@ public class PaymentController {
         List<Payment> payments = paymentRepository.findByStoreStoreIdOrderByPaymentTimeDesc(storeId);
         model.addAttribute("payments", payments);
         return "paymentHistory";
-    }
-
-    @GetMapping("/payments/history/{paymentId}")
-    public ResponseEntity<Map<String, Object>> getPaymentHistoryDetail(@CookieValue(name = "storeId", required = false) Integer storeId,
-                                                                       @PathVariable Integer paymentId) {
-        Payment payment = paymentRepository.findById(paymentId).orElse(null);
-        if (payment == null || !payment.getStore().getStoreId().equals(storeId)) {
-            return ResponseEntity.notFound().build();
-        }
-        List<PaymentDetail> details = paymentDetailRepository.findByPaymentPaymentId(paymentId);
-        List<Map<String, Object>> detailList = details.stream().map(d -> {
-            Map<String, Object> m = new HashMap<>();
-            m.put("menuName", d.getMenu().getMenuName());
-            m.put("quantity", d.getQuantity());
-            m.put("subtotal", d.getSubtotal());
-            return m;
-        }).collect(Collectors.toList());
-        Map<String, Object> result = new HashMap<>();
-        result.put("seatName", payment.getVisit().getSeat().getSeatName());
-        result.put("paymentTime", payment.getPaymentTime());
-        result.put("total", payment.getTotal());
-        result.put("details", detailList);
-        return ResponseEntity.ok(result);
     }
 
 

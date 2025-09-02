@@ -17,6 +17,7 @@ th, td {
 th {
     background-color: #f2f2f2;
 }
+<<<<<<< codex_test
 
 tbody tr:hover {
     background-color: #eef;
@@ -57,3 +58,5 @@ tbody tr:hover {
     font-weight: bold;
     cursor: pointer;
 }
+=======
+>>>>>>> c6a4dcf Add payment detail retrieval from history

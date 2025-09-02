@@ -7,8 +7,7 @@
 </head>
 <body>
 <h1>会計履歴</h1>
-<a href="/seats" class="back-button">座席一覧に戻る</a>
-<table id="historyTable">
+<table>
     <thead>
     <tr>
         <th>日時</th>
@@ -18,7 +17,7 @@
     </tr>
     </thead>
     <tbody>
-    <tr th:each="payment : ${payments}" th:attr="data-payment-id=${payment.paymentId}">
+    <tr th:each="payment : ${payments}">
         <td th:text="${#temporals.format(payment.paymentTime, 'yyyy-MM-dd HH:mm')}"></td>
         <td th:text="${payment.visit.seat.seatName}"></td>
         <td th:text="${#numbers.formatDecimal(payment.total,0,0)} + '円'"></td>
@@ -26,6 +25,7 @@
     </tr>
     </tbody>
 </table>
+<<<<<<< codex_test
 <div id="detailModal" class="modal">
     <div class="modal-content">
         <span class="close">&times;</span>
@@ -67,5 +67,7 @@ document.querySelectorAll('#historyTable tbody tr').forEach(row => {
     });
 });
 </script>
+=======
+>>>>>>> c6a4dcf Add payment detail retrieval from history
 </body>
 </html>
