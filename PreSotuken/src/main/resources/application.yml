@@ -1,15 +1,26 @@
 spring:
   profiles:
     active: dev
+    
 
   datasource:
-    url: jdbc:mysql://localhost:3306/order
+    url: jdbc:mysql://localhost:3306/order?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Tokyo
+
     username: root
     password: pass
     driver-class-name: com.mysql.cj.jdbc.Driver
+
+  
+  flyway:
+    enabled: true
+    baseline-on-migrate: false
+    
+    
 
 
 
 server:
   address: 0.0.0.0
   port: 8080
+
+  
