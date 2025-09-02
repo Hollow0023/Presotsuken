@@ -3,6 +3,7 @@ package com.order.controller;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Comparator;
 import java.util.stream.Collectors;
 
 import org.springframework.http.ResponseEntity;
@@ -115,12 +116,15 @@ public class PaymentController {
             return m;
         }).collect(Collectors.toList());
 
-        List<Map<String, Object>> seatList = seatRepository.findByStore_StoreIdOrderBySeatNameAsc(storeId).stream().map(s -> {
-            Map<String, Object> m = new HashMap<>();
-            m.put("id", s.getSeatId());
-            m.put("name", s.getSeatName());
-            return m;
-        }).collect(Collectors.toList());
+        List<Map<String, Object>> seatList = seatRepository.findByStore_StoreId(storeId).stream()
+                .sorted(Comparator.comparingInt(s -> extractSeatNumber(s.getSeatName()))
+                        .thenComparing(Seat::getSeatName))
+                .map(s -> {
+                    Map<String, Object> m = new HashMap<>();
+                    m.put("id", s.getSeatId());
+                    m.put("name", s.getSeatName());
+                    return m;
+                }).collect(Collectors.toList());
 
         List<Map<String, Object>> userList = userRepository.findByStore_StoreId(storeId).stream().map(u -> {
             Map<String, Object> m = new HashMap<>();
@@ -229,6 +233,13 @@ public class PaymentController {
         return ResponseEntity.ok().build();
     }
 
+    private int extractSeatNumber(String seatName) {
+        if (seatName == null) {
+            return Integer.MAX_VALUE;
+        }
+        String digits = seatName.replaceAll("\\D", "");
+        return digits.isEmpty() ? Integer.MAX_VALUE : Integer.parseInt(digits);
+    }
 
     //会計確定: Payment および Visit の退店時刻を更新
 
