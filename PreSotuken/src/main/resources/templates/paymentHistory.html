@@ -13,7 +13,8 @@
     <tr>
         <th>日時</th>
         <th>席</th>
-        <th>合計</th>
+        <th>税抜合計</th>
+        <th>税込合計</th>
         <th>担当</th>
     </tr>
     </thead>
@@ -21,10 +22,8 @@
     <tr th:each="payment : ${payments}" th:attr="data-payment-id=${payment.paymentId}">
         <td th:text="${#temporals.format(payment.paymentTime, 'yyyy-MM-dd HH:mm')}"></td>
         <td th:text="${payment.visit.seat.seatName}"></td>
-        <td>
-            <span th:text="${#numbers.formatDecimal(payment.total,0,0)}"></span>円
-            (<span th:text="${#numbers.formatDecimal(subtotalMap[payment.paymentId],0,0)}"></span>円税抜)
-        </td>
+        <td><span th:text="${#numbers.formatDecimal(subtotalMap[payment.paymentId],0,0)}"></span>円</td>
+        <td><span th:text="${#numbers.formatDecimal(payment.total,0,0)}"></span>円</td>
         <td th:text="${payment.cashier != null ? payment.cashier.userName : ''}"></td>
     </tr>
     </tbody>
@@ -86,8 +85,9 @@ function loadDetail(id, row) {
 
             if (row) {
                 row.querySelector('td:nth-child(2)').textContent = data.seatName;
-                row.querySelector('td:nth-child(3)').textContent = `${Math.round(data.total)}円 (税抜 ${Math.round(data.subtotal)}円)`;
-                row.querySelector('td:nth-child(4)').textContent = data.cashierName || '';
+                row.querySelector('td:nth-child(3)').textContent = `${Math.round(data.subtotal)}円`;
+                row.querySelector('td:nth-child(4)').textContent = `${Math.round(data.total)}円`;
+                row.querySelector('td:nth-child(5)').textContent = data.cashierName || '';
             }
 
             document.querySelectorAll('.delete-detail').forEach(btn => {

@@ -18,27 +18,24 @@
     <tr>
         <th>時間帯</th>
         <th>客数</th>
-        <th>客単価</th>
-        <th>売上</th>
-        <th>累計</th>
+        <th>客単価(税抜)</th>
+        <th>客単価(税込)</th>
+        <th>売上(税抜)</th>
+        <th>売上(税込)</th>
+        <th>累計(税抜)</th>
+        <th>累計(税込)</th>
     </tr>
     </thead>
     <tbody>
     <tr th:each="row : ${hourlyData}" th:attr="data-hour=${row.hour}">
         <td th:text="${row.hour} + ':00 - ' + (${row.hour}+1) + ':00'"></td>
         <td th:text="${row.customers}"></td>
-        <td>
-            <span th:text="${#numbers.formatDecimal(row.customerUnitPriceWithTax,0,0)}"></span>円
-            (<span th:text="${#numbers.formatDecimal(row.customerUnitPriceWithoutTax,0,0)}"></span>円税抜)
-        </td>
-        <td>
-            <span th:text="${#numbers.formatDecimal(row.hourSalesWithTax,0,0)}"></span>円
-            (<span th:text="${#numbers.formatDecimal(row.hourSalesWithoutTax,0,0)}"></span>円税抜)
-        </td>
-        <td>
-            <span th:text="${#numbers.formatDecimal(row.cumulativeSalesWithTax,0,0)}"></span>円
-            (<span th:text="${#numbers.formatDecimal(row.cumulativeSalesWithoutTax,0,0)}"></span>円税抜)
-        </td>
+        <td><span th:text="${#numbers.formatDecimal(row.customerUnitPriceWithoutTax,0,0)}"></span>円</td>
+        <td><span th:text="${#numbers.formatDecimal(row.customerUnitPriceWithTax,0,0)}"></span>円</td>
+        <td><span th:text="${#numbers.formatDecimal(row.hourSalesWithoutTax,0,0)}"></span>円</td>
+        <td><span th:text="${#numbers.formatDecimal(row.hourSalesWithTax,0,0)}"></span>円</td>
+        <td><span th:text="${#numbers.formatDecimal(row.cumulativeSalesWithoutTax,0,0)}"></span>円</td>
+        <td><span th:text="${#numbers.formatDecimal(row.cumulativeSalesWithTax,0,0)}"></span>円</td>
     </tr>
     </tbody>
 </table>
