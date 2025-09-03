@@ -24,6 +24,22 @@ public interface PaymentDetailRepository extends JpaRepository<PaymentDetail, In
 
     List<PaymentDetail> findByPaymentPaymentIdAndMenuIsPlanStarterTrue(Integer paymentId);
 
+    @Query("""
+        SELECT pd.menu.menuName, SUM(pd.quantity)
+        FROM PaymentDetail pd
+        JOIN pd.payment p
+        WHERE p.store.storeId = :storeId
+          AND p.paymentTime >= :start AND p.paymentTime < :end
+          AND p.visitCancel = false
+        GROUP BY pd.menu.menuName
+        ORDER BY pd.menu.menuName
+    """)
+    List<Object[]> sumMenuQuantityByTime(
+        @Param("storeId") Integer storeId,
+        @Param("start") LocalDateTime start,
+        @Param("end") LocalDateTime end
+    );
+
     // 現金売上（点検対象の支払い種別）
 //    @Query("""
 //        SELECT SUM(pd.subtotal)
