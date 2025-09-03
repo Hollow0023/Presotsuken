@@ -85,6 +85,8 @@ public class SalesAnalysisController {
             Map<String, Object> m = new HashMap<>();
             m.put("menuName", r[0]);
             m.put("quantity", ((Number) r[1]).intValue());
+            m.put("price", ((Number) r[2]).doubleValue());
+
             list.add(m);
         }
         return ResponseEntity.ok(list);

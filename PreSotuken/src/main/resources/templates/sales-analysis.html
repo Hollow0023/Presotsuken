@@ -7,6 +7,8 @@
 </head>
 <body>
 <h1>売上分析</h1>
+<p><a th:href="@{/seat-list}">座席一覧に戻る</a></p>
+
 <form id="dateForm" method="get" action="/sales-analysis">
     <label>日付: <input type="date" name="date" th:value="${date}"></label>
     <button type="submit">表示</button>
@@ -52,9 +54,11 @@ document.querySelectorAll('#analysisTable tbody tr').forEach(row => {
             .then(res => res.json())
             .then(data => {
                 let html = `<h2>${hour}時の販売内訳</h2>`;
-                html += '<table><thead><tr><th>商品</th><th>数量</th></tr></thead><tbody>';
+                html += '<table><thead><tr><th>商品</th><th>数量</th><th>金額</th></tr></thead><tbody>';
                 data.forEach(item => {
-                    html += `<tr><td>${item.menuName}</td><td>${item.quantity}</td></tr>`;
+                    const price = Math.round(item.price).toLocaleString();
+                    html += `<tr><td>${item.menuName}</td><td>${item.quantity}</td><td>${price}円</td></tr>`;
+
                 });
                 html += '</tbody></table>';
                 modalBody.innerHTML = html;
