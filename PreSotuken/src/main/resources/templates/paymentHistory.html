@@ -21,7 +21,10 @@
     <tr th:each="payment : ${payments}" th:attr="data-payment-id=${payment.paymentId}">
         <td th:text="${#temporals.format(payment.paymentTime, 'yyyy-MM-dd HH:mm')}"></td>
         <td th:text="${payment.visit.seat.seatName}"></td>
-        <td th:text="${#numbers.formatDecimal(payment.total,0,0)} + '円'"></td>
+        <td>
+            <span th:text="${#numbers.formatDecimal(payment.total,0,0)}"></span>円
+            (<span th:text="${#numbers.formatDecimal(subtotalMap[payment.paymentId],0,0)}"></span>円税抜)
+        </td>
         <td th:text="${payment.cashier != null ? payment.cashier.userName : ''}"></td>
     </tr>
     </tbody>
@@ -70,9 +73,11 @@ function loadDetail(id, row) {
             });
             html += `</select></p>`;
             html += `<p>割引: <input type="number" id="discountInput" value="${data.discount || 0}">円</p>`;
-            html += `<table id="detailTable"><thead><tr><th>商品</th><th>数量</th><th>小計</th><th></th></tr></thead><tbody>`;
+            html += `<table id="detailTable"><thead><tr><th>商品</th><th>数量</th><th>税込小計</th><th>税抜小計</th><th></th></tr></thead><tbody>`;
             data.details.forEach(d => {
-                html += `<tr data-detail-id="${d.paymentDetailId}" data-price="${d.price}"><td>${d.menuName}</td><td><input type="number" class="qty-input" min="1" value="${d.quantity}"></td><td class="subtotal">${d.subtotal}</td><td><button type="button" class="delete-detail">削除</button></td></tr>`;
+                const subIn = Math.round(d.subtotalWithTax);
+                const subEx = Math.round(d.subtotalWithoutTax);
+                html += `<tr data-detail-id="${d.paymentDetailId}" data-price="${d.price}" data-tax-rate="${d.taxRate}"><td>${d.menuName}</td><td><input type="number" class="qty-input" min="1" value="${d.quantity}"></td><td class="subtotal">${subIn}円</td><td class="subtotal-ex">${subEx}円</td><td><button type="button" class="delete-detail">削除</button></td></tr>`;
             });
             html += `</tbody></table>`;
             html += `<button id="saveChanges" class="save-btn">保存</button>`;
@@ -81,7 +86,7 @@ function loadDetail(id, row) {
 
             if (row) {
                 row.querySelector('td:nth-child(2)').textContent = data.seatName;
-                row.querySelector('td:nth-child(3)').textContent = `${data.total}円`;
+                row.querySelector('td:nth-child(3)').textContent = `${Math.round(data.total)}円 (税抜 ${Math.round(data.subtotal)}円)`;
                 row.querySelector('td:nth-child(4)').textContent = data.cashierName || '';
             }
 
@@ -97,8 +102,12 @@ function loadDetail(id, row) {
                 input.addEventListener('input', e => {
                     const tr = e.target.closest('tr');
                     const price = parseFloat(tr.dataset.price);
+                    const taxRate = parseFloat(tr.dataset.taxRate);
                     const qty = parseInt(e.target.value) || 0;
-                    tr.querySelector('.subtotal').textContent = price * qty;
+                    const subEx = price * qty;
+                    const subIn = subEx * (1 + taxRate);
+                    tr.querySelector('.subtotal').textContent = `${Math.round(subIn)}円`;
+                    tr.querySelector('.subtotal-ex').textContent = `${Math.round(subEx)}円`;
                 });
             });
 

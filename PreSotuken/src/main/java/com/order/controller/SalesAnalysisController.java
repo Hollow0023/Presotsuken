@@ -42,28 +42,39 @@ public class SalesAnalysisController {
         List<Payment> payments = paymentRepository
                 .findByStoreStoreIdAndPaymentTimeBetween(storeId, startOfDay, endOfDay);
 
-        double[] hourlySales = new double[24];
+        double[] hourlySalesWithTax = new double[24];
+        double[] hourlySalesWithoutTax = new double[24];
         int[] hourlyCustomers = new int[24];
         for (Payment p : payments) {
             if (p.getPaymentTime() == null) continue;
             int hour = p.getPaymentTime().getHour();
             double total = p.getTotal() != null ? p.getTotal() : 0;
-            hourlySales[hour] += total;
+            hourlySalesWithTax[hour] += total;
+            double subtotal = paymentDetailRepository.findByPaymentPaymentId(p.getPaymentId())
+                    .stream()
+                    .mapToDouble(pd -> pd.getSubtotal() != null ? pd.getSubtotal() : 0)
+                    .sum();
+            hourlySalesWithoutTax[hour] += subtotal;
             if (p.getVisit() != null && p.getVisit().getNumberOfPeople() != null) {
                 hourlyCustomers[hour] += p.getVisit().getNumberOfPeople();
             }
         }
 
         List<Map<String, Object>> hourlyData = new ArrayList<>();
-        double cumulative = 0;
+        double cumulativeWithTax = 0;
+        double cumulativeWithoutTax = 0;
         for (int i = 0; i < 24; i++) {
-            cumulative += hourlySales[i];
+            cumulativeWithTax += hourlySalesWithTax[i];
+            cumulativeWithoutTax += hourlySalesWithoutTax[i];
             Map<String, Object> m = new HashMap<>();
             m.put("hour", i);
             m.put("customers", hourlyCustomers[i]);
-            m.put("customerUnitPrice", hourlyCustomers[i] > 0 ? hourlySales[i] / hourlyCustomers[i] : 0);
-            m.put("hourSales", hourlySales[i]);
-            m.put("cumulativeSales", cumulative);
+            m.put("customerUnitPriceWithTax", hourlyCustomers[i] > 0 ? hourlySalesWithTax[i] / hourlyCustomers[i] : 0);
+            m.put("customerUnitPriceWithoutTax", hourlyCustomers[i] > 0 ? hourlySalesWithoutTax[i] / hourlyCustomers[i] : 0);
+            m.put("hourSalesWithTax", hourlySalesWithTax[i]);
+            m.put("hourSalesWithoutTax", hourlySalesWithoutTax[i]);
+            m.put("cumulativeSalesWithTax", cumulativeWithTax);
+            m.put("cumulativeSalesWithoutTax", cumulativeWithoutTax);
             hourlyData.add(m);
         }
 
@@ -85,7 +96,8 @@ public class SalesAnalysisController {
             Map<String, Object> m = new HashMap<>();
             m.put("menuName", r[0]);
             m.put("quantity", ((Number) r[1]).intValue());
-            m.put("price", ((Number) r[2]).doubleValue());
+            m.put("priceWithoutTax", ((Number) r[2]).doubleValue());
+            m.put("priceWithTax", ((Number) r[3]).doubleValue());
 
             list.add(m);
         }

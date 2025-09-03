@@ -25,7 +25,10 @@ public interface PaymentDetailRepository extends JpaRepository<PaymentDetail, In
     List<PaymentDetail> findByPaymentPaymentIdAndMenuIsPlanStarterTrue(Integer paymentId);
 
     @Query("""
-        SELECT pd.menu.menuName, SUM(pd.quantity), SUM(pd.subtotal)
+        SELECT pd.menu.menuName,
+               SUM(pd.quantity),
+               SUM(pd.subtotal),
+               SUM(pd.subtotal * (1 + pd.taxRate.rate))
 
         FROM PaymentDetail pd
         JOIN pd.payment p

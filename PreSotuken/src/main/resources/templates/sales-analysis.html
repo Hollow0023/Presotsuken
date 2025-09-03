@@ -27,9 +27,18 @@
     <tr th:each="row : ${hourlyData}" th:attr="data-hour=${row.hour}">
         <td th:text="${row.hour} + ':00 - ' + (${row.hour}+1) + ':00'"></td>
         <td th:text="${row.customers}"></td>
-        <td th:text="${#numbers.formatDecimal(row.customerUnitPrice,0,0)} + '円'"></td>
-        <td th:text="${#numbers.formatDecimal(row.hourSales,0,0)} + '円'"></td>
-        <td th:text="${#numbers.formatDecimal(row.cumulativeSales,0,0)} + '円'"></td>
+        <td>
+            <span th:text="${#numbers.formatDecimal(row.customerUnitPriceWithTax,0,0)}"></span>円
+            (<span th:text="${#numbers.formatDecimal(row.customerUnitPriceWithoutTax,0,0)}"></span>円税抜)
+        </td>
+        <td>
+            <span th:text="${#numbers.formatDecimal(row.hourSalesWithTax,0,0)}"></span>円
+            (<span th:text="${#numbers.formatDecimal(row.hourSalesWithoutTax,0,0)}"></span>円税抜)
+        </td>
+        <td>
+            <span th:text="${#numbers.formatDecimal(row.cumulativeSalesWithTax,0,0)}"></span>円
+            (<span th:text="${#numbers.formatDecimal(row.cumulativeSalesWithoutTax,0,0)}"></span>円税抜)
+        </td>
     </tr>
     </tbody>
 </table>
@@ -54,10 +63,11 @@ document.querySelectorAll('#analysisTable tbody tr').forEach(row => {
             .then(res => res.json())
             .then(data => {
                 let html = `<h2>${hour}時の販売内訳</h2>`;
-                html += '<table><thead><tr><th>商品</th><th>数量</th><th>金額</th></tr></thead><tbody>';
+                html += '<table><thead><tr><th>商品</th><th>数量</th><th>税込金額</th><th>税抜金額</th></tr></thead><tbody>';
                 data.forEach(item => {
-                    const price = Math.round(item.price).toLocaleString();
-                    html += `<tr><td>${item.menuName}</td><td>${item.quantity}</td><td>${price}円</td></tr>`;
+                    const priceIn = Math.round(item.priceWithTax).toLocaleString();
+                    const priceEx = Math.round(item.priceWithoutTax).toLocaleString();
+                    html += `<tr><td>${item.menuName}</td><td>${item.quantity}</td><td>${priceIn}円</td><td>${priceEx}円</td></tr>`;
 
                 });
                 html += '</tbody></table>';
