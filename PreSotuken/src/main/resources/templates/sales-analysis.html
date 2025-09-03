@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>売上分析</title>
+    <link rel="stylesheet" href="/css/sales-analysis.css">
+</head>
+<body>
+<h1>売上分析</h1>
+<a href="/">← トップに戻る</a>
+
+<form id="dateForm" method="get" action="/sales-analysis">
+    <label>日付: <input type="date" name="date" th:value="${date}"></label>
+    <button type="submit">表示</button>
+</form>
+<table id="analysisTable">
+    <thead>
+    <tr>
+        <th>時間帯</th>
+        <th>客数</th>
+        <th>客単価(税抜)</th>
+        <th>客単価(税込)</th>
+        <th>売上(税抜)</th>
+        <th>売上(税込)</th>
+        <th>累計(税抜)</th>
+        <th>累計(税込)</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="row : ${hourlyData}" th:attr="data-hour=${row.hour}">
+        <td th:text="${row.hour} + ':00 - ' + (${row.hour}+1) + ':00'"></td>
+        <td th:text="${row.customers}"></td>
+        <td><span th:text="${#numbers.formatDecimal(row.customerUnitPriceWithoutTax,0,0)}"></span>円</td>
+        <td><span th:text="${#numbers.formatDecimal(row.customerUnitPriceWithTax,0,0)}"></span>円</td>
+        <td><span th:text="${#numbers.formatDecimal(row.hourSalesWithoutTax,0,0)}"></span>円</td>
+        <td><span th:text="${#numbers.formatDecimal(row.hourSalesWithTax,0,0)}"></span>円</td>
+        <td><span th:text="${#numbers.formatDecimal(row.cumulativeSalesWithoutTax,0,0)}"></span>円</td>
+        <td><span th:text="${#numbers.formatDecimal(row.cumulativeSalesWithTax,0,0)}"></span>円</td>
+    </tr>
+    </tbody>
+</table>
+<div id="detailModal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <div id="modalBody"></div>
+    </div>
+</div>
+<script>
+const modal = document.getElementById('detailModal');
+const modalBody = document.getElementById('modalBody');
+const closeBtn = modal.querySelector('.close');
+closeBtn.onclick = () => modal.style.display = 'none';
+window.onclick = e => { if (e.target === modal) modal.style.display = 'none'; };
+
+document.querySelectorAll('#analysisTable tbody tr').forEach(row => {
+    row.addEventListener('click', () => {
+        const hour = row.dataset.hour;
+        const date = document.querySelector('input[name="date"]').value;
+        fetch(`/sales-analysis/details?date=${date}&hour=${hour}`)
+            .then(res => res.json())
+            .then(data => {
+                let html = `<h2>${hour}時の販売内訳</h2>`;
+                html += '<table><thead><tr><th>商品</th><th>数量</th><th>税込金額</th><th>税抜金額</th></tr></thead><tbody>';
+                data.forEach(item => {
+                    const priceIn = Math.round(item.priceWithTax).toLocaleString();
+                    const priceEx = Math.round(item.priceWithoutTax).toLocaleString();
+                    html += `<tr><td>${item.menuName}</td><td>${item.quantity}</td><td>${priceIn}円</td><td>${priceEx}円</td></tr>`;
+
+                });
+                html += '</tbody></table>';
+                modalBody.innerHTML = html;
+                modal.style.display = 'block';
+            });
+    });
+});
+</script>
+</body>
+</html>

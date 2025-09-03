@@ -91,7 +91,16 @@ public class PaymentController {
     public String showPaymentHistory(@CookieValue(name = "storeId", required = false) Integer storeId,
                                      Model model) {
         List<Payment> payments = paymentRepository.findByStoreStoreIdOrderByPaymentTimeDesc(storeId);
+        Map<Integer, Double> subtotalMap = new HashMap<>();
+        for (Payment p : payments) {
+            double subtotal = paymentDetailRepository.findByPaymentPaymentId(p.getPaymentId())
+                    .stream()
+                    .mapToDouble(pd -> pd.getSubtotal() != null ? pd.getSubtotal() : 0)
+                    .sum();
+            subtotalMap.put(p.getPaymentId(), subtotal);
+        }
         model.addAttribute("payments", payments);
+        model.addAttribute("subtotalMap", subtotalMap);
         return "paymentHistory";
     }
 
@@ -110,8 +119,11 @@ public class PaymentController {
             m.put("paymentDetailId", d.getPaymentDetailId());
             m.put("menuName", d.getMenu().getMenuName());
             m.put("quantity", d.getQuantity());
-            m.put("subtotal", d.getSubtotal());
+            m.put("subtotalWithoutTax", d.getSubtotal());
+            double subtotalWithTax = d.getSubtotal() * (1 + d.getTaxRate().getRate());
+            m.put("subtotalWithTax", subtotalWithTax);
             m.put("price", d.getMenu().getPrice());
+            m.put("taxRate", d.getTaxRate().getRate());
             return m;
         }).collect(Collectors.toList());
 
@@ -137,6 +149,9 @@ public class PaymentController {
         }).collect(Collectors.toList());
 
         Map<String, Object> result = new HashMap<>();
+        double subtotal = details.stream()
+                .mapToDouble(d -> d.getSubtotal() != null ? d.getSubtotal() : 0)
+                .sum();
         result.put("seatId", payment.getVisit().getSeat().getSeatId());
         result.put("seatName", payment.getVisit().getSeat().getSeatName());
         result.put("paymentTypeId", payment.getPaymentType() != null ? payment.getPaymentType().getTypeId() : null);
@@ -145,6 +160,7 @@ public class PaymentController {
         result.put("paymentTime", payment.getPaymentTime());
         result.put("discount", payment.getDiscount());
         result.put("total", payment.getTotal());
+        result.put("subtotal", subtotal);
         result.put("details", detailList);
         result.put("seats", seatList);
         result.put("users", userList);
