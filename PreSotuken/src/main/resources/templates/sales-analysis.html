@@ -8,6 +8,7 @@
 <body>
 <h1>売上分析</h1>
 <p><a th:href="@{/seat-list}">座席一覧に戻る</a></p>
+
 <form id="dateForm" method="get" action="/sales-analysis">
     <label>日付: <input type="date" name="date" th:value="${date}"></label>
     <button type="submit">表示</button>
@@ -57,6 +58,7 @@ document.querySelectorAll('#analysisTable tbody tr').forEach(row => {
                 data.forEach(item => {
                     const price = Math.round(item.price).toLocaleString();
                     html += `<tr><td>${item.menuName}</td><td>${item.quantity}</td><td>${price}円</td></tr>`;
+
                 });
                 html += '</tbody></table>';
                 modalBody.innerHTML = html;
