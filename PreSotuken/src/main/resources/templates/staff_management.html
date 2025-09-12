@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>スタッフ管理</title>
+    <link rel="stylesheet" th:href="@{/css/staff_management.css}">
+    <script th:src="@{/js/staff_management.js}" defer></script>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>スタッフ管理</h1>
+        <button id="addStaffBtn" class="btn btn-primary">＋ スタッフ追加</button>
+    </div>
+
+    <div class="main-content">
+        <table id="staffTable">
+            <thead>
+                <tr>
+                    <th>スタッフ名</th>
+                    <th>管理者権限</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- JSで動的に追加 -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- スタッフ追加/編集モーダル -->
+<div id="staffModal" class="modal hidden">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="modalTitle">スタッフを追加</h3>
+            <button class="close-btn" id="closeModalBtn">×</button>
+        </div>
+        <div class="modal-body">
+            <form id="staffForm">
+                <input type="hidden" id="userId" value="">
+                <div class="form-group">
+                    <label for="userNameInput">スタッフ名：</label>
+                    <input type="text" id="userNameInput" required>
+                </div>
+                <div class="form-group">
+                    <label for="isAdminInput">
+                        <input type="checkbox" id="isAdminInput">
+                        管理者権限
+                    </label>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" id="saveStaffBtn" class="btn btn-success">保存</button>
+                    <button type="button" id="cancelStaffBtn" class="btn btn-secondary">キャンセル</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- メッセージ表示エリア -->
+<div id="messageArea" class="message-area hidden">
+    <div id="messageContent"></div>
+    <button id="closeMessageBtn">×</button>
+</div>
+
+</body>
+</html>
