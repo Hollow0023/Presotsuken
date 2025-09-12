@@ -110,6 +110,15 @@ public class InspectionLogService {
         return userRepository.findByStore_StoreId(storeId);
     }
 
+    /**
+     * 指定された店舗の点検履歴を取得します。
+     * @param storeId 店舗ID
+     * @return 点検履歴リスト
+     */
+    public List<InspectionLog> getInspectionHistory(Integer storeId) {
+        return inspectionLogRepository.findByStore_StoreIdOrderByInspectionTimeDesc(storeId);
+    }
+
     public Map<String, Object> buildInspectionSummary(Integer storeId) {
         LocalDateTime now = LocalDateTime.now();
         LocalDate today = now.toLocalDate();

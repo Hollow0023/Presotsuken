@@ -31,4 +31,11 @@ public interface InspectionLogRepository extends JpaRepository<InspectionLog, In
         @Param("start") LocalDateTime start,
         @Param("end") LocalDateTime end
     );
+    
+    /**
+     * 指定された店舗IDの点検ログを新しい順に取得します。
+     * @param storeId 店舗ID
+     * @return 点検ログリスト（新しい順）
+     */
+    List<InspectionLog> findByStore_StoreIdOrderByInspectionTimeDesc(Integer storeId);
 }
