@@ -1,5 +1,7 @@
 package com.order.controller;
 
+import java.util.List;
+
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -9,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import com.order.dto.InspectionLogRequest;
+import com.order.entity.InspectionLog;
 import com.order.service.CookieUtil;
 import com.order.service.InspectionLogService;
 
@@ -38,6 +41,17 @@ public class InspectionLogController {
         model.addAttribute("users", inspectionLogService.getUsersForStore(storeId));
 
         return "admin/inspectionForm";
+    }
+
+    @GetMapping("/history")
+    public String showHistory(HttpServletRequest request, Model model) {
+        Integer storeId = cookieUtil.getStoreIdFromCookie(request);
+        
+        // 点検履歴を取得
+        List<InspectionLog> inspectionHistory = inspectionLogService.getInspectionHistory(storeId);
+        model.addAttribute("inspectionHistory", inspectionHistory);
+        
+        return "admin/inspectionHistory";
     }
 
     @PostMapping

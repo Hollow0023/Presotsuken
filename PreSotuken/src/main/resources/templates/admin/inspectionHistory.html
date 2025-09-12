@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<title>点検履歴</title>
+<style>
+body {
+	font-family: sans-serif;
+	padding: 20px;
+}
+
+h1 {
+	margin-top: 30px;
+}
+
+table {
+	width: 100%;
+	border-collapse: collapse;
+	margin-top: 10px;
+}
+
+th, td {
+	padding: 8px;
+	text-align: center;
+	border: 1px solid #ccc;
+}
+
+th {
+	background-color: #f5f5f5;
+	font-weight: bold;
+}
+
+.amount {
+	text-align: right;
+}
+
+.date {
+	white-space: nowrap;
+}
+
+.navigation {
+	margin-bottom: 20px;
+}
+
+.navigation a {
+	margin-right: 15px;
+	text-decoration: none;
+	color: #007bff;
+}
+
+.navigation a:hover {
+	text-decoration: underline;
+}
+
+.difference-positive {
+	color: green;
+	font-weight: bold;
+}
+
+.difference-negative {
+	color: red;
+	font-weight: bold;
+}
+
+.no-data {
+	text-align: center;
+	padding: 20px;
+	color: #888;
+	font-style: italic;
+}
+</style>
+</head>
+
+<body>
+	<h1>点検履歴</h1>
+	
+	<div class="navigation">
+		<a href="/admin/inspection/form">← 点検フォームに戻る</a>
+		<a href="/">トップに戻る</a>
+	</div>
+
+	<div th:if="${#lists.isEmpty(inspectionHistory)}" class="no-data">
+		点検履歴はありません。
+	</div>
+
+	<table th:if="${!#lists.isEmpty(inspectionHistory)}">
+		<thead>
+			<tr>
+				<th>点検日時</th>
+				<th>点検者</th>
+				<th>現金売上</th>
+				<th>実際の現金</th>
+				<th>差額</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr th:each="log : ${inspectionHistory}">
+				<td class="date" th:text="${#temporals.format(log.inspectionTime, 'yyyy-MM-dd HH:mm')}">2023-12-01 15:30</td>
+				<td th:text="${log.user.userName}">山田太郎</td>
+				<td class="amount" th:text="${#numbers.formatInteger(log.totalCashSales, 0, 'COMMA')} + '円'">10,000円</td>
+				<td class="amount" th:text="${#numbers.formatInteger(log.actualCashAmount, 0, 'COMMA')} + '円'">9,500円</td>
+				<td class="amount" 
+					th:classappend="${log.differenceAmount.compareTo(T(java.math.BigDecimal).ZERO) >= 0} ? 'difference-positive' : 'difference-negative'"
+					th:text="${#numbers.formatInteger(log.differenceAmount, 0, 'COMMA')} + '円'">-500円</td>
+			</tr>
+		</tbody>
+	</table>
+
+</body>
+</html>
