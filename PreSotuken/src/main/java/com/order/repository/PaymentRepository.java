@@ -29,7 +29,7 @@ public interface PaymentRepository extends JpaRepository<Payment, Integer> {
           AND p.paymentTime >= :start
           AND p.paymentTime < :end
           AND p.visitCancel = false
-          AND p.cancel = false
+          AND COALESCE(p.cancel, false) = false
     """)
     Long countCustomerVisits(
         @Param("storeId") Integer storeId,
@@ -42,7 +42,7 @@ public interface PaymentRepository extends JpaRepository<Payment, Integer> {
             WHERE p.store.storeId = :storeId
               AND p.paymentTime BETWEEN :start AND :end
               AND p.visitCancel = false
-              AND p.cancel = false
+              AND COALESCE(p.cancel, false) = false
               AND p.paymentType.isInspectionTarget = true
     	""")
     	BigDecimal sumCashSales(
