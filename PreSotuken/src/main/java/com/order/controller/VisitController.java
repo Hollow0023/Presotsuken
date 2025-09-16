@@ -98,16 +98,47 @@ public class VisitController {
 		Terminal terminal = terminalRepository.findByIpAddressAndStore_StoreId(ip, storeId)
 				.orElseThrow(() -> new RuntimeException("端末が見つかりません"));
 
-		Integer seatId = terminal.getSeat().getSeatId();
-		model.addAttribute("seatId", seatId);
-		model.addAttribute("storeId", storeId);
-		model.addAttribute("userId", null);
-		// Cookie に seatId を保存
-		Cookie seatIdCookie = new Cookie("seatId", String.valueOf(seatId));
-		seatIdCookie.setPath("/");
-		seatIdCookie.setMaxAge(60 * 60 * 24 * 120);
-		response.addCookie(seatIdCookie);
+                Integer seatId = terminal.getSeat().getSeatId();
+                model.addAttribute("seatId", seatId);
+                model.addAttribute("storeId", storeId);
+                model.addAttribute("userId", null);
+                // Cookie に seatId を保存
+                Cookie seatIdCookie = new Cookie("seatId", String.valueOf(seatId));
+                seatIdCookie.setPath("/");
+                seatIdCookie.setMaxAge(60 * 60 * 24 * 120);
+                response.addCookie(seatIdCookie);
 
-		return "orderwait";
-	}
+                Visit activeVisit = visitRepository
+                                .findFirstBySeat_Store_StoreIdAndSeat_SeatIdAndLeaveTimeIsNullOrderByVisitTimeDesc(storeId,
+                                                seatId);
+                if (activeVisit != null && activeVisit.getVisitId() != null) {
+                        Cookie visitIdCookie = new Cookie("visitId", String.valueOf(activeVisit.getVisitId()));
+                        visitIdCookie.setPath("/");
+                        visitIdCookie.setMaxAge(60 * 60 * 24 * 120);
+                        response.addCookie(visitIdCookie);
+
+                        Cookie storeIdCookie = new Cookie("storeId", String.valueOf(storeId));
+                        storeIdCookie.setPath("/");
+                        storeIdCookie.setMaxAge(60 * 60 * 24 * 120);
+                        response.addCookie(storeIdCookie);
+
+                        String userIdCookieValue = "null";
+                        if (request.getCookies() != null) {
+                                for (Cookie cookie : request.getCookies()) {
+                                        if ("userId".equals(cookie.getName())) {
+                                                userIdCookieValue = cookie.getValue();
+                                                break;
+                                        }
+                                }
+                        }
+                        Cookie userIdCookie = new Cookie("userId", userIdCookieValue);
+                        userIdCookie.setPath("/");
+                        userIdCookie.setMaxAge(60 * 60 * 24 * 120);
+                        response.addCookie(userIdCookie);
+
+                        return "redirect:/order";
+                }
+
+                return "orderwait";
+        }
 }
