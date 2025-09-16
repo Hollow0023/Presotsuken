@@ -35,6 +35,7 @@ public interface PaymentDetailRepository extends JpaRepository<PaymentDetail, In
         WHERE p.store.storeId = :storeId
           AND p.paymentTime >= :start AND p.paymentTime < :end
           AND p.visitCancel = false
+          AND p.cancel = false
         GROUP BY pd.menu.menuName
         ORDER BY pd.menu.menuName
     """)
@@ -71,6 +72,7 @@ public interface PaymentDetailRepository extends JpaRepository<PaymentDetail, In
           AND p.paymentTime BETWEEN :start AND :end
           AND pt.isInspectionTarget = true
           AND p.visitCancel = false
+          AND p.cancel = false
         GROUP BY pd.taxRate.taxRateId
     """)
     List<Object[]> sumSalesByTaxRate(
@@ -88,6 +90,7 @@ public interface PaymentDetailRepository extends JpaRepository<PaymentDetail, In
         WHERE p.store.storeId = :storeId
           AND p.paymentTime BETWEEN :start AND :end
           AND p.visitCancel = false
+          AND p.cancel = false
         GROUP BY pt.typeName
     """)
     List<Object[]> sumSalesByPaymentType(
@@ -106,6 +109,7 @@ public interface PaymentDetailRepository extends JpaRepository<PaymentDetail, In
           AND p.paymentTime BETWEEN :start AND :end
           AND pd.discount IS NOT NULL
           AND p.visitCancel = false
+          AND p.cancel = false
         GROUP BY pt.typeName
     """)
     List<Object[]> sumDiscountByPaymentType(
@@ -122,6 +126,7 @@ public interface PaymentDetailRepository extends JpaRepository<PaymentDetail, In
         WHERE p.store.storeId = :storeId
           AND p.paymentTime BETWEEN :start AND :end
           AND p.visitCancel = false
+          AND p.cancel = false
     """)
     BigDecimal sumTotalSales(
         @Param("storeId") Integer storeId,
@@ -134,10 +139,11 @@ public interface PaymentDetailRepository extends JpaRepository<PaymentDetail, In
     	    SELECT SUM(pd.subtotal * pd.taxRate.rate)
     	    FROM PaymentDetail pd
     	    JOIN pd.payment p
-    	    WHERE p.store.storeId = :storeId
-    	      AND p.paymentTime BETWEEN :start AND :end
-    	      AND p.visitCancel = false
-    	      AND pd.taxRate.rate = :rate
+            WHERE p.store.storeId = :storeId
+              AND p.paymentTime BETWEEN :start AND :end
+              AND p.visitCancel = false
+              AND p.cancel = false
+              AND pd.taxRate.rate = :rate
     	""")
     	BigDecimal sumTaxAmount(
     	    @Param("storeId") Integer storeId,
@@ -163,6 +169,7 @@ public interface PaymentDetailRepository extends JpaRepository<PaymentDetail, In
           AND p.paymentTime >= :start
           AND p.paymentTime < :end
           AND p.visitCancel = false
+          AND p.cancel = false
         GROUP BY pt.typeName, tr.taxRateId
         ORDER BY pt.typeName, tr.taxRateId
     """)

@@ -23,6 +23,50 @@ tbody tr:hover {
     cursor: pointer;
 }
 
+.cancelled-row {
+    background-color: #fbeaea;
+}
+
+.status-cell {
+    width: 70px;
+    text-align: center;
+    font-weight: bold;
+}
+
+.cancelled-row td {
+    color: #555;
+}
+
+.cancelled-row .status-cell {
+    color: #c00;
+}
+
+.cancel-status {
+    display: inline-block;
+    margin-right: 10px;
+    font-weight: bold;
+}
+
+.status-active {
+    color: #2b8a3e;
+}
+
+.status-cancelled {
+    color: #c00;
+}
+
+.cancel-toggle-btn {
+    margin-bottom: 10px;
+    padding: 6px 12px;
+    border: 1px solid #ccc;
+    background-color: #f5f5f5;
+    cursor: pointer;
+}
+
+.cancel-toggle-btn:hover {
+    background-color: #e2e2e2;
+}
+
 .back-button {
     display: inline-block;
     margin-bottom: 10px;
