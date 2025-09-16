@@ -110,3 +110,8 @@ tbody tr:hover {
 .delete-detail {
     color: #c00;
 }
+
+.qty-input,
+.discount-input {
+    width: 80px;
+}
