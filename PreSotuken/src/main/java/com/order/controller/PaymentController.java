@@ -95,7 +95,12 @@ public class PaymentController {
         for (Payment p : payments) {
             double subtotal = paymentDetailRepository.findByPaymentPaymentId(p.getPaymentId())
                     .stream()
-                    .mapToDouble(pd -> pd.getSubtotal() != null ? pd.getSubtotal() : 0)
+                    .mapToDouble(pd -> {
+                        double base = pd.getSubtotal() != null ? pd.getSubtotal() : 0;
+                        double detailDiscount = pd.getDiscount() != null ? pd.getDiscount() : 0;
+                        double net = base - detailDiscount;
+                        return net > 0 ? net : 0;
+                    })
                     .sum();
             subtotalMap.put(p.getPaymentId(), subtotal);
         }
@@ -119,11 +124,16 @@ public class PaymentController {
             m.put("paymentDetailId", d.getPaymentDetailId());
             m.put("menuName", d.getMenu().getMenuName());
             m.put("quantity", d.getQuantity());
-            m.put("subtotalWithoutTax", d.getSubtotal());
-            double subtotalWithTax = d.getSubtotal() * (1 + d.getTaxRate().getRate());
+            double baseSubtotal = d.getSubtotal() != null ? d.getSubtotal() : 0;
+            double detailDiscount = d.getDiscount() != null ? d.getDiscount() : 0;
+            double netSubtotalWithoutTax = Math.max(baseSubtotal - detailDiscount, 0);
+            double taxRate = d.getTaxRate() != null ? d.getTaxRate().getRate() : 0;
+            double subtotalWithTax = netSubtotalWithoutTax * (1 + taxRate);
+            m.put("subtotalWithoutTax", netSubtotalWithoutTax);
             m.put("subtotalWithTax", subtotalWithTax);
             m.put("price", d.getMenu().getPrice());
-            m.put("taxRate", d.getTaxRate().getRate());
+            m.put("taxRate", taxRate);
+            m.put("discount", detailDiscount);
             return m;
         }).collect(Collectors.toList());
 
@@ -150,7 +160,12 @@ public class PaymentController {
 
         Map<String, Object> result = new HashMap<>();
         double subtotal = details.stream()
-                .mapToDouble(d -> d.getSubtotal() != null ? d.getSubtotal() : 0)
+                .mapToDouble(d -> {
+                    double base = d.getSubtotal() != null ? d.getSubtotal() : 0;
+                    double detailDiscount = d.getDiscount() != null ? d.getDiscount() : 0;
+                    double net = base - detailDiscount;
+                    return net > 0 ? net : 0;
+                })
                 .sum();
         result.put("seatId", payment.getVisit().getSeat().getSeatId());
         result.put("seatName", payment.getVisit().getSeat().getSeatName());
@@ -222,10 +237,23 @@ public class PaymentController {
                     paymentDetailRepository.deleteById(d.getPaymentDetailId());
                 } else {
                     PaymentDetail detail = paymentDetailRepository.findById(d.getPaymentDetailId()).orElse(null);
-                    if (detail != null && d.getQuantity() != null) {
-                        detail.setQuantity(d.getQuantity());
-                        if (detail.getMenu() != null && detail.getMenu().getPrice() != null) {
-                            detail.setSubtotal(detail.getMenu().getPrice() * d.getQuantity());
+                    if (detail != null) {
+                        if (d.getQuantity() != null) {
+                            detail.setQuantity(d.getQuantity());
+                            if (detail.getMenu() != null && detail.getMenu().getPrice() != null) {
+                                detail.setSubtotal(detail.getMenu().getPrice() * d.getQuantity());
+                            }
+                        }
+                        if (d.getDiscount() != null) {
+                            double baseSubtotal = detail.getSubtotal() != null ? detail.getSubtotal() : 0;
+                            double requestedDiscount = d.getDiscount();
+                            if (requestedDiscount < 0) {
+                                requestedDiscount = 0;
+                            }
+                            if (requestedDiscount > baseSubtotal) {
+                                requestedDiscount = baseSubtotal;
+                            }
+                            detail.setDiscount(requestedDiscount);
                         }
                         paymentDetailRepository.save(detail);
                     }
@@ -236,7 +264,12 @@ public class PaymentController {
         // recalc subtotal and total
         List<PaymentDetail> remaining = paymentDetailRepository.findByPaymentPaymentId(paymentId);
         double subtotal = remaining.stream()
-                .mapToDouble(pd -> pd.getSubtotal() != null ? pd.getSubtotal() : 0)
+                .mapToDouble(pd -> {
+                    double base = pd.getSubtotal() != null ? pd.getSubtotal() : 0;
+                    double detailDiscount = pd.getDiscount() != null ? pd.getDiscount() : 0;
+                    double net = base - detailDiscount;
+                    return net > 0 ? net : 0;
+                })
                 .sum();
         payment.setSubtotal(subtotal);
         double discount = payment.getDiscount() != null ? payment.getDiscount() : 0;

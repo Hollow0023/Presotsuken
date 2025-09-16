@@ -16,6 +16,7 @@ public class PaymentHistoryUpdateRequest {
     public static class DetailUpdate {
         private Integer paymentDetailId;
         private Integer quantity;
+        private Double discount;
         private Boolean delete;
     }
 }

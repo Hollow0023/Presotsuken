@@ -44,6 +44,36 @@ const modalBody = document.getElementById('modalBody');
 const closeBtn = modal.querySelector('.close');
 let deletedDetailIds = [];
 
+function updateRowSubtotal(tr) {
+    if (!tr) return;
+    const price = parseFloat(tr.dataset.price) || 0;
+    const taxRate = parseFloat(tr.dataset.taxRate) || 0;
+    const qtyInput = tr.querySelector('.qty-input');
+    const discountInput = tr.querySelector('.discount-input');
+    const qty = qtyInput ? (parseInt(qtyInput.value) || 0) : 0;
+    let discountValue = discountInput ? parseFloat(discountInput.value) : 0;
+    if (!isFinite(discountValue) || discountValue < 0) {
+        discountValue = 0;
+    }
+    const subtotalBeforeDiscount = price * qty;
+    if (discountValue > subtotalBeforeDiscount) {
+        discountValue = subtotalBeforeDiscount;
+    }
+    if (discountInput) {
+        discountInput.value = Math.round(discountValue);
+    }
+    const subtotalEx = Math.max(subtotalBeforeDiscount - discountValue, 0);
+    const subtotalIn = subtotalEx * (1 + taxRate);
+    const subtotalCell = tr.querySelector('.subtotal');
+    const subtotalExCell = tr.querySelector('.subtotal-ex');
+    if (subtotalCell) {
+        subtotalCell.textContent = `${Math.round(subtotalIn)}円`;
+    }
+    if (subtotalExCell) {
+        subtotalExCell.textContent = `${Math.round(subtotalEx)}円`;
+    }
+}
+
 closeBtn.onclick = () => {
     modal.style.display = 'none';
 };
@@ -82,11 +112,12 @@ function loadDetail(id, row) {
             });
             html += `</select></p>`;
             html += `<p>割引: <input type="number" id="discountInput" value="${data.discount || 0}">円</p>`;
-            html += `<table id="detailTable"><thead><tr><th>商品</th><th>数量</th><th>税込小計</th><th>税抜小計</th><th></th></tr></thead><tbody>`;
+            html += `<table id="detailTable"><thead><tr><th>商品</th><th>数量</th><th>割引額</th><th>税込小計</th><th>税抜小計</th><th></th></tr></thead><tbody>`;
             data.details.forEach(d => {
+                const discount = d.discount || 0;
                 const subIn = Math.round(d.subtotalWithTax);
                 const subEx = Math.round(d.subtotalWithoutTax);
-                html += `<tr data-detail-id="${d.paymentDetailId}" data-price="${d.price}" data-tax-rate="${d.taxRate}"><td>${d.menuName}</td><td><input type="number" class="qty-input" min="1" value="${d.quantity}"></td><td class="subtotal">${subIn}円</td><td class="subtotal-ex">${subEx}円</td><td><button type="button" class="delete-detail">削除</button></td></tr>`;
+                html += `<tr data-detail-id="${d.paymentDetailId}" data-price="${d.price}" data-tax-rate="${d.taxRate}"><td>${d.menuName}</td><td><input type="number" class="qty-input" min="1" value="${d.quantity}"></td><td><input type="number" class="discount-input" min="0" step="1" value="${discount}"></td><td class="subtotal">${subIn}円</td><td class="subtotal-ex">${subEx}円</td><td><button type="button" class="delete-detail">削除</button></td></tr>`;
             });
             html += `</tbody></table>`;
             html += `<button id="saveChanges" class="save-btn">保存</button>`;
@@ -116,15 +147,18 @@ function loadDetail(id, row) {
             document.querySelectorAll('.qty-input').forEach(input => {
                 input.addEventListener('input', e => {
                     const tr = e.target.closest('tr');
-                    const price = parseFloat(tr.dataset.price);
-                    const taxRate = parseFloat(tr.dataset.taxRate);
-                    const qty = parseInt(e.target.value) || 0;
-                    const subEx = price * qty;
-                    const subIn = subEx * (1 + taxRate);
-                    tr.querySelector('.subtotal').textContent = `${Math.round(subIn)}円`;
-                    tr.querySelector('.subtotal-ex').textContent = `${Math.round(subEx)}円`;
+                    updateRowSubtotal(tr);
                 });
             });
+
+            document.querySelectorAll('.discount-input').forEach(input => {
+                input.addEventListener('input', e => {
+                    const tr = e.target.closest('tr');
+                    updateRowSubtotal(tr);
+                });
+            });
+
+            document.querySelectorAll('#detailTable tbody tr').forEach(tr => updateRowSubtotal(tr));
 
             document.getElementById('saveChanges').addEventListener('click', () => {
                 const payload = {
@@ -137,7 +171,8 @@ function loadDetail(id, row) {
                 document.querySelectorAll('#detailTable tbody tr').forEach(tr => {
                     payload.details.push({
                         paymentDetailId: parseInt(tr.dataset.detailId),
-                        quantity: parseInt(tr.querySelector('.qty-input').value)
+                        quantity: parseInt(tr.querySelector('.qty-input').value),
+                        discount: parseFloat(tr.querySelector('.discount-input').value) || 0
                     });
                 });
                 deletedDetailIds.forEach(id => {
