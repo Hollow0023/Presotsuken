@@ -11,6 +11,7 @@
 <table id="historyTable">
     <thead>
     <tr>
+        <th>状態</th>
         <th>日時</th>
         <th>席</th>
         <th>税抜合計</th>
@@ -19,7 +20,10 @@
     </tr>
     </thead>
     <tbody>
-    <tr th:each="payment : ${payments}" th:attr="data-payment-id=${payment.paymentId}">
+    <tr th:each="payment : ${payments}"
+        th:attr="data-payment-id=${payment.paymentId}"
+        th:classappend="${payment.cancel} ? ' cancelled-row' : ''">
+        <td class="status-cell" th:text="${payment.cancel} ? '削除済' : ''"></td>
         <td th:text="${#temporals.format(payment.paymentTime, 'yyyy-MM-dd HH:mm')}"></td>
         <td th:text="${payment.visit.seat.seatName}"></td>
         <td><span th:text="${#numbers.formatDecimal(subtotalMap[payment.paymentId],0,0)}"></span>円</td>
@@ -55,7 +59,13 @@ function loadDetail(id, row) {
     fetch(`/payments/history/${id}`)
         .then(res => res.json())
         .then(data => {
+            const isCancelled = data.cancel === true;
+            const statusText = isCancelled ? '削除済み' : '有効';
+            const statusClass = isCancelled ? 'status-cancelled' : 'status-active';
+
             let html = `<h2>会計詳細</h2>`;
+            html += `<p>状態: <span id="cancelStatus" class="cancel-status ${statusClass}">${statusText}</span></p>`;
+            html += `<button id="toggleCancel" class="cancel-toggle-btn">${isCancelled ? '復元する' : '削除する'}</button>`;
             html += `<p>席: <select id="seatSelect">`;
             data.seats.forEach(s => {
                 html += `<option value="${s.id}" ${s.id===data.seatId?'selected':''}>${s.name}</option>`;
@@ -84,10 +94,15 @@ function loadDetail(id, row) {
             modal.style.display = 'block';
 
             if (row) {
-                row.querySelector('td:nth-child(2)').textContent = data.seatName;
-                row.querySelector('td:nth-child(3)').textContent = `${Math.round(data.subtotal)}円`;
-                row.querySelector('td:nth-child(4)').textContent = `${Math.round(data.total)}円`;
-                row.querySelector('td:nth-child(5)').textContent = data.cashierName || '';
+                const statusCell = row.querySelector('td:nth-child(1)');
+                if (statusCell) {
+                    statusCell.textContent = isCancelled ? '削除済' : '';
+                }
+                row.classList.toggle('cancelled-row', isCancelled);
+                row.querySelector('td:nth-child(3)').textContent = data.seatName;
+                row.querySelector('td:nth-child(4)').textContent = `${Math.round(data.subtotal)}円`;
+                row.querySelector('td:nth-child(5)').textContent = `${Math.round(data.total)}円`;
+                row.querySelector('td:nth-child(6)').textContent = data.cashierName || '';
             }
 
             document.querySelectorAll('.delete-detail').forEach(btn => {
@@ -138,6 +153,21 @@ function loadDetail(id, row) {
                     }
                 });
             });
+
+            const toggleBtn = document.getElementById('toggleCancel');
+            if (toggleBtn) {
+                toggleBtn.addEventListener('click', () => {
+                    fetch(`/payments/history/${id}/cancel`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({cancel: !isCancelled})
+                    }).then(res => {
+                        if (res.ok) {
+                            loadDetail(id, row);
+                        }
+                    });
+                });
+            }
         });
 }
 

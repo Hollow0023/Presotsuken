@@ -161,6 +161,7 @@ public class PaymentController {
         result.put("discount", payment.getDiscount());
         result.put("total", payment.getTotal());
         result.put("subtotal", subtotal);
+        result.put("cancel", Boolean.TRUE.equals(payment.getCancel()));
         result.put("details", detailList);
         result.put("seats", seatList);
         result.put("users", userList);
@@ -242,6 +243,27 @@ public class PaymentController {
         payment.setTotal(subtotal - discount);
         paymentRepository.save(payment);
 
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/payments/history/{paymentId}/cancel")
+    public ResponseEntity<Void> updatePaymentCancellation(
+            @CookieValue(name = "storeId", required = false) Integer storeId,
+            @PathVariable("paymentId") Integer paymentId,
+            @RequestBody Map<String, Boolean> body) {
+
+        Payment payment = paymentRepository.findById(paymentId).orElse(null);
+        if (payment == null || !payment.getStore().getStoreId().equals(storeId)) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Boolean cancel = body.get("cancel");
+        if (cancel == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        payment.setCancel(cancel);
+        paymentRepository.save(payment);
         return ResponseEntity.ok().build();
     }
 

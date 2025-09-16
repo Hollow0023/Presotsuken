@@ -27,9 +27,12 @@ public class Payment {
     @ManyToOne
     @JoinColumn(name = "visit_id")
     private Visit visit;
-    
+
     @Column(name = "visit_cancel", nullable = false)
     private Boolean visitCancel = false;
+
+    @Column(name = "cancel", nullable = false)
+    private Boolean cancel = false;
 
     private LocalDateTime paymentTime;
     private Double subtotal;
