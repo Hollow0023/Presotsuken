@@ -140,10 +140,13 @@
 		style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 12px 20px; border-radius: 4px; display: none; z-index: 1000; box-shadow: 0 0 8px rgba(0, 0, 0, 0.3); transition: opacity 0.5s ease;"></div>
 
 	<script th:inline="javascript">
-		window. seatIdFromModel = /*[[${seatId}]]*/ 0;
+		window.seatIdFromModel = /*[[${seatId}]]*/ 0;
 		console.log(seatIdFromModel);
 	</script>
 	<script src="/js/epos-2.27.0.js"></script>
+	<script src="/js/utils.js"></script>
+	<script src="/js/printer.js"></script>
+	<script src="/js/call-system.js"></script>
 	<script src="/js/order.js"></script>
 	<script
 		src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>

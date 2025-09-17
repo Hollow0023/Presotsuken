@@ -1,300 +1,7 @@
-// Epson EPOS SDK関連のグローバル変数
-// -----------------------------------------------------------------------------
-let printer = null; // Epson Printerオブジェクト
-const ePosDev = new epson.ePOSDevice(); // Epson ePOSDeviceオブジェクト
-let currentPrinterIp = null; // 現在接続中のプリンターのIPアドレスを保持
+// 注文画面メイン処理
 
-// 印刷ジョブのキューと状態
-const printJobQueue = [];
-let isPrinting = false;
-
-//印刷キュー追加関数
-function enqueuePrintJob(ip, commandsJson, retryCount = 0) {
-    printJobQueue.push({ ip, commandsJson, retryCount });
-    if (!isPrinting) {
-        processPrintJobs();
-    }
-}
-
-//キュー処理
-async function processPrintJobs() {
-    if (printJobQueue.length === 0) {
-        isPrinting = false;
-        return;
-    }
-
-    isPrinting = true;
-    const { ip, commandsJson, retryCount } = printJobQueue.shift();
-
-    try {
-        if (!printer || !ePosDev.isConnected || currentPrinterIp !== ip) {
-            if (printer) {
-                await new Promise(resolve => {
-                    ePosDev.deleteDevice(printer, () => {
-                        ePosDev.disconnect();
-                        printer = null;
-                        resolve();
-                    });
-                });
-            }
-            await connectAndExecute(ip, commandsJson);
-        } else {
-            await executeCommands(commandsJson);
-        }
-    } catch (e) {
-        console.error("印刷エラー:", e);
-        updateStatus(`印刷エラー: ${e.message}`);
-
-        if (retryCount < 3) {
-            console.warn(`リトライ ${retryCount + 1} 回目: 再キューします`);
-            enqueuePrintJob(ip, commandsJson, retryCount + 1);
-        } else {
-            showToast("印刷に3回失敗しました。プリンタの状態を確認してください。", 4000, 'error');
-        }
-    }
-
-    processPrintJobs(); // 次のジョブを処理
-}
-
-
-
-
-// UIステータス表示用の要素
-// HTMLのbodyタグ直後などに <p id="statusMessage">プリンタステータス: 初期化中...</p> を追加してください
-const statusMessageElement = document.getElementById("statusMessage"); 
-
-function updateStatus(message) {
-    if (statusMessageElement) {
-        statusMessageElement.textContent = `プリンタステータス: ${message}`;
-    }
-    console.log(`[Printer Status] ${message}`); // コンソールにも出力
-}
-
-// プリンターへの接続とコマンド実行のラッパー関数
-async function connectAndExecute(ipAddress, commandsJson) {
-    // 既存の接続を切断する前に、現在のプリンターオブジェクトを解放
-    if (printer && ePosDev.isConnected) {
-        try {
-            await new Promise(resolve => {
-                ePosDev.deleteDevice(printer, () => {
-                    ePosDev.disconnect();
-                    printer = null;
-                    resolve();
-                });
-            });
-            console.log('既存プリンター接続を安全に切断しました。');
-        } catch (error) {
-            console.warn('既存プリンター切断中にエラー:', error);
-        }
-    }
-
-    return new Promise((resolve, reject) => {
-        ePosDev.connect(ipAddress, 8008, function(result) { // ポートは固定とするか、設定で取得
-            if (result === 'OK' || result === 'SSL_CONNECT_OK') {
-                console.log("接続成功。プリンタデバイス作成中...");
-                currentPrinterIp = ipAddress; // 接続したIPを記録
-                ePosDev.createDevice(
-                    'local_printer',
-                    ePosDev.DEVICE_TYPE_PRINTER,
-                    { crypto: false, buffer: false }, // ポート8008なら crypto: false
-                    function(devobj, retcode) {
-                        if (retcode === 'OK') {
-                            printer = devobj;
-                            setupPrinterEvents(printer); // イベントハンドラを設定
-                            console.log('プリンタデバイス作成成功。コマンド実行中...');
-                            updateStatus('印刷コマンド実行中...');
-                            executeCommands(commandsJson).then(resolve).catch(reject); // コマンド実行を待つ
-                        } else {
-                            console.error("デバイス作成失敗:", retcode);
-                            updateStatus('プリンタデバイス作成失敗: ' + retcode);
-                            reject(new Error("Device creation failed: " + retcode));
-                        }
-                    }
-                );
-            } else {
-                console.error("プリンタ接続失敗:", result);
-                updateStatus('プリンタ接続失敗: ' + result);
-                reject(new Error("Printer connection failed: " + result));
-            }
-        });
-    });
-}
-
-// プリンターイベントハンドラのセットアップ
-function setupPrinterEvents(printerObj) {
-    printerObj.timeout = 60000; // タイムアウト設定 
-    printerObj.onreceive = function(response) { 
-        if (response.success) { 
-            console.log('印刷成功！');
-            updateStatus('印刷完了');
-        } else { 
-            console.error('印刷失敗:', response.code); 
-            updateStatus('印刷失敗: ' + response.code);
-        }
- 	};
-    printerObj.onstatuschange = function(status) { 
-        console.log('プリンタステータス変更:', status);
-        // ASB_RECEIPT_NEAR_END などで用紙補充を促すなど
-    };
-    printerObj.onpaperend = function() { 
-        console.warn('用紙切れ！');
-        updateStatus('警告: 用紙切れ！');
-    };
-    printerObj.oncoveropen = function() {
-        console.warn('カバーオープン！');
-        updateStatus('警告: カバーオープン！');
-    };
-    // ondisconnectイベントでネットワーク切断の検知も重要 
-    ePosDev.ondisconnect = function() { 
-        console.warn('プリンタとの接続が切断されました！');
-        updateStatus('警告: プリンタ切断！');
-        printer = null; // プリンターオブジェクトをリセット
-        currentPrinterIp = null;
-    };
-    // onreconnecting / onreconnect も設定しておくとより堅牢
-    ePosDev.onreconnecting = function() { 
-        console.log('プリンタに再接続中...');
-        updateStatus('プリンタに再接続中...');
-    };
-    ePosDev.onreconnect = function() {
-        console.log('プリンタに再接続しました！');
-        updateStatus('プリンタ再接続完了');
-    };
-}
-
-// 印刷命令リストを実行するコア関数
-async function executeCommands(commandsJson) {
-    let commands = JSON.parse(commandsJson);
-    commands = commands.flat();
-
-    // 印刷開始前にプリンターの状態を初期化する
-    // 必要に応じて printer.reset() を呼び出すが、各コマンドで設定を上書きするなら不要な場合も
-    // printer.addReset(); // またはprinter.reset()
-
-    for (const command of commands) {
-        try {
-            switch (command.api) {
-                case "addSound": // 
-                    printer.addSound(
-                        command.pattern,
-                        command.repeat,
-                        command.cycle // cycleはオプション、存在しない場合はundefined
-                    );
-                    break;
-                case "addTextLang": // 
-                    printer.addTextLang(command.lang);
-                    break;
-                case "addFeedUnit": // 
-                    printer.addFeedUnit(command.unit);
-                    break;
-                case "addText": // 
-                    // アラインメント設定
-                    if (command.align) { 
-                        printer.addTextAlign(printer[`ALIGN_${command.align.toUpperCase()}`]); // 
-                    } else {
-                        printer.addTextAlign(printer.ALIGN_LEFT); // デフォルト 
-                    }
-                    // 倍角設定
-                    if (command.dw !== undefined && command.dh !== undefined) {
-                       printer.addTextDouble(command.dw, command.dh); // 
-                    } else {
-//                       printer.addTextDouble(false, false); // デフォルトに戻す 
-                    }
-
-                    // テキストサイズ設定
-                    if (command.width !== undefined && command.height !== undefined) {
-                        printer.addTextSize(command.width, command.height); // 
-                    } else {
-//                        printer.addTextSize(1, 1); // デフォルトに戻す 
-                    }
-                    // テキストスタイル設定
-                    if (command.reverse !== undefined && command.ul !== undefined && command.em !== undefined && command.color) {
-                        printer.addTextStyle(command.reverse, command.ul, command.em, printer[command.color]); // 
-                    } else {
-                        printer.addTextStyle(false, false, false, printer.COLOR_1); // デフォルトスタイルに戻す 
-                    }
-                    printer.addText(command.content + '\n'); // 改行はJava側で含めていても良いし、JSで追加しても良い 
-                    break;
-                case "addTextAlign": // 
-                    printer.addTextAlign(printer[`ALIGN_${command.align.toUpperCase()}`]);
-                    break;
-                case "addTextDouble": // 
-                    printer.addTextDouble(command.dw, command.dh);
-                    console.log("倍角");
-                    break;
-                case "addTextSize": // 
-                    printer.addTextSize(command.width, command.height);
-                    break;
-                case "addTextStyle": // 
-                    printer.addTextStyle(command.reverse, command.ul, command.em, printer[command.color]);
-                    break;
-                case "addFeed": // 
-                    printer.addFeed();
-                    break;
-                case "addCut": // 
-                    printer.addCut(printer[`CUT_${command.type.toUpperCase()}`]);
-                    break;
-                case "addImage": // 
-                    // 画像のBase64データ処理は非同期なので、Promiseで完了を待つ
-                    await new Promise((resolve, reject) => {
-                        const img = new Image();
-                        img.onload = function() {
-                            const canvas = document.createElement('canvas');
-                            canvas.width = command.width;
-                            canvas.height = command.height;
-                            const ctx = canvas.getContext('2d');
-                            ctx.drawImage(img, 0, 0, command.width, command.height);
-
-                            printer.addImage(
-                                ctx,
-                                command.x,
-                                command.y,
-                                command.width,
-                                command.height,
-                                printer[command.color], // COLOR_1 など 
-                                printer['MODE_' + command.mode.toUpperCase()] // MODE_MONO など 
-                            );
-                            resolve(); // 描画完了を通知
-                        };
-                        img.onerror = function() {
-                            console.error("画像読み込みエラー:", command.base64Content.substring(0, 50) + '...');
-                            reject(new Error("Image load error"));
-                        };
-                        img.src = "data:image/png;base64," + command.base64Content;
-                    });
-                    break;
-                case "addTextFont": 
-                    printer.addTextFont(printer[command.font]);
-                    break;
-                // 必要に応じて他のAPI（addBarcode, addSymbolなど）も追加
-                default:
-                  console.warn("未対応のAPIコマンド:", command.api, command);
-            }
-        } catch (e) {
-            console.error(`コマンド実行中にエラーが発生しました: ${command.api}`, e);
-            updateStatus(`コマンド実行エラー: ${command.api}`);
-            // エラーが発生したら、それ以上コマンドを送らないようにする
-            break;
-        }
-    }
-    
-    let logOutput = commands.map(cmd => {
-    return `[${cmd.api}] ${JSON.stringify(cmd)}`;
-    }).join('\n');
-
-    console.log("=== 印刷コマンド変換ログ ===\n" + logOutput);
-    console.log(commands);
-	console.log(printer);
-	console.log("印刷はコメントアウト中 224行")
-    printer.send(); // 
-}
-
-// ここまで↑、Epson EPOS SDK関連の関数群をグローバルスコープに配置
-
-// グローバル変数と初期設定 (ここから下は既存のコード)
-// -----------------------------------------------------------------------------
-const cart = []; // カートの中身を保持する配列
-let taxRateMap = {}; // 税率IDと税率をマッピングするオブジェクト
+const cart = [];
+let taxRateMap = {};
 
 // 座席情報の表示
 let seatId = getCookie("seatId");
@@ -302,52 +9,6 @@ if (!seatId || seatId === "null" || seatId === "undefined") {
     seatId = window.seatIdFromModel;
 }
 document.getElementById("seatInfo").innerText = `${seatId}`;
-
-/**
- * 指定された名前のCookieの値を取得する関数
- * @param {string} name - 取得したいCookieの名前
- * @returns {string|null} Cookieの値、またはnull
- */
-function getCookie(name) {
-    const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
-    return match ? decodeURIComponent(match[2]) : null;
-}
-
-/**
- * トーストメッセージを表示する関数
- * @param {string} message - 表示するメッセージ
- * @param {number} [duration=2000] - 表示時間 (ミリ秒)
- */
-function showToast(message, duration = 2000, type = 'success') {
-    const toast = document.getElementById("toast");
-    toast.textContent = message;
-    
-    // スタイルをリセット
-    toast.style.backgroundColor = '';
-    toast.style.color = '';
-
-    // タイプに応じたスタイルを設定
-    if (type === 'error') {
-        toast.style.backgroundColor = '#dc3545'; // 赤色
-        toast.style.color = '#fff'; // 白文字
-    } else if (type === 'success') {
-        toast.style.backgroundColor = '#28a745'; // 緑色
-        toast.style.color = '#fff';
-    } else if (type === 'info') {
-        toast.style.backgroundColor = '#007bff'; // 青色
-        toast.style.color = '#fff';
-    }
-
-    toast.style.display = "block";
-    toast.style.opacity = "1";
-
-    setTimeout(() => {
-        toast.style.opacity = "0";
-        setTimeout(() => {
-            toast.style.display = "none";
-        }, 500);
-    }, duration);
-}
 
 // モーダル・パネルの開閉処理
 // -----------------------------------------------------------------------------
@@ -718,41 +379,26 @@ function submitOrder() {
         return;
     }
     
-    // カートの内容を注文データとして整形
     const orderItems = cart.map(item => ({
         menuId: parseInt(item.menuId),
         taxRateId: parseInt(item.taxRateId),
         quantity: parseInt(item.quantity),
-        // ここで選択されたオプションを追加する
-        optionItemIds: item.selectedOptions || [] // オプションがない場合は空の配列
+        optionItemIds: item.selectedOptions || []
     }));
     
-    // toggleCart(false) を呼び出してカートパネルを閉じ、ボタンテキストを戻す
-    toggleCart(false); 
+    toggleCart(false);
 
-    // 注文データをサーバーにPOST送信
     fetch('/order/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(orderItems)
     }).then(res => {
         if (res.ok) {
-//            const currentUrl = new URL(window.location.href);
-//            currentUrl.searchParams.set('toastMessage', '注文を確定しました');
-//            window.location.href = currentUrl.toString(); // クエリパラメータ付きでリロード
-            cart.length = 0; // カートの配列を空にする
+            cart.length = 0;
             updateMiniCart();
-			showToast("注文を確定しました", 3000);
+            showToast("注文を確定しました", 3000);
         } else {
-			return res.json().then(errorBody => {
-                const errorMessage = errorBody.message || '不明なエラーが発生しました。';
-                // エラーメッセージとタイプをクエリパラメータにセットしてリロード
-                const currentUrl = new URL(window.location.href);
-                currentUrl.searchParams.set('toastMessage', errorMessage);
-                currentUrl.searchParams.set('toastType', 'error'); // エラータイプも渡す
-                window.location.href = currentUrl.toString(); // リロード
-            });
-//            showToast('注文に失敗しました');
+            cart.splice(index, 1);
         }
     }).catch(error => {
         console.error('注文送信中にエラーが発生しました:', error);
@@ -763,7 +409,6 @@ function submitOrder() {
 
 /**
  * 注文履歴モーダル内の表示を更新するためのフェッチ関数
- * toggleHistory とは独立させて、自動で開閉しないようにする
  */
 function fetchOrderHistoryForHistoryModal() {
     fetch('/order/history')
@@ -817,9 +462,6 @@ function fetchOrderHistoryForHistoryModal() {
                     line.style.textAlign = "right";
                     taxEl.appendChild(line);
                 });
-            
-            // カート確定後の履歴更新なので、モーダルが開いていなければ閉じっぱなし
-            // 開いている場合はそのまま更新される
         })
         .catch(error => {
             console.error("注文履歴の再取得に失敗しました:", error);
@@ -960,12 +602,12 @@ window.addEventListener('DOMContentLoaded', () => {
 //            }
 
             // 指定された座席のトピックを購読
-           stompClient.subscribe(`/topic/seats/${seatId}`, function (message) {
+            stompClient.subscribe(`/topic/seats/${seatId}`, function (message) {
                 const body = JSON.parse(message.body);
                 console.log("WebSocketメッセージ受信 (seatsトピック):", body);
 
                 if (body.type === 'LEAVE') {
-                    document.cookie = 'visitId=; Max-Age=0; path=/'; // visitIdを削除（セッション切れ用）
+                    document.cookie = 'visitId=; Max-Age=0; path=/';
                     window.location.href = '/visits/orderwait';
                 } else if (body.type === 'PLAN_ACTIVATED') {
                     const activatedMenuGroupIds = body.activatedMenuGroupIds;
@@ -973,231 +615,115 @@ window.addEventListener('DOMContentLoaded', () => {
                     
                     console.log(`プラン ${activatedPlanId} がシート ${seatId} でアクティブ化されました。`);
                     console.log("表示されるメニューグループID:", activatedMenuGroupIds);
-                    
-                    
 
-
-                    // Step 1: 全てのタブとメニューアイテムを初期状態（非表示）に戻す
-                    // （isPlanTargetでないものは、後でswitchTabで表示されるため、ここでは触らない）
                     document.querySelectorAll('.menu-tab[data-is-plan-target="true"]').forEach(tab => {
                         tab.classList.remove('active-plan-group');
-                        // ★修正: ここでstyle.display = 'none'; はCSSに任せる
                     });
                     document.querySelectorAll('.menu-item[data-is-plan-target="true"]').forEach(item => {
                         item.classList.remove('active-plan-menu');
-                        // ★修正: ここでstyle.display = 'none'; はCSSに任せる
                     });
-                    // もし、現在表示されているメニュー（activeクラスがついてるタブのメニュー）を一旦全部隠したいなら、
-                    // document.querySelectorAll('.menu-item').forEach(item => item.style.display = 'none');
-                    // のような処理も検討する。ただし、switchTabで表示されるはずなので、このままでOKの可能性が高い。
 
-
-                    // Step 2: 活性化されたメニューグループのタブとメニューアイテムを表示する
                     activatedMenuGroupIds.forEach(groupId => {
-                        // メニューグループのタブを表示
                         const menuGroupTab = document.querySelector(`.menu-tab[data-group-id="${groupId}"]`);
                         if (menuGroupTab) {
-                            menuGroupTab.classList.add('active-plan-group'); // CSSで表示
-                            // ★修正: ここでstyle.display = 'block'; はCSSに任せる
+                            menuGroupTab.classList.add('active-plan-group');
                         }
-                        // そのグループに属するメニューアイテムを表示
                         document.querySelectorAll(`.menu-item[data-group-id="${groupId}"]`).forEach(item => {
-                            item.classList.add('active-plan-menu'); // CSSで表示
-                            // ★修正: ここでstyle.display = 'block'; はCSSに任せる
+                            item.classList.add('active-plan-menu');
                         });
                     });
                     
-                    
                     const currentUrl = new URL(window.location.href);
-		            currentUrl.searchParams.set('toastMessage', '飲み放題が開始されました！メニューが増えました！');
-		            window.location.href = currentUrl.toString(); // クエリパラメータ付きでリロード
-
-//                    showToast("飲み放題が開始されました！メニューが増えました！", 3000);
-//
-//                    // Step 3: 最初の飲み放題対象グループのタブを自動でクリックする
-//                    if (activatedMenuGroupIds && activatedMenuGroupIds.length > 0) {
-//                        const firstActivatedTab = document.querySelector(`.menu-tab[data-group-id="${activatedMenuGroupIds[0]}"]`);
-//                        if (firstActivatedTab) {
-//                            switchTab(firstActivatedTab); 
-//                        }
-//                    }
-
-
-
+                    currentUrl.searchParams.set('toastMessage', '飲み放題が開始されました！メニューが増えました！');
+                    window.location.href = currentUrl.toString();
                 }
             }, function (error) {
                 console.error('STOMP error:', error);
-                // エラー処理、再接続の試行など
             });
-            // ★★★ 新たに '/topic/printer/${seatId}' の購読を追加する ★★★
-        stompClient.subscribe(`/topic/printer/${seatId}`, function (message) { // <- ここを新たに追加
-            const payload = JSON.parse(message.body);
-            console.log("WebSocketメッセージ受信 (printerトピック):", payload); // ログで区別できるように変更
-			if (payload.type === 'PRINT_COMMANDS') {
-			        enqueuePrintJob(payload.ip, payload.commands);
-		    } else if (payload.type === 'PRINT_ERROR') {
-		        alert('印刷エラー: ' + payload.message);
-		        console.error('印刷エラー:', payload.message);
-		        updateStatus('エラー: ' + payload.message);
-		    }
-            
-            // ... (その他の printer トピックのメッセージタイプもここに追加) ...
-        }, function (error) { // printerトピックの購読エラーハンドラ
-            console.error('STOMP error for /topic/printer:', error);
-            updateStatus('WebSocket購読エラー (printer): ' + error);
-        });
+
+            stompClient.subscribe(`/topic/printer/${seatId}`, function (message) {
+                const payload = JSON.parse(message.body);
+                console.log("WebSocketメッセージ受信 (printerトピック):", payload);
+                if (payload.type === 'PRINT_COMMANDS') {
+                    enqueuePrintJob(payload.ip, payload.commands);
+                } else if (payload.type === 'PRINT_ERROR') {
+                    alert('印刷エラー: ' + payload.message);
+                    console.error('印刷エラー:', payload.message);
+                    updatePrinterStatus('エラー: ' + payload.message);
+                }
+            }, function (error) {
+                console.error('STOMP error for /topic/printer:', error);
+                updatePrinterStatus('WebSocket購読エラー (printer): ' + error);
+            });
 
         }
     });
 });
 
-// ウィンドウ全体のクリックイベントリスナー
 window.addEventListener('click', (e) => {
-    // カートパネル以外の部分をクリックしたら閉じる
     const cartPanel = document.getElementById("cartPanel");
     const toggleButton = document.getElementById("cartToggleButton");
-    if (cartPanel && toggleButton) { // 要素が存在するかチェック
+    if (cartPanel && toggleButton) {
         const isClickInsideCart =
             cartPanel.contains(e.target) ||
             e.target.closest('.cart-button');
 
         if (cartPanel.classList.contains('show') && !isClickInsideCart) {
-            // toggleCart(false) を呼び出してカートパネルを閉じ、ボタンテキストを戻す
             toggleCart(false);
         }
     }
 
-    // 履歴モーダル以外の部分をクリックしたら閉じる
     const historyModal = document.getElementById('historyModal');
     const historyToggleBtn = document.getElementById("historyToggleButton");
-    if (historyModal && historyToggleBtn) { // 要素が存在するかチェック
+    if (historyModal && historyToggleBtn) {
         if (
             historyModal.classList.contains('show') &&
             !historyModal.contains(e.target) &&
             !e.target.closest('.history-button')
         ) {
-            closeHistoryModal(); // 履歴モーダルを閉じる
+            closeHistoryModal();
         }
     }
     
-    // 展開されているメニューアイテムがクリックされた場所以外なら閉じる
     document.querySelectorAll('.menu-item.expanded').forEach(item => {
         if (!item.contains(e.target)) {
-            toggleDetails(item); // 閉じる
+            toggleDetails(item);
         }
     });
 });
 
-// 「座席選択に戻る」ボタンのイベントリスナー
 document.getElementById("backToSeatList").addEventListener("click", function () {
-    document.cookie = "visitId=; Max-Age=0; path=/"; // visitIdを削除
+    document.cookie = "visitId=; Max-Age=0; path=/";
 });
 
-// ページロード時の処理
 window.onload = () => {
     const params = new URLSearchParams(window.location.search);
-    // URLパラメータに "from=seatlist" があれば、「座席選択に戻る」ボタンを表示
     if (params.get("from") === "seatlist") {
         document.getElementById("backToSeatList").style.display = "block";
     }
-    // ページロード時にミニカートを初期化表示
     updateMiniCart();
     
-    
-    // ★URLパラメータにtoastMessageがあれば表示
-    const urlParams = new URLSearchParams(window.location.search);
-    const message = urlParams.get('toastMessage');
-    const type = urlParams.get('toastType') || 'success'; // デフォルトはsuccess
-    if (message) {
-        showToast(message, 3000, type); // タイプを渡す
-        window.history.replaceState({}, document.title, window.location.pathname);
-    }
+    handleUrlToastMessage();
 
-
-
-    // ★重要: ページロード時に現在の飲み放題状態に基づいてメニューグループの表示を調整
-    // WebSocketからの通知だけでなく、初期表示でも正しい状態にする必要がある
-    // サーバサイドから渡されたmenuGroupsの情報を使って処理する
-    const allMenuTabs = document.querySelectorAll('.menu-tab');
-    const allMenuItems = document.querySelectorAll('.menu-item');
-
-    // 初期表示時に、isPlanTarget="true" のものを非表示にする
-    // ★修正: ここでstyle.displayを直接操作するのをやめる。CSSに任せる
-    // allMenuTabs.forEach(tab => {
-    //     if (tab.getAttribute('data-is-plan-target') === 'true') {
-    //         tab.style.display = 'none'; // この行を削除
-    //     }
-    // });
-    // allMenuItems.forEach(item => {
-    //     if (item.getAttribute('data-is-plan-target') === 'true') {
-    //         item.style.display = 'none'; // この行を削除
-    //     }
-    // });
-
-    // まずは、初回表示時に最初のタブをアクティブにする処理
     const firstNonPlanTargetTab = document.querySelector('.menu-tab:not([data-is-plan-target="true"])');
     if (firstNonPlanTargetTab) {
-        // ★修正: ここでstyle.displayを直接操作するのをやめる。CSSに任せる
-        // firstNonPlanTargetTab.style.display = 'block'; // この行を削除
         switchTab(firstNonPlanTargetTab);
     } else {
-        // 全てがisPlanTarget=trueの場合（＝何も表示されない場合）
-        // 最初のタブ（どれでもいい）をアクティブにする
         const anyTab = document.querySelector('.menu-tab');
         if (anyTab) {
-            // ★修正: ここでstyle.displayを直接操作するのをやめる。CSSに任せる
-            // anyTab.style.display = 'block'; // この行を削除
             switchTab(anyTab);
         }
     }
 };
 
-/**
- * 指定されたメニューグループIDのタブとメニューアイテムを表示状態にする関数
- * @param {Array<Number>} groupIds - 表示するメニューグループIDのリスト
- */
 function activatePlanGroups(groupIds) {
     groupIds.forEach(groupId => {
-        // メニューグループのタブを表示
         const menuGroupTab = document.querySelector(`.menu-tab[data-group-id="${groupId}"]`);
         if (menuGroupTab) {
-            menuGroupTab.classList.add('active-plan-group'); // CSSで表示
-            // ★修正: ここでstyle.display = 'block'; はCSSに任せる
+            menuGroupTab.classList.add('active-plan-group');
         }
-        // そのグループに属するメニューアイテムを表示
         document.querySelectorAll(`.menu-item[data-group-id="${groupId}"]`).forEach(item => {
-            item.classList.add('active-plan-menu'); // CSSで表示
-            // ★修正: ここでstyle.display = 'block'; はCSSに任せる
+            item.classList.add('active-plan-menu');
         });
-    });
-}
-
-
-//スタッフ呼び出し
-function sendCallRequest() {
-    const seatId = getCookie('seatId'); // Cookieから座席IDを取得
-    if (!seatId) {
-        alert('座席情報が見つかりません。');
-        return;
-    }
-
-    fetch('/callSeat', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        // 送信したい座席IDをリクエストボディに含める
-        body: JSON.stringify({ seatId: seatId }) 
-    })
-    .then(response => {
-        if (response.ok) {
-            alert('店員を呼び出しました。少々お待ちください。');
-        } else {
-            alert('呼び出しに失敗しました。');
-        }
-    })
-    .catch(error => {
-        console.error('呼び出しエラー:', error);
-        alert('呼び出し中にエラーが発生しました。');
     });
 }
