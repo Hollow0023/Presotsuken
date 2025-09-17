@@ -1,0 +1,182 @@
+/**
+ * ナビゲーション関連コンポーネント
+ * メニュードロワー、バーガーメニューなどのナビゲーションスタイル
+ */
+
+/* ========================================
+   バーガーメニュー
+======================================== */
+
+.burger {
+    position: fixed;
+    top: 16px;
+    left: 16px;
+    z-index: 1001;
+    font-size: 24px;
+    background: none;
+    border: none;
+    color: black;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 4px;
+    transition: color 0.3s ease;
+}
+
+.burger:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+}
+
+/* ========================================
+   メニュードロワー
+======================================== */
+
+.menu-drawer {
+    position: fixed;
+    top: 0;
+    left: -100%;
+    width: 300px;
+    height: 100vh;
+    background-color: #333;
+    color: white;
+    padding: 80px 20px 20px;
+    box-shadow: 2px 0 6px rgba(0, 0, 0, 0.3);
+    transition: left 0.3s ease;
+    z-index: 1000;
+    overflow-y: auto;
+}
+
+.menu-drawer.open {
+    left: 0;
+}
+
+.menu-drawer h3 {
+    color: white;
+    margin-bottom: 15px;
+    font-size: 18px;
+    border-bottom: 1px solid #555;
+    padding-bottom: 10px;
+}
+
+.menu-drawer a {
+    display: block;
+    color: #ccc;
+    text-decoration: none;
+    padding: 12px 0;
+    border-bottom: 1px solid #555;
+    transition: color 0.2s ease;
+}
+
+.menu-drawer a:hover {
+    color: white;
+    background-color: rgba(255, 255, 255, 0.1);
+    padding-left: 10px;
+}
+
+/* ========================================
+   メニューグループ（アコーディオン）
+======================================== */
+
+.menu-group {
+    margin-bottom: 10px;
+}
+
+.menu-group-title {
+    color: white;
+    font-weight: 600;
+    padding: 10px 0;
+    cursor: pointer;
+    border-bottom: 1px solid #555;
+    margin-bottom: 5px;
+}
+
+.menu-group-title:hover {
+    color: #ddd;
+}
+
+.menu-group[open] .menu-group-title {
+    color: #4CAF50;
+}
+
+.menu-group a {
+    padding-left: 20px;
+    font-size: 14px;
+}
+
+/* ========================================
+   メニュータブ（水平ナビゲーション）
+======================================== */
+
+.menu-tabs {
+    display: flex;
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+    overflow-x: auto;
+    white-space: nowrap;
+}
+
+.menu-tab {
+    flex: 0 0 auto;
+    padding: 12px 20px;
+    background-color: #e9ecef;
+    color: #495057;
+    cursor: pointer;
+    border: none;
+    border-bottom: 3px solid transparent;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    user-select: none;
+}
+
+.menu-tab:hover {
+    background-color: #dee2e6;
+    color: #212529;
+}
+
+.menu-tab.active {
+    background-color: white;
+    color: #007bff;
+    border-bottom-color: #007bff;
+}
+
+/* プラン対象メニューの表示制御 */
+.menu-tab[data-is-plan-target="true"] {
+    display: none;
+}
+
+.menu-tab[data-is-plan-target="true"].active-plan-group {
+    display: block;
+}
+
+/* ========================================
+   ページタイトル
+======================================== */
+
+.page-title-container {
+    text-align: center;
+    margin: 24px 0;
+}
+
+.page-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #333;
+    margin: 0;
+}
+
+/* ========================================
+   レスポンシブ対応
+======================================== */
+
+@media (max-width: 768px) {
+    .menu-drawer {
+        width: 280px;
+    }
+    
+    .menu-tabs {
+        font-size: 14px;
+    }
+    
+    .menu-tab {
+        padding: 10px 16px;
+    }
+}

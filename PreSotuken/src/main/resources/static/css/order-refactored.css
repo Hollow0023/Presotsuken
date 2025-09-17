@@ -1,0 +1,252 @@
+/**
+ * 注文画面専用スタイル
+ * 共通スタイルを使用して、注文画面固有の要素のみを定義
+ */
+
+/* ========================================
+   メインレイアウト
+======================================== */
+
+main {
+    display: flex;
+    height: 90vh;
+}
+
+/* ========================================
+   メニューリスト
+======================================== */
+
+.menu-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    background-color: white;
+}
+
+.menu-item {
+    display: flex;
+    align-items: center;
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    padding: 15px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    height: 200px;
+    overflow: hidden;
+}
+
+.menu-item:hover {
+    border-color: #007bff;
+    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.2);
+}
+
+.menu-item.expanded {
+    height: auto;
+    cursor: default;
+}
+
+/* プラン対象メニューの表示制御 */
+.menu-item[data-is-plan-target="true"] {
+    display: none;
+}
+
+.menu-item[data-is-plan-target="true"].active-plan-menu {
+    display: flex;
+}
+
+/* ========================================
+   メニューアイテム内の要素
+======================================== */
+
+.menu-image-wrapper {
+    position: relative;
+    margin-right: 15px;
+    flex-shrink: 0;
+}
+
+.menu-image-wrapper img {
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+    border-radius: 4px;
+}
+
+.info-btn {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.info-btn:hover {
+    background-color: #0056b3;
+}
+
+.menu-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.menu-name {
+    font-size: 18px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 5px;
+}
+
+.menu-price {
+    font-size: 16px;
+    color: #007bff;
+    font-weight: 600;
+}
+
+/* ========================================
+   メニュー詳細（展開時）
+======================================== */
+
+.menu-detail {
+    display: none;
+    width: 100%;
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #eee;
+}
+
+.menu-item.expanded .menu-detail {
+    display: block;
+}
+
+.detail-section {
+    margin-bottom: 15px;
+}
+
+.detail-label {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 5px;
+}
+
+/* オプション選択 */
+.option-group {
+    margin-bottom: 15px;
+}
+
+.option-select {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+/* 数量選択 */
+.quantity-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.quantity-btn {
+    width: 30px;
+    height: 30px;
+    border: 1px solid #ddd;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+}
+
+.quantity-btn:hover {
+    background-color: #e9ecef;
+}
+
+.quantity-input {
+    width: 60px;
+    text-align: center;
+    padding: 5px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+/* カートに追加ボタン */
+.add-cart-btn {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.add-cart-btn:hover {
+    background-color: #218838;
+}
+
+/* ========================================
+   特別なボタンスタイル
+======================================== */
+
+#backToSeatList {
+    margin-bottom: 12px;
+}
+
+#backToSeatList a {
+    color: #007bff;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+#backToSeatList a:hover {
+    text-decoration: underline;
+}
+
+/* ========================================
+   レスポンシブ対応
+======================================== */
+
+@media (max-width: 768px) {
+    main {
+        flex-direction: column;
+        height: auto;
+    }
+    
+    .menu-item {
+        flex-direction: column;
+        height: auto;
+        text-align: center;
+    }
+    
+    .menu-image-wrapper {
+        margin-right: 0;
+        margin-bottom: 10px;
+    }
+    
+    .quantity-controls {
+        justify-content: center;
+    }
+    
+    .menu-tabs {
+        overflow-x: scroll;
+    }
+}

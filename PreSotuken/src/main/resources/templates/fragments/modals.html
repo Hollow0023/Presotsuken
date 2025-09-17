@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<!-- 座席選択モーダル -->
+<div th:fragment="seat-modal" id="seatModal" class="modal seat-modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">座席情報</h3>
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="modal-seat-info">
+                <div class="modal-seat-name" id="modalSeatName"></div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">人数</label>
+                <div class="counter">
+                    <button type="button" onclick="decrease()">-</button>
+                    <input type="number" id="peopleCount" value="1" min="1" max="10" readonly>
+                    <button type="button" onclick="increase()">+</button>
+                </div>
+            </div>
+            
+            <div class="modal-buttons">
+                <button type="button" class="modal-button primary" onclick="submitSeat()">
+                    座席を確定
+                </button>
+            </div>
+        </div>
+        
+        <input type="hidden" id="modalSeatId">
+    </div>
+</div>
+
+<!-- アクティブ座席モーダル -->
+<div th:fragment="active-seat-modal" id="activeModal" class="modal active-modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">座席操作</h3>
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="seat-info">
+                <div class="modal-seat-name" id="activeModalSeatName"></div>
+            </div>
+            
+            <div class="button-group">
+                <button type="button" id="orderBtn" class="btn btn-primary">
+                    注文画面へ
+                </button>
+                <button type="button" id="paymentCheckBtn" class="btn btn-success">
+                    会計確認
+                </button>
+                <button type="button" id="deleteVisitBtn" class="btn btn-danger">
+                    退店処理
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 呼び出しリストモーダル -->
+<div th:fragment="call-list-modal" id="callListModal" class="modal call-list-modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">呼び出し中の座席</h3>
+            <button class="modal-close" onclick="closeCallListModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <ul id="callingSeatsList" class="calling-seats-list">
+                <li class="empty-message">現在、呼び出し中の座席はありません。</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- カートパネル -->
+<div th:fragment="cart-panel" id="cartPanel" class="cart-panel">
+    <div class="panel-header">
+        <h3>カート内容</h3>
+    </div>
+    <div class="panel-body">
+        <table id="cartMiniList" class="cart-mini-list">
+            <!-- カート内容がここに表示される -->
+        </table>
+    </div>
+    <div class="panel-footer">
+        <div class="cart-summary">
+            <div class="cart-total">
+                <span>合計:</span>
+                <span id="cartMiniTotal">0円</span>
+            </div>
+            <div class="cart-count" id="cartMiniCount">0点</div>
+            <div id="cartMiniTax"></div>
+        </div>
+        <button class="cart-check-button" onclick="submitOrder()">
+            注文確定
+        </button>
+    </div>
+</div>
+
+<!-- 注文履歴モーダル -->
+<div th:fragment="history-modal" id="historyModal" class="modal history-modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">注文履歴</h3>
+            <button class="modal-close" onclick="closeHistoryModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <table id="historyTable" class="history-table">
+                <thead>
+                    <tr>
+                        <th>商品名</th>
+                        <th style="text-align: center;">数量</th>
+                        <th style="text-align: right;">小計</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- 履歴データがここに表示される -->
+                </tbody>
+            </table>
+        </div>
+        <div class="modal-footer">
+            <div class="history-summary">
+                <div class="history-total">
+                    <span>合計金額(税込)</span>
+                    <span id="historyTotal">0円</span>
+                </div>
+                <div class="history-count">
+                    <span>合計点数:</span>
+                    <span id="historyCount">0点</span>
+                </div>
+                <div id="historyTax" class="history-tax"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</html>

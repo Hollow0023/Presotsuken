@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<!-- 共通ヘッダー要素のフラグメント -->
+<head th:fragment="common-head(title, additionalCss)">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta charset="UTF-8">
+    <title th:text="${title}">デフォルトタイトル</title>
+    
+    <!-- 共通CSSファイル -->
+    <link rel="stylesheet" href="/css/common.css">
+    <link rel="stylesheet" href="/css/components/navigation.css">
+    <link rel="stylesheet" href="/css/components/modals.css">
+    
+    <!-- ページ固有のCSSファイル -->
+    <th:block th:each="css : ${additionalCss}">
+        <link rel="stylesheet" th:href="@{'/css/' + ${css}}">
+    </th:block>
+</head>
+
+</html>

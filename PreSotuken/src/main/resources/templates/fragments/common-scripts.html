@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<!-- 共通スクリプト要素のフラグメント -->
+<div th:fragment="common-scripts(additionalScripts)">
+    <!-- 共通JavaScriptファイル -->
+    <script src="/js/utils.js"></script>
+    
+    <!-- ページ固有のJavaScriptファイル -->
+    <th:block th:each="script : ${additionalScripts}">
+        <script th:src="@{'/js/' + ${script}}"></script>
+    </th:block>
+</div>
+
+<!-- WebSocket用スクリプト -->
+<div th:fragment="websocket-scripts">
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+</div>
+
+<!-- プリンター用スクリプト -->
+<div th:fragment="printer-scripts">
+    <script src="/js/epos-2.27.0.js"></script>
+    <script src="/js/printer.js"></script>
+</div>
+
+<!-- 呼び出しシステム用スクリプト -->
+<div th:fragment="call-system-scripts">
+    <script src="/js/call-system.js"></script>
+</div>
+
+</html>

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head th:replace="~{fragments/common-head :: common-head('座席一覧', ${{seat-list-refactored.css}})}"></head>
+
+<body>
+    <!-- ナビゲーション -->
+    <button class="burger" onclick="toggleMenu()">☰</button>
+    
+    <div class="page-title-container">
+        <h1 class="page-title">テーブル一覧</h1>
+    </div>
+
+    <!-- ユーザー選択 -->
+    <div class="user-selection">
+        <label for="userSelect">担当者:</label>
+        <select id="userSelect" class="form-select" onchange="setUserIdCookie(this.value)">
+            <option value="">ユーザーを選択</option>
+            <option th:each="user : ${users}" th:value="${user.userId}" th:text="${user.userName}"></option>
+        </select>
+    </div>
+
+    <!-- 呼び出し状況確認ボタン -->
+    <button class="call-status-btn" onclick="openCallListModal()">呼び出し状況確認</button>
+
+    <!-- メニュードロワー -->
+    <nav id="menuDrawer" class="menu-drawer">
+        <div>
+            <details class="menu-group" close>
+                <summary class="menu-group-title">メニュー設定</summary>
+                <a href="/menu/list">メニュー管理</a>
+                <a href="/menu/group/add">メニューグループ管理</a>
+                <a href="/options">オプション管理</a>
+                <a href="/menu/sold-out-management">メニュー品切れ管理</a>
+            </details>
+            <details class="menu-group" close>
+                <summary class="menu-group-title">スタッフ管理</summary>
+                <a href="/staff">スタッフ管理</a>
+            </details>
+            <details class="menu-group" close>
+                <summary class="menu-group-title">会計・売上</summary>
+                <a href="/payments/history">売上履歴</a>
+                <a href="/sales/analysis">売上分析</a>
+                <a href="/payment-types">支払方法管理</a>
+            </details>
+            <details class="menu-group" close>
+                <summary class="menu-group-title">システム設定</summary>
+                <a href="/store/edit">店舗設定</a>
+                <a href="/logo/setting">ロゴ設定</a>
+                <a href="/printers">プリンター設定</a>
+                <a href="/admin/plans">プラン管理</a>
+            </details>
+            <details class="menu-group" close>
+                <summary class="menu-group-title">その他</summary>
+                <a href="#" onclick="clearUserIdCookie()">担当者情報をクリア</a>
+                <a href="/logout">ログアウト</a>
+            </details>
+        </div>
+    </nav>
+
+    <!-- 座席グリッド -->
+    <div class="seat-grid">
+        <div th:each="seatGroup : ${seatsByGroup}">
+            <div th:each="seat : ${seatGroup.value}" 
+                 class="seat" 
+                 th:attr="data-seat-id=${seat.seatId}, data-seat-name=${seat.seatName}"
+                 onclick="openSeat(this)">
+                <div class="seat-name" th:text="${seat.seatName}"></div>
+                <div class="seat-info">
+                    <div th:id="'people-' + ${seat.seatId}" class="people-count"></div>
+                    <div th:id="'elapsed-' + ${seat.seatId}" class="elapsed-time"></div>
+                    <div th:id="'total-' + ${seat.seatId}" class="total-amount"></div>
+                </div>
+                <div th:id="'status-' + ${seat.seatId}" class="seat-status"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- モーダル -->
+    <div th:replace="~{fragments/modals :: seat-modal}"></div>
+    <div th:replace="~{fragments/modals :: active-seat-modal}"></div>
+    <div th:replace="~{fragments/modals :: call-list-modal}"></div>
+
+    <!-- 音声ファイル -->
+    <audio id="chimeSound" src="/chime.mp3" preload="auto"></audio>
+
+    <!-- スクリプト -->
+    <div th:replace="~{fragments/common-scripts :: websocket-scripts}"></div>
+    <div th:replace="~{fragments/common-scripts :: call-system-scripts}"></div>
+    <div th:replace="~{fragments/common-scripts :: common-scripts(${{seat-list.js}})}"></div>
+
+</body>
+</html>

@@ -1,0 +1,354 @@
+/**
+ * モーダル関連コンポーネント
+ * 各種モーダルダイアログの専用スタイル
+ */
+
+/* ========================================
+   座席選択モーダル
+======================================== */
+
+.seat-modal .modal-content {
+    max-width: 500px;
+}
+
+.seat-modal .counter {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    margin: 20px 0;
+}
+
+.seat-modal .counter button {
+    font-size: 25px;
+    padding: 15px 20px;
+    border: none;
+    background-color: #007bff;
+    color: white;
+    border-radius: 4px;
+    cursor: pointer;
+    min-width: 50px;
+}
+
+.seat-modal .counter button:hover {
+    background-color: #0056b3;
+}
+
+.seat-modal .counter input {
+    font-size: 20px;
+    text-align: center;
+    width: 80px;
+    padding: 10px;
+    border: 2px solid #ddd;
+    border-radius: 4px;
+}
+
+.seat-modal .modal-buttons {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.seat-modal .modal-button {
+    flex: 1;
+    min-width: 200px;
+    height: 150px;
+    padding: 10px;
+    font-weight: bold;
+    border: none;
+    font-size: 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.seat-modal .modal-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* ========================================
+   アクティブ座席モーダル
+======================================== */
+
+.active-modal .modal-content {
+    max-width: 600px;
+}
+
+.active-modal .seat-info {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+}
+
+.active-modal .seat-name {
+    font-size: 20px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 10px;
+}
+
+.active-modal .button-group {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.active-modal .button-group button {
+    flex: 1;
+    min-width: 120px;
+    padding: 12px 20px;
+    font-size: 16px;
+    font-weight: 600;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+/* ========================================
+   呼び出しリストモーダル
+======================================== */
+
+.call-list-modal .modal-content {
+    max-width: 800px;
+}
+
+.call-list-modal .calling-seats-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.call-list-modal .calling-seats-list li {
+    padding: 15px;
+    border-bottom: 1px solid #eee;
+    background-color: #fff;
+}
+
+.call-list-modal .calling-seats-list li:nth-child(even) {
+    background-color: #f8f9fa;
+}
+
+.call-list-modal .call-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+}
+
+.call-list-modal .call-item-name {
+    font-weight: 600;
+    font-size: 16px;
+    color: #333;
+}
+
+.call-list-modal .call-item-time {
+    color: #666;
+    font-size: 14px;
+}
+
+.call-list-modal .complete-button {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background-color 0.2s ease;
+}
+
+.call-list-modal .complete-button:hover {
+    background-color: #218838;
+}
+
+.call-list-modal .empty-message {
+    text-align: center;
+    padding: 40px 20px;
+    color: #666;
+    font-style: italic;
+}
+
+/* ========================================
+   カートパネル（サイドパネル形式）
+======================================== */
+
+.cart-panel {
+    position: fixed;
+    top: 0;
+    right: -100%;
+    width: 400px;
+    height: 100vh;
+    background-color: white;
+    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+    transition: right 0.3s ease;
+    z-index: 999;
+    display: flex;
+    flex-direction: column;
+}
+
+.cart-panel.show {
+    right: 0;
+}
+
+.cart-panel .panel-header {
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+    font-weight: 600;
+    font-size: 18px;
+}
+
+.cart-panel .panel-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+}
+
+.cart-panel .panel-footer {
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-top: 1px solid #dee2e6;
+}
+
+.cart-panel .cart-mini-list {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.cart-panel .cart-mini-list th,
+.cart-panel .cart-mini-list td {
+    padding: 8px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+.cart-panel .cart-mini-list th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.cart-panel .cart-summary {
+    margin-top: 15px;
+    padding: 15px;
+    background-color: #e9ecef;
+    border-radius: 4px;
+}
+
+.cart-panel .cart-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 600;
+    font-size: 16px;
+    margin-bottom: 10px;
+}
+
+.cart-panel .cart-count {
+    color: #666;
+    font-size: 14px;
+}
+
+.cart-panel .cart-check-button {
+    width: 100%;
+    padding: 12px 0;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 15px;
+    transition: background-color 0.2s ease;
+}
+
+.cart-panel .cart-check-button:hover {
+    background-color: #45a049;
+}
+
+/* ========================================
+   注文履歴モーダル
+======================================== */
+
+.history-modal .modal-content {
+    max-width: 900px;
+    max-height: 80vh;
+}
+
+.history-modal .history-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+}
+
+.history-modal .history-table th,
+.history-modal .history-table td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+.history-modal .history-table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+
+.history-modal .history-summary {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 4px;
+    margin-top: 20px;
+}
+
+.history-modal .history-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 600;
+    font-size: 18px;
+    margin-bottom: 10px;
+}
+
+.history-modal .history-tax {
+    font-size: 14px;
+    color: #666;
+    text-align: right;
+}
+
+/* ========================================
+   レスポンシブ対応
+======================================== */
+
+@media (max-width: 768px) {
+    .cart-panel {
+        width: 100%;
+        right: -100%;
+    }
+    
+    .modal-content {
+        margin: 5% auto;
+        max-width: 95%;
+        max-height: 90vh;
+    }
+    
+    .seat-modal .modal-buttons {
+        flex-direction: column;
+    }
+    
+    .seat-modal .modal-button {
+        min-width: auto;
+        height: 60px;
+    }
+    
+    .active-modal .button-group {
+        flex-direction: column;
+    }
+}
