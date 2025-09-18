@@ -1,6 +1,5 @@
 package com.order.service;
 
-
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -27,6 +26,11 @@ import com.order.repository.UserRepository;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+
+/**
+ * 検査ログ管理に関するビジネスロジックを提供するサービス
+ * 検査の登録、履歴取得、売上集計などを担当します
+ */
 
 @Service
 @RequiredArgsConstructor

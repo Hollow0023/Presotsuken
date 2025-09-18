@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType; // ★MediaTypeをインポート
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -20,17 +20,26 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.order.dto.MenuForm; // MenuFormをインポート
+import com.order.dto.MenuForm;
 import com.order.entity.Menu;
 import com.order.entity.Plan;
 import com.order.repository.MenuGroupRepository;
 import com.order.repository.MenuTimeSlotRepository;
 import com.order.repository.OptionGroupRepository;
 import com.order.repository.PrinterConfigRepository;
-import com.order.repository.StoreRepository; // StoreRepositoryを注入
+import com.order.repository.StoreRepository;
 import com.order.repository.TaxRateRepository;
 import com.order.service.MenuAddService;
 import com.order.service.MenuService;
+
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
+
+/**
+ * メニュー管理に関する機能を提供するコントローラ
+ * メニューの追加、編集、画像アップロード、プラン管理などを担当します
+ */
 
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
