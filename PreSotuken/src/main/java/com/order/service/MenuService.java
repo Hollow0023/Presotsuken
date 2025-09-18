@@ -57,8 +57,8 @@ public class MenuService {
             return List.of();
         }
 
-        // 取得した複数のtimeSlotIdに紐づくメニューを全て取得し、重複を除去してソート
-        List<Menu> menus = menuRepository.findByStore_StoreIdAndIsSoldOutFalseAndTimeSlot_TimeSlotIdInOrderByMenuNameAsc(storeId, currentSlotIds);
+        // 取得した複数のtimeSlotIdに紐づくメニューを全て取得し、重複を除去してソート（削除されていないもののみ）
+        List<Menu> menus = menuRepository.findByStore_StoreIdAndIsSoldOutFalseAndTimeSlot_TimeSlotIdInAndDeletedAtIsNullOrderByMenuNameAsc(storeId, currentSlotIds);
 
         return menus.stream().map(this::toDto).collect(Collectors.toList());
     }
@@ -74,13 +74,13 @@ public class MenuService {
     }
 
     /**
-     * 品切れ状態に関係なく全てのメニューとオプションを取得します（管理者用）
+     * 品切れ状態に関係なく全てのメニューとオプションを取得します（管理者用、削除されていないもののみ）
      * 
      * @param storeId 店舗ID
      * @return 全メニューとオプション情報のDTOリスト
      */
     public List<MenuWithOptionsDTO> getAllMenusWithOptions(Integer storeId) {
-        List<Menu> menus = menuRepository.findByStore_StoreIdOrderByMenuIdAsc(storeId);
+        List<Menu> menus = menuRepository.findByStore_StoreIdAndDeletedAtIsNullOrderByMenuIdAsc(storeId);
         return menus.stream().map(this::toDto).collect(Collectors.toList());
     }
 
@@ -119,34 +119,43 @@ public class MenuService {
     }
 
     /**
-     * 指定されたIDのメニューの品切れ状態を更新します
+     * 指定されたIDのメニューの品切れ状態を更新します（削除されていないメニューのみ）
      * 
      * @param menuId 更新対象のメニューID
      * @param isSoldOut 品切れ状態 (true:品切れ中, false:品切れ解除)
-     * @return 更新されたメニュー、または見つからない場合はnull
+     * @return 更新されたメニュー、または見つからない/削除済みの場合はnull
      */
     public Menu updateMenuSoldOutStatus(Integer menuId, Boolean isSoldOut) {
         return menuRepository.findById(menuId).map(menu -> {
+            // 削除済みメニューは更新不可
+            if (menu.getDeletedAt() != null) {
+                return null;
+            }
             menu.setIsSoldOut(isSoldOut);
             return menuRepository.save(menu);
         }).orElse(null);
     }
 
     /**
-     * 指定された複数のメニューIDの品切れ状態を一括で更新します
+     * 指定された複数のメニューIDの品切れ状態を一括で更新します（削除されていないメニューのみ）
      * 
      * @param menuIds 更新対象のメニューIDのリスト
      * @param isSoldOut 品切れ状態 (true:品切れ中, false:品切れ解除)
-     * @return 更新されたメニューのリスト
+     * @return 更新されたメニューのリスト（削除済みメニューは除外）
      */
     public List<Menu> updateMultipleMenuSoldOutStatus(List<Integer> menuIds, Boolean isSoldOut) {
         List<Menu> menusToUpdate = menuRepository.findAllById(menuIds);
 
-        for (Menu menu : menusToUpdate) {
+        // 削除されていないメニューのみを更新対象とする
+        List<Menu> validMenus = menusToUpdate.stream()
+                .filter(menu -> menu.getDeletedAt() == null)
+                .collect(Collectors.toList());
+
+        for (Menu menu : validMenus) {
             menu.setIsSoldOut(isSoldOut);
         }
         
-        return menuRepository.saveAll(menusToUpdate);
+        return menuRepository.saveAll(validMenus);
     }
 
     /**

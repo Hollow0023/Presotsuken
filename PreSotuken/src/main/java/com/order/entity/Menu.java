@@ -1,5 +1,7 @@
 package com.order.entity;
 
+import java.time.LocalDateTime;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -46,4 +48,7 @@ public class Menu {
     private String menuDescription;
     private Boolean isSoldOut;
     private String receiptLabel;
+    
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
 }
