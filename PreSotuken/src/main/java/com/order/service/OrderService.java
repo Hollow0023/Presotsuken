@@ -136,6 +136,12 @@ public class OrderService {
         for (OrderItemDto item : items) {
             Menu menu = menuRepository.findById(item.getMenuId())
                     .orElseThrow(() -> new RuntimeException("Menu not found with ID: " + item.getMenuId()));
+            
+            // 削除済みメニューのチェック
+            if (menu.getDeletedAt() != null) {
+                throw new IllegalArgumentException("削除されたメニュー「" + menu.getMenuName() + "」が含まれていました。再度注文をお願いします。");
+            }
+            
             TaxRate taxRate = taxRateRepository.findById(item.getTaxRateId())
                     .orElseThrow(() -> new RuntimeException("TaxRate not found with ID: " + item.getTaxRateId()));
             

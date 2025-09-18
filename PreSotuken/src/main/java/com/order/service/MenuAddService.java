@@ -1,6 +1,7 @@
 package com.order.service;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -54,9 +55,10 @@ public class MenuAddService {
     private final PaymentLookupService paymentLookup;
     
     
-    // MenuエンティティをMenuForm DTOに変換して返すメソッド
+    // MenuエンティティをMenuForm DTOに変換して返すメソッド（削除されていないメニューのみ）
     public Optional<MenuForm> getMenuFormById(Integer menuId) {
         return menuRepository.findById(menuId)
+                .filter(menu -> menu.getDeletedAt() == null) // 削除されていないメニューのみ
                 .map(menu -> {
                     MenuForm form = new MenuForm();
                     form.setMenuId(menu.getMenuId());
@@ -180,22 +182,23 @@ public class MenuAddService {
     }
 
 
-    // 全メニューを取得するメソッド (menu_nameでソート適用)
+    // 全メニューを取得するメソッド (menu_nameでソート適用、削除されていないもののみ)
     public List<Menu> getMenusByStoreId(Integer storeId) {
-        return menuRepository.findByStore_StoreIdOrderByMenuIdAsc(storeId);
+        return menuRepository.findByStore_StoreIdAndDeletedAtIsNullOrderByMenuIdAsc(storeId);
     }
     // ...getMenusWithOptions (品切れ表示しない場合)
        public List<MenuWithOptionsDTO> getMenusWithOptions(Integer storeId) {
-           List<Menu> menus = menuRepository.findByStore_StoreIdAndIsSoldOutFalseOrderByMenuNameAsc(storeId);
+           List<Menu> menus = menuRepository.findByStore_StoreIdAndIsSoldOutFalseAndDeletedAtIsNullOrderByMenuNameAsc(storeId);
            // DTOへの変換ロジック
            return menus.stream()
                .map(menu -> new MenuWithOptionsDTO(menu)) // コンストラクタでDTOに変換
                .collect(Collectors.toList());
        }
 
-    // 特定のメニューを取得するメソッド (関連データもフェッチされるようにエンティティを調整)
+    // 特定のメニューを取得するメソッド (関連データもフェッチされるようにエンティティを調整、削除されていないもののみ)
     public Optional<Menu> getMenuById(Integer menuId) {
-        return menuRepository.findById(menuId);
+        return menuRepository.findById(menuId)
+                .filter(menu -> menu.getDeletedAt() == null);
     }
     
     public List<Integer> getMenuOptionIdsByMenuId(Integer menuId) {
@@ -286,6 +289,11 @@ public class MenuAddService {
             throw new IllegalArgumentException("指定されたメニューは現在の店舗に属していません。");
         }
 
+        // 削除済みメニューは更新不可
+        if (existingMenu.getDeletedAt() != null) {
+            throw new IllegalArgumentException("削除済みのメニューは更新できません。");
+        }
+
         if (!imageFile.isEmpty()) {
             if (existingMenu.getMenuImage() != null && !existingMenu.getMenuImage().isEmpty()) {
                 imageUploadService.deleteImage(existingMenu.getMenuImage());
@@ -355,16 +363,16 @@ public class MenuAddService {
             throw new IllegalArgumentException("指定されたメニューは現在の店舗に属していません。");
         }
 
-        menuPrinterMapRepository.deleteByMenu_MenuId(menuToDelete.getMenuId());
-        menuOptionRepository.deleteByMenu_MenuId(menuToDelete.getMenuId());
-
-        if (menuToDelete.getMenuImage() != null && !menuToDelete.getMenuImage().isEmpty()) {
-            try {
-                imageUploadService.deleteImage(menuToDelete.getMenuImage());
-            } catch (IOException e) {
-                System.err.println("Warning: Failed to delete image file for menu " + menuId + ": " + e.getMessage());
-            }
+        // 既に削除済みの場合はエラー
+        if (menuToDelete.getDeletedAt() != null) {
+            throw new IllegalArgumentException("指定されたメニューは既に削除済みです。");
         }
-        menuRepository.delete(menuToDelete);
+
+        // ソフトデリート: deleted_at に現在時刻を設定
+        menuToDelete.setDeletedAt(LocalDateTime.now());
+        menuRepository.save(menuToDelete);
+        
+        // 注意: プリンターマップやオプションは削除しない
+        // これらは履歴として残しておく
     }
 }

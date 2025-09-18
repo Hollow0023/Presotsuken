@@ -12,39 +12,34 @@ import com.order.entity.Menu;
 
 @Repository
 public interface MenuRepository extends JpaRepository<Menu, Integer> {
-	List<Menu> findByStore_StoreId(Integer storeId);
+	List<Menu> findByStore_StoreIdAndDeletedAtIsNull(Integer storeId);
 	
-	@Query("SELECT m FROM Menu m WHERE :now BETWEEN m.timeSlot.startTime AND m.timeSlot.endTime")
+	@Query("SELECT m FROM Menu m WHERE :now BETWEEN m.timeSlot.startTime AND m.timeSlot.endTime AND m.deletedAt IS NULL")
 	List<Menu> findMenusAvailableAt(@Param("now") LocalTime now);
 
-    // isPlanStarterがtrueのメニューを検索
-    List<Menu> findByIsPlanStarterTrue();
+    // isPlanStarterがtrueのメニューを検索（削除されていないもののみ）
+    List<Menu> findByIsPlanStarterTrueAndDeletedAtIsNull();
 
-    // isPlanStarterがtrueで、特定のplanIdを持つメニューを検索
-    List<Menu> findByIsPlanStarterTrueAndPlanId(Integer planId);
+    // isPlanStarterがtrueで、特定のplanIdを持つメニューを検索（削除されていないもののみ）
+    List<Menu> findByIsPlanStarterTrueAndPlanIdAndDeletedAtIsNull(Integer planId);
     
-    // getMenusWithOptions で使う: 特定の店舗で、品切れでなく、指定された時間帯に利用可能で、メニュー名順にソートされたメニューを取得
-    @Query("SELECT m FROM Menu m JOIN m.timeSlot ts WHERE m.store.storeId = :storeId AND m.isSoldOut = FALSE AND ts.timeSlotId = :timeSlotId ORDER BY m.menuName ASC")
+    // getMenusWithOptions で使う: 特定の店舗で、品切れでなく、指定された時間帯に利用可能で、メニュー名順にソートされたメニューを取得（削除されていないもののみ）
+    @Query("SELECT m FROM Menu m JOIN m.timeSlot ts WHERE m.store.storeId = :storeId AND m.isSoldOut = FALSE AND ts.timeSlotId = :timeSlotId AND m.deletedAt IS NULL ORDER BY m.menuName ASC")
     List<Menu> findByStore_StoreIdAndIsSoldOutFalseAndMenuTimeSlotTimeSlotIdOrderByMenuNameAsc(Integer storeId, Integer timeSlotId);
 
-    
-    
-    
-    List<Menu> findByStore_StoreIdAndIsSoldOutFalseAndTimeSlot_TimeSlotIdInOrderByMenuNameAsc(Integer storeId, List<Integer> timeSlotTimeSlotIds);
+    List<Menu> findByStore_StoreIdAndIsSoldOutFalseAndTimeSlot_TimeSlotIdInAndDeletedAtIsNullOrderByMenuNameAsc(Integer storeId, List<Integer> timeSlotTimeSlotIds);
  
-    
-    
- // 特定の店舗のメニューをmenu_nameでソートして取得 (管理者用・品切れ表示しない場合)
-    List<Menu> findByStore_StoreIdAndIsSoldOutFalseOrderByMenuNameAsc(Integer storeId); // ★ 修正
+    // 特定の店舗のメニューをmenu_nameでソートして取得 (管理者用・品切れ表示しない場合、削除されていないもののみ)
+    List<Menu> findByStore_StoreIdAndIsSoldOutFalseAndDeletedAtIsNullOrderByMenuNameAsc(Integer storeId);
 
-    // 特定の店舗の全てのメニューをmenu_nameでソートして取得 (管理者用・品切れも表示する場合)
-    List<Menu> findByStore_StoreIdOrderByMenuIdAsc(Integer storeId); // ★ 修正
+    // 特定の店舗の全てのメニューをmenu_nameでソートして取得 (管理者用・品切れも表示する場合、削除されていないもののみ)
+    List<Menu> findByStore_StoreIdAndDeletedAtIsNullOrderByMenuIdAsc(Integer storeId);
 
-    // isPlanStarterがtrueのメニューをmenu_nameでソートして取得
-    List<Menu> findByIsPlanStarterTrueOrderByMenuNameAsc(); // ★ 修正
+    // isPlanStarterがtrueのメニューをmenu_nameでソートして取得（削除されていないもののみ）
+    List<Menu> findByIsPlanStarterTrueAndDeletedAtIsNullOrderByMenuNameAsc();
 
-    // isPlanStarterがtrueで、特定のplanIdを持つメニューをmenu_nameでソートして取得
-    List<Menu> findByIsPlanStarterTrueAndPlanIdOrderByMenuNameAsc(Integer planId); // ★ 修正
+    // isPlanStarterがtrueで、特定のplanIdを持つメニューをmenu_nameでソートして取得（削除されていないもののみ）
+    List<Menu> findByIsPlanStarterTrueAndPlanIdAndDeletedAtIsNullOrderByMenuNameAsc(Integer planId);
     
     
 //    List<Menu> findByStore_StoreIdAndIsSoldOutFalseAndIsPlanTargetFalseAndTimeSlot_TimeSlotIdInOrderByMenuNameAsc(
