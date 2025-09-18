@@ -4,7 +4,6 @@ import java.time.LocalTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
-// ★ @Autowired は削除し、コンストラクタインジェクションに統一するため
 import org.springframework.stereotype.Service;
 
 import com.order.dto.MenuWithOptionsDTO;
@@ -22,8 +21,12 @@ import com.order.repository.PlanRepository;
 
 import lombok.RequiredArgsConstructor;
 
+/**
+ * メニュー管理に関するビジネスロジックを提供するサービス
+ * メニューの取得、時間帯フィルタリング、DTOへの変換などを担当します
+ */
 @Service
-@RequiredArgsConstructor // finalフィールドのコンストラクタを自動生成
+@RequiredArgsConstructor
 public class MenuService {
 
     private final MenuTimeSlotRepository menuTimeSlotRepository;
@@ -33,130 +36,91 @@ public class MenuService {
     private final OptionItemRepository optionItemRepository;
     private final PlanRepository planRepository;
 
-
-    // 時間帯を絞って表示 (品切れは表示しない)
+    /**
+     * 現在の時間帯に合致し、品切れでないメニューとオプションを取得します
+     * 
+     * @param storeId 店舗ID
+     * @return メニューとオプション情報のDTOリスト
+     */
     public List<MenuWithOptionsDTO> getMenusWithOptions(Integer storeId) {
         LocalTime now = LocalTime.now();
         
-
         List<MenuTimeSlot> allTimeSlots = menuTimeSlotRepository.findByStoreStoreId(storeId);
         
         // 現在時刻に合致する全ての時間帯スロットを取得
         List<Integer> currentSlotIds = allTimeSlots.stream()
                 .filter(slot -> !now.isBefore(slot.getStartTime()) && now.isBefore(slot.getEndTime()))
-                .map(MenuTimeSlot::getTimeSlotId) // 合致するスロットのIDだけを抽出
+                .map(MenuTimeSlot::getTimeSlotId)
                 .collect(Collectors.toList());
 
         if (currentSlotIds.isEmpty()) {
-            return List.of(); // 該当する時間帯スロットが一つもなければ空リストを返す
+            return List.of();
         }
 
         // 取得した複数のtimeSlotIdに紐づくメニューを全て取得し、重複を除去してソート
-        // MenuRepositoryに新しいクエリメソッドが必要になる
         List<Menu> menus = menuRepository.findByStore_StoreIdAndIsSoldOutFalseAndTimeSlot_TimeSlotIdInOrderByMenuNameAsc(storeId, currentSlotIds);
-        // findByStore_StoreIdAndIsSoldOutFalseAndMenuTimeSlotTimeSlotIdInOrderByMenuNameAsc が無い場合、
-        // Streamでフィルタリングしてから toDto する
-        // List<Menu> menus = menuRepository.findByStore_StoreIdAndIsSoldOutFalseOrderByMenuNameAsc(storeId).stream()
-        //      .filter(menu -> menu.getTimeSlot() != null && currentSlotIds.contains(menu.getTimeSlot().getTimeSlotId()))
-        //      .collect(Collectors.toList());
-
 
         return menus.stream().map(this::toDto).collect(Collectors.toList());
     }
     
+    /**
+     * 指定店舗の全プランを取得します
+     * 
+     * @param storeId 店舗ID
+     * @return プランのリスト
+     */
     public List<Plan> getAllPlans(Integer storeId) {
-        // PlanエンティティがStoreエンティティを関連フィールド'store'で持っている場合
         return planRepository.findByStore_StoreId(storeId);
-        // もしPlanが直接storeIdを持つなら、return planRepository.findByStoreId(storeId);
     }
 
-    // 全てのメニューを表示 (品切れも表示)
+    /**
+     * 品切れ状態に関係なく全てのメニューとオプションを取得します（管理者用）
+     * 
+     * @param storeId 店舗ID
+     * @return 全メニューとオプション情報のDTOリスト
+     */
     public List<MenuWithOptionsDTO> getAllMenusWithOptions(Integer storeId) {
-        // ★修正: storeId でフィルタリングし、menu_name でソート
         List<Menu> menus = menuRepository.findByStore_StoreIdOrderByMenuIdAsc(storeId);
         return menus.stream().map(this::toDto).collect(Collectors.toList());
     }
 
-    // 共通：メニュー → DTO（オプション、税込価格含む）
+    /**
+     * MenuエンティティをMenuWithOptionsDTOに変換します
+     * オプション情報、税込価格、メニューグループ情報などを含めて変換します
+     * 
+     * @param menu 変換対象のMenuエンティティ
+     * @return 変換されたDTO
+     */
     public MenuWithOptionsDTO toDto(Menu menu) {
         MenuWithOptionsDTO dto = new MenuWithOptionsDTO();
 
+        // 基本情報のマッピング
         dto.setMenuId(menu.getMenuId());
         dto.setMenuName(menu.getMenuName());
         dto.setPrice(menu.getPrice());
         dto.setMenuImage(menu.getMenuImage());
-        dto.setDescription(menu.getMenuDescription()); // MenuエンティティのmenuDescriptionをマッピング
+        dto.setDescription(menu.getMenuDescription());
         dto.setIsSoldOut(menu.getIsSoldOut());
 
-     // TaxRate関連のマッピング
-        if (menu.getTaxRate() != null) {
-            dto.setTaxRateId(menu.getTaxRate().getTaxRateId());
-            dto.setTaxRateValue(menu.getTaxRate().getRate());
-            double rate = menu.getTaxRate().getRate();
-            
-            // ★ここを修正！Math.round() で四捨五入して、結果をDoubleにキャスト
-            dto.setPriceWithTax((double) Math.round(menu.getPrice() * (1 + rate))); 
-        } else {
-            dto.setTaxRateId(null);
-            dto.setTaxRateValue(0.0);
-            dto.setPriceWithTax(menu.getPrice()); // 税率がない場合は税抜き価格をそのまま
-        }
+        // 税率関連のマッピング
+        mapTaxRateInfo(menu, dto);
 
-        // ★ MenuGroup関連のマッピング (MenuGroupエンティティから必要な情報をDTOへ)
-        if (menu.getMenuGroup() != null) {
-            dto.setMenuGroupId(menu.getMenuGroup().getGroupId());
-            dto.setMenuGroupName(menu.getMenuGroup().getGroupName());
-            dto.setMenuGroupIsPlanTarget(menu.getMenuGroup().getIsPlanTarget());
-            dto.setMenuGroupSortOrder(menu.getMenuGroup().getSortOrder());
-        } else {
-            // MenuGroupがnullの場合のデフォルト値
-            dto.setMenuGroupId(null);
-            dto.setMenuGroupName(null);
-            dto.setMenuGroupIsPlanTarget(false); // デフォルトでfalseなど
-            dto.setMenuGroupSortOrder(Integer.MAX_VALUE); // ソート順の末尾に
-        }
+        // メニューグループ関連のマッピング
+        mapMenuGroupInfo(menu, dto);
 
-        // ★ 飲み放題関連の新しいフィールドをDTOにセット
+        // 飲み放題関連のフィールドをDTOにセット
         dto.setIsPlanStarter(menu.getIsPlanStarter());
         dto.setPlanId(menu.getPlanId());
         
-        // オプショングループの構築 (ここではMenuOptionのリストを想定)
-        // menuOptionRepository.findByMenu_MenuId(menu.getMenuId()) は List<MenuOption> を返すことを想定
-        var menuOptions = menuOptionRepository.findByMenu_MenuId(menu.getMenuId());
-        List<OptionGroupDTO> groupDTOs = menuOptions.stream()
-            .map(menuOption -> {
-                // MenuOptionからOptionGroupエンティティを直接取得できれば良い
-                // もしOptionGroupIdしか持たないなら、optionGroupRepository.findById(menuOption.getOptionGroupId()) で取得
-                var group = optionGroupRepository.findById(menuOption.getOptionGroupId()).orElse(null); // OptionGroupエンティティをOptionGroupRepositoryから取得
-                if (group == null) return null; // グループが見つからなければスキップ
-
-                var groupDTO = new OptionGroupDTO();
-                groupDTO.setOptionGroupId(group.getOptionGroupId());
-                groupDTO.setGroupName(group.getGroupName());
-
-                // OptionItemのリストをOptionItemDTOに変換 (optionItemRepositoryから取得)
-                var itemDTOs = optionItemRepository.findByOptionGroupId(group.getOptionGroupId())
-                        .stream()
-                        .map(item -> {
-                            var itemDTO = new OptionItemDTO();
-                            itemDTO.setOptionItemId(item.getOptionItemId());
-                            itemDTO.setItemName(item.getItemName());
-                            return itemDTO;
-                        }).collect(Collectors.toList());
-
-                groupDTO.setOptionItems(itemDTOs);
-                return groupDTO;
-            })
-            .filter(group -> group != null) // nullになったDTOを除外
-            .collect(Collectors.toList());
-
-        dto.setOptionGroups(groupDTOs);
+        // オプショングループの構築
+        buildOptionGroups(menu, dto);
 
         return dto;
     }
 
     /**
-     * 指定されたIDのメニューの品切れ状態を更新する
+     * 指定されたIDのメニューの品切れ状態を更新します
+     * 
      * @param menuId 更新対象のメニューID
      * @param isSoldOut 品切れ状態 (true:品切れ中, false:品切れ解除)
      * @return 更新されたメニュー、または見つからない場合はnull
@@ -169,7 +133,8 @@ public class MenuService {
     }
 
     /**
-     * 指定された複数のメニューIDの品切れ状態を一括で更新する
+     * 指定された複数のメニューIDの品切れ状態を一括で更新します
+     * 
      * @param menuIds 更新対象のメニューIDのリスト
      * @param isSoldOut 品切れ状態 (true:品切れ中, false:品切れ解除)
      * @return 更新されたメニューのリスト
@@ -182,5 +147,71 @@ public class MenuService {
         }
         
         return menuRepository.saveAll(menusToUpdate);
+    }
+
+    /**
+     * 税率情報をDTOにマッピングします
+     */
+    private void mapTaxRateInfo(Menu menu, MenuWithOptionsDTO dto) {
+        if (menu.getTaxRate() != null) {
+            dto.setTaxRateId(menu.getTaxRate().getTaxRateId());
+            dto.setTaxRateValue(menu.getTaxRate().getRate());
+            double rate = menu.getTaxRate().getRate();
+            dto.setPriceWithTax((double) Math.round(menu.getPrice() * (1 + rate))); 
+        } else {
+            dto.setTaxRateId(null);
+            dto.setTaxRateValue(0.0);
+            dto.setPriceWithTax(menu.getPrice());
+        }
+    }
+
+    /**
+     * メニューグループ情報をDTOにマッピングします
+     */
+    private void mapMenuGroupInfo(Menu menu, MenuWithOptionsDTO dto) {
+        if (menu.getMenuGroup() != null) {
+            dto.setMenuGroupId(menu.getMenuGroup().getGroupId());
+            dto.setMenuGroupName(menu.getMenuGroup().getGroupName());
+            dto.setMenuGroupIsPlanTarget(menu.getMenuGroup().getIsPlanTarget());
+            dto.setMenuGroupSortOrder(menu.getMenuGroup().getSortOrder());
+        } else {
+            dto.setMenuGroupId(null);
+            dto.setMenuGroupName(null);
+            dto.setMenuGroupIsPlanTarget(false);
+            dto.setMenuGroupSortOrder(Integer.MAX_VALUE);
+        }
+    }
+
+    /**
+     * オプショングループ情報を構築してDTOに設定します
+     */
+    private void buildOptionGroups(Menu menu, MenuWithOptionsDTO dto) {
+        var menuOptions = menuOptionRepository.findByMenu_MenuId(menu.getMenuId());
+        List<OptionGroupDTO> groupDTOs = menuOptions.stream()
+            .map(menuOption -> {
+                var group = optionGroupRepository.findById(menuOption.getOptionGroupId()).orElse(null);
+                if (group == null) return null;
+
+                var groupDTO = new OptionGroupDTO();
+                groupDTO.setOptionGroupId(group.getOptionGroupId());
+                groupDTO.setGroupName(group.getGroupName());
+
+                // OptionItemのリストをOptionItemDTOに変換
+                var itemDTOs = optionItemRepository.findByOptionGroupId(group.getOptionGroupId())
+                        .stream()
+                        .map(item -> {
+                            var itemDTO = new OptionItemDTO();
+                            itemDTO.setOptionItemId(item.getOptionItemId());
+                            itemDTO.setItemName(item.getItemName());
+                            return itemDTO;
+                        }).collect(Collectors.toList());
+
+                groupDTO.setOptionItems(itemDTOs);
+                return groupDTO;
+            })
+            .filter(group -> group != null)
+            .collect(Collectors.toList());
+
+        dto.setOptionGroups(groupDTOs);
     }
 }
