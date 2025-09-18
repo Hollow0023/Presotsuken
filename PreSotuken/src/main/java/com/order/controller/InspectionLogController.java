@@ -12,12 +12,16 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import com.order.dto.InspectionLogRequest;
 import com.order.entity.InspectionLog;
-import com.order.service.CookieUtil;
 import com.order.service.InspectionLogService;
+import com.order.util.CookieUtil;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * 検査ログ管理に関する管理者機能を提供するコントローラ
+ * 検査ログの記録、履歴表示を担当します
+ */
 @Controller
 @RequestMapping("/admin/inspection")
 @RequiredArgsConstructor
@@ -26,6 +30,14 @@ public class InspectionLogController {
     private final InspectionLogService inspectionLogService;
     private final CookieUtil cookieUtil;
 
+    /**
+     * 検査フォーム画面を表示します
+     * 点検対象期間の売上集計値とユーザー一覧を取得してモデルに設定します
+     * 
+     * @param request HTTPリクエスト（Cookie取得用）
+     * @param model ビューに渡すモデル
+     * @return 検査フォーム画面のテンプレート名
+     */
     @GetMapping("/form")
     public String showForm(HttpServletRequest request, Model model) {
         Integer storeId = cookieUtil.getStoreIdFromCookie(request);
@@ -43,6 +55,13 @@ public class InspectionLogController {
         return "admin/inspectionForm";
     }
 
+    /**
+     * 検査履歴画面を表示します
+     * 
+     * @param request HTTPリクエスト（Cookie取得用）
+     * @param model ビューに渡すモデル
+     * @return 検査履歴画面のテンプレート名
+     */
     @GetMapping("/history")
     public String showHistory(HttpServletRequest request, Model model) {
         Integer storeId = cookieUtil.getStoreIdFromCookie(request);
@@ -54,11 +73,18 @@ public class InspectionLogController {
         return "admin/inspectionHistory";
     }
 
+    /**
+     * 検査を登録します
+     * 
+     * @param request HTTPリクエスト（Cookie取得用）
+     * @param inspectionLogRequest 検査ログのリクエストデータ
+     * @param performWithdrawal 出金を実行するかどうか
+     * @return リダイレクト先URL
+     */
     @PostMapping
     public String registerInspection(HttpServletRequest request,
                                      @ModelAttribute InspectionLogRequest inspectionLogRequest,
-                                     @RequestParam(name = "performWithdrawal", defaultValue = "false") boolean performWithdrawal
-                                     ) {
+                                     @RequestParam(name = "performWithdrawal", defaultValue = "false") boolean performWithdrawal) {
     	
         Integer storeId = cookieUtil.getStoreIdFromCookie(request);
         
