@@ -24,7 +24,7 @@ const printerSelectTemplate = document.querySelector('.printer-select-template')
 
 let selectedMenuId = null; // 現在選択中のメニューID
 
-// ★★★ここから追加！飲み放題関連のDOM要素★★★
+// 飲み放題関連のDOM要素
 const isPlanStarterInput = document.getElementById('isPlanStarterInput');
 const planIdGroup = document.getElementById('planIdGroup');
 const planSelect = document.getElementById('planSelect');
@@ -55,7 +55,7 @@ function resetForm() {
     clearDynamicSelects(printerSelectsContainer, printerSelectTemplate);
     addDynamicSelect(printerSelectsContainer, printerSelectTemplate, window.allPrinters, 'printerIds', '');
 
-    // ★★★ここから追加！飲み放題関連のフィールドをリセット★★★
+    // 飲み放題関連のフィールドを初期状態へ戻す
     isPlanStarterInput.checked = false;
     togglePlanIdGroup(); // プルダウンの表示/非表示を更新
     planSelect.value = ''; // プルダウンの選択をリセット
@@ -128,22 +128,22 @@ async function showMenuDetails(menuId) {
         }
         imageFileInput.value = '';
 
- // プルダウンの選択 (MenuFormのフィールド名に合わせる)
-        document.getElementById('timeSlotSelect').value = menu.timeSlotTimeSlotId || ''; // ここを修正
-        document.getElementById('taxRateSelect').value = menu.taxRateTaxRateId || ''; // ここを修正
-        document.getElementById('menuGroupSelect').value = menu.menuGroupGroupId || ''; // ここを修正
+        // 各セレクトボックスへ取得したIDを反映
+        document.getElementById('timeSlotSelect').value = menu.timeSlotTimeSlotId || '';
+        document.getElementById('taxRateSelect').value = menu.taxRateTaxRateId || '';
+        document.getElementById('menuGroupSelect').value = menu.menuGroupGroupId || '';
 
         // オプション選択のセット (MenuFormから直接 optionGroupIds を取得)
         const fetchedOptionIds = menu.optionGroupIds || [];
         setDynamicSelects(optionSelectsContainer, optionSelectTemplate, window.allOptionGroups, 'optionGroupIds', fetchedOptionIds.map(String));
 
-        // プリンター選択のセット (MenuFormから直接 printerIds を取得)
-		const printerId = menu.printerId || '';
-		clearDynamicSelects(printerSelectsContainer, printerSelectTemplate);
-		addDynamicSelect(printerSelectsContainer, printerSelectTemplate, window.allPrinters, 'printerIds', String(printerId));
+        // プリンター選択は単一のIDのみ保持するため、1つのセレクトボックスへ値を設定する
+        const printerId = menu.printerId || '';
+        clearDynamicSelects(printerSelectsContainer, printerSelectTemplate);
+        addDynamicSelect(printerSelectsContainer, printerSelectTemplate, window.allPrinters, 'printerIds', String(printerId));
 
 
-        // ★★★飲み放題関連のフィールドをセット★★★
+        // 飲み放題関連のフィールドをセット
         isPlanStarterInput.checked = menu.isPlanStarter || false;
         togglePlanIdGroup(); // プルダウンの表示/非表示を更新
         planSelect.value = menu.planId || ''; // プルダウンの選択をセット
@@ -374,179 +374,6 @@ function setupToastr() {
 }
 
 
-// =======================================================
-// イベントリスナー設定
-// =======================================================
-
-// ファイル選択時に画像プレビューを表示
-imageFileInput.addEventListener('change', (event) => {
-    const file = event.target.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            imagePreview.src = e.target.result;
-            imagePreview.style.display = 'block';
-            noImageText.style.display = 'none';
-            removeImageBtn.style.display = 'inline-block';
-        };
-        reader.readAsDataURL(file);
-    } else {
-        if (currentMenuImageInput.value) {
-            imagePreview.src = currentMenuImageInput.value;
-            imagePreview.style.display = 'block';
-            noImageText.style.display = 'none';
-            removeImageBtn.style.display = 'inline-block';
-        } else {
-            imagePreview.src = '#';
-            imagePreview.style.display = 'none';
-            noImageText.style.display = 'inline-block';
-            removeImageBtn.style.display = 'none';
-        }
-    }
-});
-
-// 画像削除ボタン
-removeImageBtn.addEventListener('click', () => {
-    imageFileInput.value = '';
-    imagePreview.src = '#';
-    imagePreview.style.display = 'none';
-    noImageText.style.display = 'inline-block';
-    removeImageBtn.style.display = 'none';
-    currentMenuImageInput.value = '';
-});
-
-// フォームリセットボタン
-resetFormBtn.addEventListener('click', resetForm);
-
-// 新規メニュー登録ボタン
-addNewMenuBtn.addEventListener('click', resetForm);
-
-// オプション追加ボタンクリックイベント
-addOptionSelectBtn.addEventListener('click', () => addDynamicSelect(optionSelectsContainer, optionSelectTemplate, window.allOptionGroups, 'optionGroupIds', ''));
-
-// プリンター追加ボタンクリックイベント
-//addPrinterSelectBtn.addEventListener('click', () => addDynamicSelect(printerSelectsContainer, printerSelectTemplate, window.allPrinters, 'printerIds', ''));
-
-
-// ★★★ フォームのSUBMITイベントをAjaxに切り替える ★★★
-menuForm.addEventListener('submit', async (event) => {
-    event.preventDefault(); // デフォルトのフォーム送信を防止
-
-    const formData = new FormData(menuForm); // フォームデータを取得 (ファイルも含む)
-
-    // hiddenフィールドのmenuIdをFormDataに追加（これがないと更新対象が不明になる）
-    formData.append('menuId', document.getElementById('menuId').value);
-
-    // プルダウンから選択された関連エンティティのIDもFormDataに追加
-    // ここは MenuForm のネストされたオブジェクトのIDを参照する必要がある
-    formData.append('taxRate.taxRateId', document.getElementById('taxRateSelect').value); // 正しい
-    formData.append('menuGroup.groupId', document.getElementById('menuGroupSelect').value); // 正しい
-    formData.append('timeSlot.timeSlotId', document.getElementById('timeSlotSelect').value); // 正しい
-    
-    // isSoldOut (チェックボックス) はチェックが入ってないとFormDataに含まれないので、明示的に追加
-    formData.append('isSoldOut', document.getElementById('isSoldOutInput').checked);
-
-    // ★★★ここから追加！isPlanStarterとplanIdをFormDataに追加★★★
-    formData.append('isPlanStarter', isPlanStarterInput.checked); // チェックボックスの値
-    if (isPlanStarterInput.checked) { // チェックされている場合のみplanIdを送信
-        formData.append('planId', planSelect.value);
-    } else {
-        formData.append('planId', ''); // チェックされていない場合は空文字列を送信
-    }
-
-    // オプション選択の値を正しく FormData に追加
-    const optionSelects = optionSelectsContainer.querySelectorAll('select[name="optionGroupIds"]');
-    formData.delete('optionGroupIds'); // 既存の formData の optionGroupIds を削除
-    optionSelects.forEach(select => {
-        if (select.value) { // 選択されている値のみ
-            formData.append('optionGroupIds', select.value);
-        }
-    });
-
-    // プリンター選択の値を正しく FormData に追加
-// submit時の処理を「1個だけ」に限定
-	const printerSelect = printerSelectsContainer.querySelector('select[name="printerIds"]');
-	formData.delete('printerId');
-	if (printerSelect && printerSelect.value) {
-	    formData.append('printerId', printerSelect.value); // ← 1件だけ送る
-	}
-
-    
-    // 画像ファイルの扱い:
-    if (!imageFileInput.files.length) {
-        formData.append('currentMenuImage', currentMenuImageInput.value || '');
-    } else {
-        formData.delete('currentMenuImage');
-    }
-
-
-    try {
-        const response = await fetch('/menu/save', {
-            method: 'POST',
-            body: formData
-        });
-
-        // レスポンスがJSONではない可能性があるので、response.json()をtry-catchで囲む
-        let result;
-        try {
-            result = await response.json();
-        } catch (jsonError) {
-            console.error('JSONパースエラー:', jsonError);
-            toastr.error('サーバーからの応答が不正です。', "エラー");
-            return;
-        }
-
-        if (response.ok && result.status === 'success') {
-            toastr.success(result.message, "成功");
-            await refreshMenuList();
-            resetForm();
-        } else {
-            toastr.error(result.message || '不明なエラーが発生しました。', "エラー");
-        }
-    } catch (error) {
-        console.error('メニュー保存エラー:', error);
-        toastr.error('メニューの保存中に予期せぬエラーが発生しました。', "エラー");
-    }
-});
-
-
-// ★★★ 削除ボタンのクリックイベントもAjaxに切り替える ★★★
-deleteMenuBtn.addEventListener('click', async () => {
-    if (!selectedMenuId) return;
-
-    if (confirm('本当にこのメニューを削除しますか？')) {
-        try {
-            const response = await fetch(`/menu/delete/${selectedMenuId}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            let result;
-            try {
-                result = await response.json();
-            } catch (jsonError) {
-                console.error('JSONパースエラー:', jsonError);
-                toastr.error('サーバーからの応答が不正です。', "エラー");
-                return;
-            }
-
-            if (response.ok && result.status === 'success') {
-                toastr.success(result.message, "成功");
-                await refreshMenuList();
-                resetForm();
-            } else {
-                toastr.error(result.message || '不明なエラーが発生しました。', "エラー");
-            }
-        } catch (error) {
-            console.error('メニュー削除エラー:', error);
-            toastr.error('メニューの削除中に予期せぬエラーが発生しました。', "エラー");
-        }
-    }
-});
-
-
 // メニューリストをサーバーから再取得して表示を更新する関数
 async function refreshMenuList() {
     try {
@@ -590,12 +417,180 @@ function getCookie(name) {
     return null;
 }
 
-// ページロード時の初期化
-document.addEventListener('DOMContentLoaded', () => {
-    setupToastr();
-    resetForm(); // まずフォームをリセットして、飲み放題関連の初期表示を適用
-    refreshMenuList(); // メニューリストをサーバーから取得して表示
+// =======================================================
+// イベントハンドラー
+// =======================================================
 
-    // 飲み放題開始メニューチェックボックスのイベントリスナー
+function handleImageFileChange(event) {
+    const file = event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            imagePreview.src = e.target.result;
+            imagePreview.style.display = 'block';
+            noImageText.style.display = 'none';
+            removeImageBtn.style.display = 'inline-block';
+        };
+        reader.readAsDataURL(file);
+        return;
+    }
+
+    if (currentMenuImageInput.value) {
+        imagePreview.src = currentMenuImageInput.value;
+        imagePreview.style.display = 'block';
+        noImageText.style.display = 'none';
+        removeImageBtn.style.display = 'inline-block';
+    } else {
+        imagePreview.src = '#';
+        imagePreview.style.display = 'none';
+        noImageText.style.display = 'inline-block';
+        removeImageBtn.style.display = 'none';
+    }
+}
+
+function handleRemoveImageClick() {
+    imageFileInput.value = '';
+    imagePreview.src = '#';
+    imagePreview.style.display = 'none';
+    noImageText.style.display = 'inline-block';
+    removeImageBtn.style.display = 'none';
+    currentMenuImageInput.value = '';
+}
+
+function handleOptionAddClick() {
+    addDynamicSelect(optionSelectsContainer, optionSelectTemplate, window.allOptionGroups, 'optionGroupIds', '');
+}
+
+function handlePrinterAddClick() {
+    addDynamicSelect(printerSelectsContainer, printerSelectTemplate, window.allPrinters, 'printerIds', '');
+}
+
+async function handleMenuFormSubmit(event) {
+    event.preventDefault();
+
+    const formData = new FormData(menuForm);
+    formData.append('menuId', document.getElementById('menuId').value);
+
+    // MenuForm のネストされたオブジェクト構造に合わせ、関連エンティティのIDを付与する
+    formData.append('taxRate.taxRateId', document.getElementById('taxRateSelect').value);
+    formData.append('menuGroup.groupId', document.getElementById('menuGroupSelect').value);
+    formData.append('timeSlot.timeSlotId', document.getElementById('timeSlotSelect').value);
+
+    // チェックが外れている場合でも値を送信できるように明示的に追加
+    formData.append('isSoldOut', document.getElementById('isSoldOutInput').checked);
+
+    // 飲み放題関連項目を送信
+    formData.append('isPlanStarter', isPlanStarterInput.checked);
+    if (isPlanStarterInput.checked) {
+        formData.append('planId', planSelect.value);
+    } else {
+        formData.append('planId', '');
+    }
+
+    // オプション選択をFormDataへ反映
+    const optionSelects = optionSelectsContainer.querySelectorAll('select[name="optionGroupIds"]');
+    formData.delete('optionGroupIds');
+    optionSelects.forEach(select => {
+        if (select.value) {
+            formData.append('optionGroupIds', select.value);
+        }
+    });
+
+    // プリンターは単一選択のため、最初のセレクト要素から値を収集する
+    const printerSelect = printerSelectsContainer.querySelector('select[name="printerIds"]');
+    formData.delete('printerId');
+    if (printerSelect && printerSelect.value) {
+        formData.append('printerId', printerSelect.value);
+    }
+
+    if (!imageFileInput.files.length) {
+        formData.append('currentMenuImage', currentMenuImageInput.value || '');
+    } else {
+        formData.delete('currentMenuImage');
+    }
+
+    try {
+        const response = await fetch('/menu/save', {
+            method: 'POST',
+            body: formData
+        });
+
+        // レスポンスがJSONではない可能性があるため、JSONパースエラーも捕捉して通知する
+        let result;
+        try {
+            result = await response.json();
+        } catch (jsonError) {
+            console.error('JSONパースエラー:', jsonError);
+            toastr.error('サーバーからの応答が不正です。', "エラー");
+            return;
+        }
+
+        if (response.ok && result.status === 'success') {
+            toastr.success(result.message, "成功");
+            await refreshMenuList();
+            resetForm();
+        } else {
+            toastr.error(result.message || '不明なエラーが発生しました。', "エラー");
+        }
+    } catch (error) {
+        console.error('メニュー保存エラー:', error);
+        toastr.error('メニューの保存中に予期せぬエラーが発生しました。', "エラー");
+    }
+}
+
+async function handleDeleteMenuClick() {
+    if (!selectedMenuId) return;
+
+    if (!confirm('本当にこのメニューを削除しますか？')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/menu/delete/${selectedMenuId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        let result;
+        try {
+            result = await response.json();
+        } catch (jsonError) {
+            console.error('JSONパースエラー:', jsonError);
+            toastr.error('サーバーからの応答が不正です。', "エラー");
+            return;
+        }
+
+        if (response.ok && result.status === 'success') {
+            toastr.success(result.message, "成功");
+            await refreshMenuList();
+            resetForm();
+        } else {
+            toastr.error(result.message || '不明なエラーが発生しました。', "エラー");
+        }
+    } catch (error) {
+        console.error('メニュー削除エラー:', error);
+        toastr.error('メニューの削除中に予期せぬエラーが発生しました。', "エラー");
+    }
+}
+
+
+// ページロード時の初期化をまとめたエントリーポイント
+function initMenuManagement() {
+    setupToastr();
+    resetForm();
+    refreshMenuList();
+
+    imageFileInput.addEventListener('change', handleImageFileChange);
+    removeImageBtn.addEventListener('click', handleRemoveImageClick);
+    resetFormBtn.addEventListener('click', resetForm);
+    addNewMenuBtn.addEventListener('click', resetForm);
+    addOptionSelectBtn.addEventListener('click', handleOptionAddClick);
+    addPrinterSelectBtn.addEventListener('click', handlePrinterAddClick);
+    menuForm.addEventListener('submit', handleMenuFormSubmit);
+    deleteMenuBtn.addEventListener('click', handleDeleteMenuClick);
     isPlanStarterInput.addEventListener('change', togglePlanIdGroup);
-});
+}
+
+document.addEventListener('DOMContentLoaded', initMenuManagement);
