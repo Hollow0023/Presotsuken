@@ -21,8 +21,7 @@ public class OptionItem {
 
     private int optionGroupId; // DBの option_group_id と一致
 
-    // ★ここをDBのカラム名に合わせて item_name に変更する
-    private String itemName; // DBの item_name と一致させる
+    private String itemName; // DBの item_name に合わせたプロパティ名
 
     // Getter / Setter はLombokで自動生成されるので、明示的な記述は不要
 }

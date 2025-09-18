@@ -292,8 +292,7 @@ function addToCart(button) {
     const price = parseFloat(button.getAttribute('data-price'));
     const name = button.getAttribute('data-name');
 
-    // ★★★ここを修正するよ！★★★
-    // ボタンの親要素（menu-detail）から quantity-input を探す
+    // ボタンの親要素（menu-detail）から数量入力欄を取得
     const menuDetail = button.closest('.menu-detail'); // 親の.menu-detail要素を取得
     const quantityInput = menuDetail.querySelector('.quantity-input'); // その中から.quantity-inputを探す
     
@@ -497,9 +496,8 @@ function switchTab(tabElement) {
     document.querySelectorAll('.menu-item').forEach(item => {
         const itemGroupId = item.getAttribute('data-group-id');
 
-        // ★変更点: 現在選択されているタブのグループIDに一致するメニューアイテムのみを表示
-        // 飲み放題のアクティブ状況によるメニューアイテム個別の表示制御は、
-        // そもそもバックエンドが送ってこない or CSSでタブが非表示になることで間接的に制御される
+        // 現在選択されているタブに該当するメニューのみを表示
+        // 飲み放題の状態による表示制御はバックエンドやタブ自体の表示切り替えで行われる
         if (itemGroupId === groupId) {
             item.style.display = 'block';
         } else {
@@ -585,7 +583,6 @@ window.addEventListener('DOMContentLoaded', () => {
     });
 
     // 最初のタブを自動的にクリックして表示
-    // ★修正：飲み放題開始後は、最初の飲み放題メニューグループをアクティブにする処理が必要
     const firstTab = document.querySelector('.menu-tab');
     if (firstTab) firstTab.click(); // 通常表示時の初期タブ選択
 

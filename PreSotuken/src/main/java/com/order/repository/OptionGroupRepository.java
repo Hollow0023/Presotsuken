@@ -1,4 +1,3 @@
-// com.order.repository.OptionGroupRepository.java
 package com.order.repository;
 
 import java.util.List;
@@ -11,9 +10,8 @@ import com.order.entity.OptionGroup;
 
 @Repository
 public interface OptionGroupRepository extends JpaRepository<OptionGroup, Integer> {
-    List<OptionGroup> findByStoreId(Integer storeId); // 既存のfindByStoreIdはそのまま
+    List<OptionGroup> findByStoreId(Integer storeId);
 
-    // ★★★ このメソッドを以下のように修正（JPQLを明示的に定義） ★★★
     // OptionGroup から MenuOption を JOIN し、MenuOption の持つ Menu エンティティの menuId でフィルタリング
     @Query("SELECT og FROM OptionGroup og JOIN MenuOption mo ON og.optionGroupId = mo.optionGroupId WHERE mo.menu.menuId = :menuId")
     List<OptionGroup> findByMenuId(@org.springframework.data.repository.query.Param("menuId") Integer menuId);

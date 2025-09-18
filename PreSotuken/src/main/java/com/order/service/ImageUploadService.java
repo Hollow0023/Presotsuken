@@ -15,8 +15,8 @@ public class ImageUploadService {
 
     // 画像の保存ベースディレクトリ (application.propertiesなどで設定)
     // upload.path を使うように変更
-    @Value("${upload.path}") // ★ここを修正！
-    private String uploadDir; // 変数名はそのまま uploadDir でOK
+    @Value("${upload.path}")
+    private String uploadDir; // 画像保存先のルートディレクトリ
 
     /**
      * アップロードされた画像を保存し、保存された画像のパスを返します。

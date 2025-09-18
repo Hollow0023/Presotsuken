@@ -5,9 +5,9 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.IdClass;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor; // ★ 追加
+import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.NoArgsConstructor; // ★ 追加 (Spring Data JPAが内部でデフォルトコンストラクタを必要とすることがあるため)
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 
@@ -15,9 +15,9 @@ import lombok.Setter;
 @Setter
 @Entity
 @Table(name = "plan_menu_group_map")
-@IdClass(PlanMenuGroupMapId.class) // PlanMenuGroupMapIdをimportすることで解決
-@NoArgsConstructor // ★ 追加
-@AllArgsConstructor // ★ 追加
+@IdClass(PlanMenuGroupMapId.class)
+@NoArgsConstructor
+@AllArgsConstructor
 public class PlanMenuGroupMap {
 	
 

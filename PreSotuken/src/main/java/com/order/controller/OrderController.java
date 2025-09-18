@@ -1,5 +1,3 @@
-// src/main/java/com/order/controller/OrderController.java (修正版)
-
 package com.order.controller;
 
 import java.time.LocalDateTime;
@@ -42,9 +40,8 @@ import com.order.repository.OptionItemRepository;
 import com.order.repository.PaymentDetailOptionRepository;
 import com.order.repository.PaymentDetailRepository;
 import com.order.repository.PaymentRepository;
-import com.order.repository.PlanMenuGroupMapRepository; // PlanMenuGroupMapRepositoryを追加
-// ★ 新しくインポートするリポジトリ
-import com.order.repository.PlanRepository; // PlanRepositoryを追加 - 今回のロジックでは直接使わないけど、注入自体はOK
+import com.order.repository.PlanMenuGroupMapRepository;
+import com.order.repository.PlanRepository;
 import com.order.repository.SeatRepository;
 import com.order.repository.StoreRepository;
 import com.order.repository.TaxRateRepository;
@@ -80,9 +77,9 @@ public class OrderController {
 	private final SeatRepository seatRepository;
 	private final SimpMessagingTemplate messagingTemplate;
 
-	// ★ 新しく注入するリポジトリ
-	private final PlanRepository planRepository; // PlanRepositoryはOrderControllerでは直接使用しないが、依存関係としては問題なし
-	private final PlanMenuGroupMapRepository planMenuGroupMapRepository;
+        // 飲み放題プラン関連のリポジトリ
+        private final PlanRepository planRepository; // OrderControllerでは直接参照しないが依存関係として保持
+        private final PlanMenuGroupMapRepository planMenuGroupMapRepository;
 	@GetMapping
 	public String showOrderPage(
 	        @CookieValue(name = "seatId", required = false) Integer seatIdCookie,
@@ -106,13 +103,13 @@ public class OrderController {
 
 		if (showAll) {
 			menusWithOptions = menuService.getAllMenusWithOptions(storeId);
-			// ★ 管理者向けはisPlanTargetに関わらず全て表示
-			menuGroups = menuAddService.getAdminMenuGroups(storeId);
+                        // 管理者画面では全グループを対象とする
+                        menuGroups = menuAddService.getAdminMenuGroups(storeId);
 		} else {
 			menusWithOptions = menuService.getMenusWithOptions(storeId);
 			
-			// ★ ここが一番の変更点！飲み放題がアクティブかどうかに応じてメニューグループを調整する
-			// Service層のメソッドを呼び出すことで、ロジックがControllerに直接書かれるのを避ける
+                        // 飲み放題の状態に応じて表示するグループをService側で選別する
+                        // Service層のメソッドを呼び出すことで、ロジックがControllerに直接書かれるのを避ける
 			menuGroups = menuAddService.getPlanActivatedCustomerMenuGroups(storeId, seatId);
 			// ※ isPlanActiveForSeat の直接呼び出しは不要になる。
 			// menuAddService.getPlanActivatedCustomerMenuGroups 内で
@@ -231,11 +228,11 @@ public class OrderController {
                 }
             }
             
-            // ★★★ 単品伝票の印刷（savedDetailのみをリストにして渡すように変更）★★★
+            // 単品伝票は今回保存した明細のみを対象に印刷する
             // これで、各商品が1枚の単品伝票として印刷される
             printService.printLabelsForOrder(savedDetail, seatId);
 
-            // ★ここからが追加ロジック！飲み放題開始メニューの注文を検知
+            // 飲み放題開始メニューの注文を検知
             // menuエンティティのisPlanStarterがBoolean型なので、NullPointerExceptionを避けるためにequalsを使用
             if (Boolean.TRUE.equals(menu.getIsPlanStarter())) {
                 Integer planId = menu.getPlanId(); // 紐づいているplan_idを取得
@@ -271,14 +268,14 @@ public class OrderController {
             }
         }
 
-        // ★★★ ループの最後に小計伝票を構築するメソッドを呼び出す ★★★
-        printService.printReceiptForPayment(submitDetails, seatId, storeId); 
+        // 全ての明細登録後に小計伝票を印刷
+        printService.printReceiptForPayment(submitDetails, seatId, storeId);
         return ResponseEntity.ok().build();
     }
 
 
 
-//	// ★ showOrderPage で使うヘルパーメソッド (Service層に切り出すのが理想)
+//	//  showOrderPage で使うヘルパーメソッド (Service層に切り出すのが理想)
 //	// このメソッドは、現在のシート（テーブル）で飲み放題がアクティブかどうかをチェックする
 //	// ※ OrderControllerからはMenuAddService.getPlanActivatedCustomerMenuGroupsを呼び出すので、
 //	//    このcheckActivePlanForSeatメソッドはOrderControllerでは直接は使われない。

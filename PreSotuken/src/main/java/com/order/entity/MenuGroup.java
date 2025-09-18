@@ -23,10 +23,10 @@ public class MenuGroup {
     private Store store;
     
     @Column(name = "is_plan_target") // DBのカラム名とマッピング
-    private Boolean isPlanTarget; // 追加！
-    
-    @Column(name = "sort_order") // ★ 追加
-    private Integer sortOrder; // ★ 追加
+    private Boolean isPlanTarget;
+
+    @Column(name = "sort_order")
+    private Integer sortOrder;
 
     private String groupName;
     private Boolean forAdminOnly;

@@ -17,7 +17,7 @@ import jakarta.transaction.Transactional;
 public interface PlanMenuGroupMapRepository extends JpaRepository<PlanMenuGroupMap, PlanMenuGroupMapId> {
     List<PlanMenuGroupMap> findByPlanId(Integer planId);
 
-    // ★追加：planIdに基づいて紐付けを全て削除するカスタムクエリ
+    // 指定した planId に紐づく関連レコードを一括削除するクエリ
     @Modifying // DML操作（UPDATE, DELETE）であることを示す
     @Transactional // この操作はトランザクション内で実行される必要がある
     @Query("DELETE FROM PlanMenuGroupMap pmm WHERE pmm.planId = :planId")

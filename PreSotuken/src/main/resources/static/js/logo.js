@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // ★ ファイルサイズチェックのみ
+        // ファイルサイズのみチェックする
         if (file.size > MAX_FILE_SIZE_BYTES) {
             alert(`ファイルサイズが大きすぎます。${MAX_FILE_SIZE_BYTES / 1024}KB以下のファイルをアップロードしてください。`);
             logoFileInput.value = ''; // ファイル選択をクリア
@@ -39,7 +39,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const reader = new FileReader();
 
         reader.onload = function(e) {
-            // ★ 画像のピクセルサイズチェックは不要になったので削除
+            // 画像サイズのピクセルチェックは不要になったため省略
             // プレビュー表示
             currentLogoPreview.src = e.target.result;
             // BASE64エンコードされたデータをhiddenフィールドにセット

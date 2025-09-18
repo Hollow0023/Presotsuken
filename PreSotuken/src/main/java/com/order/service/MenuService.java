@@ -4,7 +4,6 @@ import java.time.LocalTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
-// ★ @Autowired は削除し、コンストラクタインジェクションに統一するため
 import org.springframework.stereotype.Service;
 
 import com.order.dto.MenuWithOptionsDTO;
@@ -72,7 +71,6 @@ public class MenuService {
 
     // 全てのメニューを表示 (品切れも表示)
     public List<MenuWithOptionsDTO> getAllMenusWithOptions(Integer storeId) {
-        // ★修正: storeId でフィルタリングし、menu_name でソート
         List<Menu> menus = menuRepository.findByStore_StoreIdOrderByMenuIdAsc(storeId);
         return menus.stream().map(this::toDto).collect(Collectors.toList());
     }
@@ -94,15 +92,14 @@ public class MenuService {
             dto.setTaxRateValue(menu.getTaxRate().getRate());
             double rate = menu.getTaxRate().getRate();
             
-            // ★ここを修正！Math.round() で四捨五入して、結果をDoubleにキャスト
-            dto.setPriceWithTax((double) Math.round(menu.getPrice() * (1 + rate))); 
+            dto.setPriceWithTax((double) Math.round(menu.getPrice() * (1 + rate)));
         } else {
             dto.setTaxRateId(null);
             dto.setTaxRateValue(0.0);
             dto.setPriceWithTax(menu.getPrice()); // 税率がない場合は税抜き価格をそのまま
         }
 
-        // ★ MenuGroup関連のマッピング (MenuGroupエンティティから必要な情報をDTOへ)
+        // MenuGroup関連の情報をDTOへ写す
         if (menu.getMenuGroup() != null) {
             dto.setMenuGroupId(menu.getMenuGroup().getGroupId());
             dto.setMenuGroupName(menu.getMenuGroup().getGroupName());
@@ -116,7 +113,7 @@ public class MenuService {
             dto.setMenuGroupSortOrder(Integer.MAX_VALUE); // ソート順の末尾に
         }
 
-        // ★ 飲み放題関連の新しいフィールドをDTOにセット
+        // 飲み放題プランに関するフラグやIDをコピー
         dto.setIsPlanStarter(menu.getIsPlanStarter());
         dto.setPlanId(menu.getPlanId());
         

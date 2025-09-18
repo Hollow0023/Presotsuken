@@ -44,7 +44,7 @@ public class PrinterController {
             model.addAttribute("printerForm", newPrinter);
         }
 
-        return "printerEdit"; // ★ここを "admin/printerEdit" に変更！
+        return "printerEdit"; // プリンタ設定画面のテンプレート名
     }
 
     // 保存処理（新規登録・更新）
@@ -85,7 +85,6 @@ public class PrinterController {
                                        @CookieValue("storeId") Integer storeId,
                                        RedirectAttributes redirectAttributes) {
 
-        // Serviceに新しいメソッドを呼び出す（後でServiceも修正が必要だよ）
         printerConfigService.updateAccountPrinterForStore(storeId, selectedPrinterId);
         redirectAttributes.addFlashAttribute("message", "会計伝票出力プリンタを更新しました！");
         return "redirect:/admin/printers";

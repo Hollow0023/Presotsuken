@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType; // ★MediaTypeをインポート
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -20,14 +20,14 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.order.dto.MenuForm; // MenuFormをインポート
+import com.order.dto.MenuForm;
 import com.order.entity.Menu;
 import com.order.entity.Plan;
 import com.order.repository.MenuGroupRepository;
 import com.order.repository.MenuTimeSlotRepository;
 import com.order.repository.OptionGroupRepository;
 import com.order.repository.PrinterConfigRepository;
-import com.order.repository.StoreRepository; // StoreRepositoryを注入
+import com.order.repository.StoreRepository;
 import com.order.repository.TaxRateRepository;
 import com.order.service.MenuAddService;
 import com.order.service.MenuService;
@@ -38,7 +38,7 @@ import lombok.RequiredArgsConstructor;
 
 @Controller
 @RequiredArgsConstructor
-@RequestMapping(value = "/menu") // ★producesを一旦削除し、メソッドレベルで設定
+@RequestMapping(value = "/menu")
 public class MenuController {
 
     private final TaxRateRepository taxRateRepository;
@@ -53,7 +53,7 @@ public class MenuController {
 
 
     // メニュー一覧＆編集画面の表示 (HTMLを返す)
-    @GetMapping(value = "/list", produces = MediaType.TEXT_HTML_VALUE) // ★HTMLを返すことを明示
+    @GetMapping(value = "/list", produces = MediaType.TEXT_HTML_VALUE)
     public String showMenuListAndEditForm(HttpServletRequest request, Model model) {
         Integer storeId = null;
         if (request.getCookies() != null) {
@@ -92,7 +92,7 @@ public class MenuController {
     }
     
     // メニューリストのデータだけをJSONで返すAPIエンドポイント
-    @GetMapping(value = "/list_data", produces = MediaType.APPLICATION_JSON_VALUE) // ★JSONを返すことを明示
+    @GetMapping(value = "/list_data", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<Map<String, Object>> getMenuListData(HttpServletRequest request) {
         Integer storeId = null;
@@ -120,7 +120,7 @@ public class MenuController {
     }
 
     // 既存メニューの詳細情報をJSONで返すAPIエンドポイント
-    @GetMapping(value = "/{menuId}/details", produces = MediaType.APPLICATION_JSON_VALUE) // ★JSONを返すことを明示
+    @GetMapping(value = "/{menuId}/details", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<MenuForm> getMenuDetails(@PathVariable("menuId") Integer menuId, HttpServletRequest request) {
         Integer storeId = null;
@@ -149,7 +149,7 @@ public class MenuController {
     }
     
     // メニューの追加・更新処理
-    @PostMapping(value = "/save", produces = MediaType.APPLICATION_JSON_VALUE) // ★JSONを返すことを明示
+    @PostMapping(value = "/save", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<Map<String, String>> saveMenu(@ModelAttribute("menuForm") MenuForm menuForm,
                                                         @RequestParam("imageFile") MultipartFile imageFile,
@@ -182,7 +182,7 @@ public class MenuController {
                 menuImageToSave = null;
             }
 
-            // ★MenuFormからMenuエンティティへの変換ロジックをここに書く
+            // MenuForm から Menu エンティティへ値を移し替える
             Menu menu = new Menu();
             menu.setMenuId(menuForm.getMenuId());
             menu.setMenuName(menuForm.getMenuName());
@@ -229,7 +229,7 @@ public class MenuController {
     }
 
     // メニュー削除エンドポイント
-    @PostMapping(value = "/delete/{menuId}", produces = MediaType.APPLICATION_JSON_VALUE) // ★JSONを返すことを明示
+    @PostMapping(value = "/delete/{menuId}", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<Map<String, String>> deleteMenu(@PathVariable("menuId") Integer menuId,
                                                           HttpServletRequest request) {

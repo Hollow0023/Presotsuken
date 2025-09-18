@@ -98,8 +98,8 @@ public class AdminController { // クラス名はAdminControllerではなくAdmi
         newTerminal.setStore(store);
         
         String ipAddress = dto.getIpAddress();
-        // ★★★ IPアドレスのチェックをisAdmin()の値で条件分岐するように修正（IPは常に必須） ★★★
-        if (ipAddress == null || ipAddress.isEmpty()) { // 管理者端末かどうかにかかわらずIPアドレスは常に必須
+        // 管理者端末かどうかに関わらずIPアドレスは常に必須
+        if (ipAddress == null || ipAddress.isEmpty()) {
             response.put("message", "IPアドレスが不正です。");
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
@@ -158,12 +158,10 @@ public class AdminController { // クラス名はAdminControllerではなくAdmi
         return "redirect:/admin/store/edit"; // 更新後もCookieのIDを使うので、IDなしのURLにリダイレクト
     }
     
-    // ★★★ 端末編集 (PUT) API ★★★
-    // DTOは追加時と同じTerminalCreationDtoを使うか、またはTerminalエンティティをRequestBodyとして直接受け取る
-    // ここではIDを含めて更新するため、TerminalCreationDtoUpdateなどの新しいDTOを作るか、
-    // あるいはTerminalエンティティを直接RequestBodyとして受け取るのがシンプル。
-    // 仮にTerminalエンティティを直接受け取るとして、IDはパス変数から取得する
-    @PutMapping("/terminals/{terminalId}") // ★ PUT /admin/terminals/{terminalId}
+    // 端末編集 (PUT) API
+    // DTOは追加時と同じTerminalCreationDtoを使うか、TerminalエンティティをRequestBodyとして受け取る
+    // ここではTerminalCreationDtoを再利用し、IDはパス変数から取得する
+    @PutMapping("/terminals/{terminalId}")
     @ResponseBody
     public ResponseEntity<Map<String, String>> updateTerminal(@PathVariable Integer terminalId,
                                                               @RequestBody TerminalCreationDto dto, // 更新用のDTO
@@ -221,8 +219,8 @@ public class AdminController { // クラス名はAdminControllerではなくAdmi
     }
 
 
-    // ★★★ 端末削除 (DELETE) API ★★★
-    @DeleteMapping("/terminals/{terminalId}") // ★ DELETE /admin/terminals/{terminalId}
+    // 端末削除 (DELETE) API
+    @DeleteMapping("/terminals/{terminalId}")
     @ResponseBody
     public ResponseEntity<Map<String, String>> deleteTerminal(@PathVariable Integer terminalId,
                                                               @CookieValue("storeId") Integer storeId) {
@@ -289,7 +287,7 @@ public class AdminController { // クラス名はAdminControllerではなくAdmi
      * @param storeId 店舗ID
      * @return 端末情報のリスト
      */
-    @GetMapping("/terminals/list") // ★★★ ここを /list に変更！ ★★★
+    @GetMapping("/terminals/list")
     @ResponseBody
     public ResponseEntity<List<Terminal>> getTerminalsByStoreId(@CookieValue("storeId") Integer storeId) {
         if (storeId == null) {
@@ -306,7 +304,7 @@ public class AdminController { // クラス名はAdminControllerではなくAdmi
      * ロゴ設定画面を表示する。
      * 既存のロゴがあれば表示し、なければデフォルト画像を示す。
      */
-    @GetMapping("/terminals/logo") // ★ /admin/terminals/logo へのGETリクエストを処理
+    @GetMapping("/terminals/logo")
     public String showLogoSettingPage(Model model) {
         Long storeId = 1L; // 例: 固定の店舗ID。陽翔君のシステムに合わせて調整してね！
 
@@ -334,14 +332,14 @@ public class AdminController { // クラス名はAdminControllerではなくAdmi
      * ロゴ画像を保存または更新する。
      * フロントエンドからBASE64エンコードされた文字列を受け取る。
      */
-    @PostMapping("/terminals/logo/upload") // ★ /admin/terminals/logo/upload へのPOSTリクエストを処理
+    @PostMapping("/terminals/logo/upload")
     public String uploadLogo(@RequestParam("storeId") Long storeId,
                              @RequestParam("logoBase64") String logoBase64,
                              RedirectAttributes redirectAttributes) {
 
         if (logoBase64 == null || logoBase64.isEmpty()) {
             redirectAttributes.addFlashAttribute("errorMessage", "ロゴデータが空です。");
-            return "redirect:/admin/terminals/logo"; // ★ リダイレクト先も変更
+            return "redirect:/admin/terminals/logo";
         }
 
         String cleanedBase64Data = logoBase64;
@@ -360,7 +358,7 @@ public class AdminController { // クラス名はAdminControllerではなくAdmi
             redirectAttributes.addFlashAttribute("errorMessage", "ロゴの保存中にエラーが発生しました。");
         }
 
-        return "redirect:/admin/terminals/logo"; // ★ リダイレクト先も変更
+        return "redirect:/admin/terminals/logo";
     }
     
 }

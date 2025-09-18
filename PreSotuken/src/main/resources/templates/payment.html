@@ -328,17 +328,17 @@
 			if (!paymentTypeId || !staffId || change < 0) return alert("入力内容に不備があります");
 
 			// 送信データに含める商品ごとの詳細リスト
-			const paymentDetailsForBackend = detailsWithDiscount.map(item => ({
-				paymentDetailId: item.paymentDetailId,
-				discountAmount: item.discountAmount // ★商品ごとの割引額
+                        const paymentDetailsForBackend = detailsWithDiscount.map(item => ({
+                                paymentDetailId: item.paymentDetailId,
+                                discountAmount: item.discountAmount // 明細ごとに適用した割引額
 			}));
 
 			// バックエンドに送る全体の割引額は、右パネルの「値引」に表示されている金額（全体割引）と、
 			// 各商品ごとの割引額の合計を合算した「最終的な総合割引額」
 			const finalTotalDiscountForBackend = discount; 
 
-			// ★subtotal の値を、テーブルの合計の合算値に変更
-			let subtotalForBackend = 0;
+                        // テーブルの表示と一致するように小計を再計算
+                        let subtotalForBackend = 0;
 			detailsWithDiscount.forEach(item => {
 				subtotalForBackend += (item.originalSubtotal - item.discountAmount);
 			});
@@ -349,7 +349,7 @@
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
 					paymentId,
-					subtotal: subtotalForBackend, // ★バックエンドにはテーブル合計の合算値を小計として送る
+                                        subtotal: subtotalForBackend, // テーブル内の割引後金額を集計した小計
 					discount: discount, 
 					discountReason: discountReason,
 					total: total, 

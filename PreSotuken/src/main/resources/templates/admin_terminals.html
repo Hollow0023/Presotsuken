@@ -262,7 +262,7 @@
             }, duration);
         }
 
-        // ★★★ 追加: 座席IDの必須状態を更新する関数 ★★★
+        // 座席選択を必須にするかどうかを更新
         function updateSeatRequiredState(isAdminCheckbox, seatSelect) {
             if (isAdminCheckbox.checked) {
                 seatSelect.removeAttribute('required'); // 管理者端末なら必須を解除
@@ -409,19 +409,19 @@
                 }
             }
 
-            // ★★★ ページロード時にデータ取得関数を呼び出す ★★★
+            // 初期表示時に必要なデータを読み込む
             fetchSeatsForDropdown(undefined, document.getElementById('seatSelect')); // 新規追加フォームの座席プルダウンをロード
             fetchTerminals();        // 既存端末リストをロード
 
-            // ★★★ 追加: isAdminCheckboxとseatSelectの参照を取得 ★★★
+            // 追加フォームで使用する要素を取得
             const isAdminCheckbox = document.getElementById('isAdminCheckbox');
             const seatSelect = document.getElementById('seatSelect');
             const ipAddressBaseInput = document.getElementById('ipAddressBase');
 
-            // ★★★ 追加: 初回ロード時に座席IDの必須状態を更新 ★★★
+            // 初期状態での必須設定を適用
             updateSeatRequiredState(isAdminCheckbox, seatSelect);
 
-            // ★★★ 追加: チェックボックスの状態変更時に座席IDの必須状態を更新 ★★★
+            // チェックボックスの変更に応じて必須状態を更新
             isAdminCheckbox.addEventListener('change', () => {
                 updateSeatRequiredState(isAdminCheckbox, seatSelect);
             });
@@ -439,7 +439,7 @@
                 const ipAddressBase = ipAddressBaseInput.value;
                 const isAdmin = isAdminCheckbox.checked;
 
-                // ★★★ クライアントサイドのバリデーションロジックを修正 ★★★
+                // 端末追加時のクライアントサイドバリデーション
                 if ((!isAdmin && !seatId) || !ipAddressBase) { // 管理者でなく、座席IDが未選択の場合 or IPアドレスが空白の場合
                     let errorMessage = '';
                     if (!ipAddressBase) {
@@ -494,17 +494,16 @@
                 }
             });
 
-            // ★★★ 追加: editIsAdminCheckboxとeditSeatSelectの参照を取得 ★★★
+            // 編集モーダルで使用する要素を取得
             const editIsAdminCheckbox = document.getElementById('editIsAdminCheckbox');
             const editSeatSelect = document.getElementById('editSeatSelect');
             const editIpAddressBaseInput = document.getElementById('editIpAddressBase');
 
-            // ★★★ 追加: 初回ロード時に編集モーダル用の座席IDの必須状態を更新 ★★★
+            // 編集モーダル表示前にも必須設定を適用
             // Note: openEditModalが呼ばれたときに更新されるので、ここでは不要かもしれないが、念のため
             updateSeatRequiredState(editIsAdminCheckbox, editSeatSelect);
 
-
-            // ★★★ 追加: 編集モーダル内のチェックボックスの状態変更時に座席IDの必須状態を更新 ★★★
+            // 編集モーダル内で管理者フラグが変わった際に必須状態を更新
             editIsAdminCheckbox.addEventListener('change', () => {
                 updateSeatRequiredState(editIsAdminCheckbox, editSeatSelect);
             });
@@ -523,7 +522,7 @@
                 const ipAddressBase = editIpAddressBaseInput.value; // 正しい参照を使用
                 const isAdmin = editIsAdminCheckbox.checked;
 
-                // ★★★ クライアントサイドのバリデーションロジックを修正 ★★★
+                // 編集時のクライアントサイドバリデーション
                 if ((!isAdmin && !seatId) || !ipAddressBase) { // 管理者でなく、座席IDが未選択の場合 or IPアドレスが空白の場合
                     let errorMessage = '';
                     if (!ipAddressBase) {
@@ -599,7 +598,7 @@
                 editIpAddressBaseInput.value = terminalToEdit.ipAddress.split('/')[0] || '';
                 editIsAdminCheckbox.checked = terminalToEdit.admin || false;
 
-                // ★★★ 追加: モーダル表示時に座席IDの必須状態を更新 ★★★
+                // モーダル表示時に必須状態を反映
                 updateSeatRequiredState(editIsAdminCheckbox, document.getElementById('editSeatSelect'));
 
                 // 座席IDがnullの場合でも、プルダウンのデフォルト値が選択されるように調整

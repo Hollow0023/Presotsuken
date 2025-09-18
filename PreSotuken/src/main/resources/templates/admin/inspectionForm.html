@@ -250,7 +250,7 @@ th, td {
         calculate(); // これで差額とボタンの状態が初期設定される
     });
 
-    // ★チェックボックスの変更を検知するイベントリスナーを追加 (今はまだボタン制御だけ) ★
+    // チェックボックスの状態変化を検知して追加処理を差し込めるようにする
     performWithdrawalCheck.addEventListener('change', () => {
         // 必要に応じて、ここで何かUIの変更やメッセージ表示を行うこともできる
         console.log("「出金も行う」チェックボックスの状態: " + performWithdrawalCheck.checked);

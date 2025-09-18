@@ -18,7 +18,7 @@ public class MenuForm {
     private String receiptLabel;
     private Boolean isSoldOut;
 
-    // ★★★ここから修正！関連エンティティのフィールドをIDと表示名に置き換え★★★
+    // 関連エンティティの識別子と表示用情報
     // MenuTimeSlotのIDと表示名、時間
     private Integer timeSlotTimeSlotId; // DBカラム名に合わせて`timeSlot.timeSlotId`をDTOのフィールドにマッピング
     private String timeSlotName; // 表示用 (APIから取得したMenuTimeSlotオブジェクトから設定される)
@@ -43,9 +43,7 @@ public class MenuForm {
     private Integer planId; 
     // private String planName; // もしプラン名も表示したいなら追加（APIからのMenuFormにないため、別途取得が必要）
 
-    // MenuAddService.getMenuFormById で、MenuエンティティからこのDTOに変換するためのコンストラクタ
-    // MenuAddService がこのDTOを構築して返しているため、
-    // ここで Menu エンティティを引数に取るコンストラクタを定義する必要はない。
-    // MenuAddService の getMenuFormById メソッド内で、setter を使ってこれらのフィールドに値をセットしている。
-    // 例: form.setMenuGroupGroupId(menu.getMenuGroup().getGroupId());
+    // MenuAddService.getMenuFormById で Menu エンティティからこのDTOへ値を写し替えているため、
+    // エンティティを受け取る追加コンストラクタは定義していない。
+    // 必要なフィールドはサービス層で個別に setter を呼び出して設定する。
 }

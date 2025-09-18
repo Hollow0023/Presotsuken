@@ -83,7 +83,7 @@ public class CashTransactionController {
         }
         // --- ここまでStore IDの取得ロジック ---
 
-        // ★ここから日付の開始と終了時刻の算出ロジックを再修正するよ★
+        // 日付境界（transitionTime）を基準に集計期間を決定
         LocalTime transitionTime;
         Optional<Store> storeOptional = storeRepository.findById(storeId);
         if (storeOptional.isPresent()) {
@@ -111,7 +111,7 @@ public class CashTransactionController {
         startOfPeriod = date.atTime(transitionTime);
         endOfPeriod = date.plusDays(1).atTime(transitionTime).minusNanos(1);
 
-        // ★ここまで日付の開始と終了時刻の算出ロジックを再修正したよ★
+        // 以上で集計対象となる開始・終了時刻が確定
 
         // サービス層からデータを取得 (storeIdと新しい開始・終了時刻を引数に)
         List<CashTransaction> transactions;

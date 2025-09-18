@@ -34,7 +34,7 @@ public class AdminPlanController {
     // プラン管理の単一画面表示
     @GetMapping
     public String managePlans(
-            @CookieValue("storeId") Integer storeId, // ★修正：Cookieから取得
+            @CookieValue("storeId") Integer storeId, // Cookie から店舗IDを取得
             Model model) {
 
         // Storeエンティティがnullの場合を考慮して、Serviceに渡す前にチェック
@@ -62,41 +62,41 @@ public class AdminPlanController {
     @PostMapping("/create")
     public String createPlan(
             @ModelAttribute PlanRequestDto requestDto,
-            @CookieValue("storeId") Integer storeId, // ★修正：Cookieから取得
+            @CookieValue("storeId") Integer storeId, // Cookie から店舗IDを取得
             RedirectAttributes redirectAttributes) {
 
         if (storeId == null) {
             return "redirect:/error?message=storeId is missing";
         }
-        requestDto.setStoreId(storeId); // Cookieから取得したstoreIdをDTOに上書きセット
+        requestDto.setStoreId(storeId); // Cookie 由来の storeId を DTO に設定
 
         planService.createPlan(requestDto);
         redirectAttributes.addFlashAttribute("message", "プランが正常に作成されました。");
-        return "redirect:/admin/plans"; // ★修正：storeIdパラメータを削除
+        return "redirect:/admin/plans"; // storeId パラメータは不要
     }
 
     // プランの更新処理
     @PostMapping("/update")
     public String updatePlan(
             @ModelAttribute PlanRequestDto requestDto,
-            @CookieValue("storeId") Integer storeId, // ★修正：Cookieから取得
+            @CookieValue("storeId") Integer storeId, // Cookie から店舗IDを取得
             RedirectAttributes redirectAttributes) {
 
         if (storeId == null) {
             return "redirect:/error?message=storeId is missing";
         }
-        requestDto.setStoreId(storeId); // Cookieから取得したstoreIdをDTOに上書きセット
+        requestDto.setStoreId(storeId); // Cookie 由来の storeId を DTO に設定
 
         planService.updatePlan(requestDto);
         redirectAttributes.addFlashAttribute("message", "プランが正常に更新されました。");
-        return "redirect:/admin/plans"; // ★修正：storeIdパラメータを削除
+        return "redirect:/admin/plans"; // storeId パラメータは不要
     }
 
     // プランの削除処理
     @PostMapping("/delete/{planId}")
     public String deletePlan(
             @PathVariable Integer planId,
-            @CookieValue("storeId") Integer storeId, // ★修正：Cookieから取得
+            @CookieValue("storeId") Integer storeId, // Cookie から店舗IDを取得
             RedirectAttributes redirectAttributes) {
 
         if (storeId == null) {
@@ -105,7 +105,7 @@ public class AdminPlanController {
 
         planService.deletePlan(planId);
         redirectAttributes.addFlashAttribute("message", "プランが正常に削除されました。");
-        return "redirect:/admin/plans"; // ★修正：storeIdパラメータを削除
+        return "redirect:/admin/plans"; // storeId パラメータは不要
     }
 
     // 編集ボタンクリック時に、JSON形式でプランデータを返すAPI (JavaScript用)

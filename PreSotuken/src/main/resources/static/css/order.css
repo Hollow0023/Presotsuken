@@ -63,12 +63,12 @@ main {
 /* ----------------------------------------------------------------------------- */
 
 
-/* ★追加：isPlanTargetがtrueのメニューグループを初期状態で非表示にするCSS */
+/* isPlanTarget が true のメニューグループを初期状態で非表示にする */
 .menu-tab[data-is-plan-target="true"],
 .menu-item[data-is-plan-target="true"] {
     display: none; /* 初期は非表示 */
 }
-/* ★追加：JavaScriptで表示を切り替える際のクラス */
+/* JavaScriptで表示状態を切り替えるためのクラス */
 .menu-tab.active-plan-group,
 .menu-item.active-plan-menu {
     display: block !important; /* JavaScriptで表示する際に強制的に表示 */
@@ -286,7 +286,7 @@ main {
 .cartContent {
     margin: 20px 20px 0 20px;
     flex-grow: 1;
-    overflow-y: auto; /* ★追加: ここでコンテンツをスクロールさせる */
+    overflow-y: auto; /* コンテンツをスクロールさせる */
 }
 
 .cartContent h4 {
@@ -295,8 +295,8 @@ main {
 
 /* カートテーブルを囲むラッパーを追加する前提 */
 .cart-table-wrapper {
-    overflow-y: auto; /* ★追加: このラッパーで縦スクロールを制御 */
-    max-height: calc(100% - 100px); /* ★調整: 必要に応じて高さ調整。合計価格やボタンの高さ次第 */
+    overflow-y: auto; /* このラッパーで縦スクロールを制御 */
+    max-height: calc(100% - 100px); /* 合計価格やボタンの高さに応じて余白を確保 */
     margin-bottom: 10px; /* 必要なら */
 }
 
@@ -339,7 +339,7 @@ main {
     background-color: lightgray;
     padding: 15px 20px;
     border-top: 1px solid #ccc;
-    flex-shrink: 0; /* ★追加: フッターが縮まないように */
+    flex-shrink: 0; /* フッターが縮まないように固定 */
 }
 
 .totalPrice {
@@ -424,8 +424,8 @@ main {
 
 /* 履歴テーブルを囲むラッパーを追加する前提 */
 .history-table-wrapper {
-    overflow-y: auto; /* ★追加: このラッパーで縦スクロールを制御 */
-    max-height: calc(100% - 100px); /* ★調整: 必要に応じて高さ調整。合計価格やボタンの高さ次第 */
+    overflow-y: auto; /* このラッパーで縦スクロールを制御 */
+    max-height: calc(100% - 100px); /* 合計価格やボタンの高さに応じて余白を確保 */
     margin-bottom: 10px; /* 必要なら */
 }
 

@@ -22,7 +22,6 @@ public class MenuOption {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
-    // ★★★ Menuエンティティへの参照に変更 ★★★
     @ManyToOne
     @JoinColumn(name = "menu_id", referencedColumnName = "menuId", nullable = false) // menu_idカラムでMenuエンティティのmenuIdを参照
     @JsonBackReference // Menu側で@JsonManagedReferenceがあるため、こちらで無限ループを防ぐ

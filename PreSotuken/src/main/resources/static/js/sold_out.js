@@ -6,9 +6,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const bulkSoldOutBtn = document.getElementById('bulkSoldOutBtn');
     const bulkAvailableBtn = document.getElementById('bulkAvailableBtn');
 
-    // ★重要: 現在の店舗IDをどこから取得するか
-    // 例: Cookieから取得、またはHTMLのhidden inputから取得
-    // ここでは仮にCookieから取得する関数を定義する
+    // 現在の店舗IDはCookieなどから取得する必要がある
+    // ここではCookieから取得するヘルパー関数を定義
     function getStoreIdFromCookie() {
         const name = "storeId=";
         const decodedCookie = decodeURIComponent(document.cookie);

@@ -9,8 +9,8 @@ import com.order.entity.MenuOption;
 
 @Repository
 public interface MenuOptionRepository extends JpaRepository<MenuOption, Integer> {
-	void deleteByMenu_MenuId(Integer menuId); 
+    void deleteByMenu_MenuId(Integer menuId);
 
-    // ★★★ これが正しい！ findByMenuId(int) ではなく findByMenu_MenuId(Integer) を使う
-    List<MenuOption> findByMenu_MenuId(Integer menuId); 
+    // MenuOption が保持する Menu エンティティのIDで検索する
+    List<MenuOption> findByMenu_MenuId(Integer menuId);
 }

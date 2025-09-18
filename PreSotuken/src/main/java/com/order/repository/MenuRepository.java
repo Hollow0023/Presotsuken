@@ -12,10 +12,10 @@ import com.order.entity.Menu;
 
 @Repository
 public interface MenuRepository extends JpaRepository<Menu, Integer> {
-	List<Menu> findByStore_StoreId(Integer storeId);
-	
-	@Query("SELECT m FROM Menu m WHERE :now BETWEEN m.timeSlot.startTime AND m.timeSlot.endTime")
-	List<Menu> findMenusAvailableAt(@Param("now") LocalTime now);
+    List<Menu> findByStore_StoreId(Integer storeId);
+
+    @Query("SELECT m FROM Menu m WHERE :now BETWEEN m.timeSlot.startTime AND m.timeSlot.endTime")
+    List<Menu> findMenusAvailableAt(@Param("now") LocalTime now);
 
     // isPlanStarterがtrueのメニューを検索
     List<Menu> findByIsPlanStarterTrue();
@@ -23,7 +23,7 @@ public interface MenuRepository extends JpaRepository<Menu, Integer> {
     // isPlanStarterがtrueで、特定のplanIdを持つメニューを検索
     List<Menu> findByIsPlanStarterTrueAndPlanId(Integer planId);
     
-    // getMenusWithOptions で使う: 特定の店舗で、品切れでなく、指定された時間帯に利用可能で、メニュー名順にソートされたメニューを取得
+    // getMenusWithOptions で使用するクエリ。指定店舗のうち、品切れでなく選択した時間帯に属するメニューを名前順に取得する。
     @Query("SELECT m FROM Menu m JOIN m.timeSlot ts WHERE m.store.storeId = :storeId AND m.isSoldOut = FALSE AND ts.timeSlotId = :timeSlotId ORDER BY m.menuName ASC")
     List<Menu> findByStore_StoreIdAndIsSoldOutFalseAndMenuTimeSlotTimeSlotIdOrderByMenuNameAsc(Integer storeId, Integer timeSlotId);
 
@@ -31,20 +31,19 @@ public interface MenuRepository extends JpaRepository<Menu, Integer> {
     
     
     List<Menu> findByStore_StoreIdAndIsSoldOutFalseAndTimeSlot_TimeSlotIdInOrderByMenuNameAsc(Integer storeId, List<Integer> timeSlotTimeSlotIds);
- 
-    
-    
- // 特定の店舗のメニューをmenu_nameでソートして取得 (管理者用・品切れ表示しない場合)
-    List<Menu> findByStore_StoreIdAndIsSoldOutFalseOrderByMenuNameAsc(Integer storeId); // ★ 修正
 
-    // 特定の店舗の全てのメニューをmenu_nameでソートして取得 (管理者用・品切れも表示する場合)
-    List<Menu> findByStore_StoreIdOrderByMenuIdAsc(Integer storeId); // ★ 修正
 
-    // isPlanStarterがtrueのメニューをmenu_nameでソートして取得
-    List<Menu> findByIsPlanStarterTrueOrderByMenuNameAsc(); // ★ 修正
+    // 管理画面向け：品切れを除外して店舗内メニューを名前順に取得
+    List<Menu> findByStore_StoreIdAndIsSoldOutFalseOrderByMenuNameAsc(Integer storeId);
 
-    // isPlanStarterがtrueで、特定のplanIdを持つメニューをmenu_nameでソートして取得
-    List<Menu> findByIsPlanStarterTrueAndPlanIdOrderByMenuNameAsc(Integer planId); // ★ 修正
+    // 管理画面向け：品切れを含めた店舗内メニューをID順に取得
+    List<Menu> findByStore_StoreIdOrderByMenuIdAsc(Integer storeId);
+
+    // 飲み放題開始メニューのみを名前順に取得
+    List<Menu> findByIsPlanStarterTrueOrderByMenuNameAsc();
+
+    // 飲み放題開始メニューのうち、指定プランに紐づくものを名前順に取得
+    List<Menu> findByIsPlanStarterTrueAndPlanIdOrderByMenuNameAsc(Integer planId);
     
     
 //    List<Menu> findByStore_StoreIdAndIsSoldOutFalseAndIsPlanTargetFalseAndTimeSlot_TimeSlotIdInOrderByMenuNameAsc(
@@ -55,7 +54,7 @@ public interface MenuRepository extends JpaRepository<Menu, Integer> {
 //           "WHERE m.store.storeId = :storeId " +
 //           "AND m.isSoldOut = FALSE " +
 //           "AND m.timeSlot.timeSlotId IN :timeSlotIds " +
-//           "AND mg.groupId IN :menuGroupIds " + // ★ここを mg.groupId に修正するよ！
+//           "AND mg.groupId IN :menuGroupIds " +
 //           "ORDER BY m.menuName ASC")
 //    List<Menu> findByStoreIdAndSoldOutFalseAndMenuGroupIdsInAndTimeSlotIdsIn(
 //            @Param("storeId") Integer storeId,

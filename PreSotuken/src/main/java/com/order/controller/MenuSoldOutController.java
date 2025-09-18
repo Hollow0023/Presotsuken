@@ -1,4 +1,3 @@
-// MenuSoldOutController.java (修正版)
 package com.order.controller;
 
 import java.util.List;
@@ -35,7 +34,7 @@ public class MenuSoldOutController {
     // メニュー一覧（品切れ状態含む）を取得するAPI
     // GET /api/admin/menu-sold-out
     @GetMapping
-    public ResponseEntity<List<MenuWithOptionsDTO>> getSoldOutStatusMenus(HttpServletRequest request) { // ★ @RequestParam Integer storeId を削除
+    public ResponseEntity<List<MenuWithOptionsDTO>> getSoldOutStatusMenus(HttpServletRequest request) {
         Integer storeId = getStoreIdFromCookie(request);
         if (storeId == null) {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);

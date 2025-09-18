@@ -13,7 +13,7 @@ public class OrderHistoryDto {
     private int subtotal;
     private Double price;      // メニューの単価
     private Double taxRate;     // 税率（例：0.1）
-    private List<String> selectedOptionNames; // ★追加：選択されたオプションの名前リスト
+    private List<String> selectedOptionNames; // 選択されたオプションの名称一覧
 
 
 

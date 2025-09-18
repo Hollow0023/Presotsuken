@@ -134,7 +134,7 @@
   const addGroupButton = document.getElementById('addGroupButton');
   const menuGroupList = document.getElementById('menuGroupList');
   const noGroupsMessage = document.getElementById('noGroupsMessage');
-  const forAdminOnlyAddCheckbox = document.getElementById('forAdminOnlyAdd'); // ★追加：新規追加用のチェックボックス
+  const forAdminOnlyAddCheckbox = document.getElementById('forAdminOnlyAdd'); // 新規追加フォームの「管理者限定」チェックボックス
 
   // グループデータの一時保存用（並び替え時に便利）
   let currentGroups = [];
@@ -204,8 +204,7 @@
     // 編集ボタン
     const editButton = document.createElement('button');
     editButton.textContent = '編集';
-    // ★修正：enableEditMode に group を引数として渡す
-    editButton.onclick = () => enableEditMode(li, groupNameSpan, editButton, group); 
+    editButton.onclick = () => enableEditMode(li, groupNameSpan, editButton, group);
     actionsDiv.appendChild(editButton);
 
     // 並び順変更ボタン (一番上/下では非活性化)
@@ -214,7 +213,7 @@
     upButton.className = 'up-down-buttons';
     // sortOrderが1なら上には動かせない
     upButton.disabled = (group.sortOrder === 1); 
-    upButton.onclick = () => moveGroup(group.groupId, 'up'); // ★ groupIdを渡す
+    upButton.onclick = () => moveGroup(group.groupId, 'up');
     actionsDiv.appendChild(upButton);
 
     const downButton = document.createElement('button');
@@ -222,7 +221,7 @@
     downButton.className = 'up-down-buttons';
     // sortOrderが最大値（配列の長さ）なら下には動かせない
     downButton.disabled = (group.sortOrder === maxSortOrder);
-    downButton.onclick = () => moveGroup(group.groupId, 'down'); // ★ groupIdを渡す
+    downButton.onclick = () => moveGroup(group.groupId, 'down');
     actionsDiv.appendChild(downButton);
 
     li.appendChild(actionsDiv);
@@ -271,7 +270,7 @@
       if (data.success) { 
         showToast("グループを追加しました！", 3000, 'success'); // alertをToastに変更
         groupNameInput.value = ''; // 入力フィールドをクリア
-        forAdminOnlyAddCheckbox.checked = false; // ★追加：チェックボックスもクリア
+        forAdminOnlyAddCheckbox.checked = false; // 入力値とあわせてチェック状態もクリア
         await fetchAndDisplayGroups(); // リストを再読み込みして最新の状態を表示
       } else {
         alert("グループの追加に失敗しました。");
@@ -286,7 +285,7 @@
 
 
   // --- 3. グループ名の編集 ---
-  // ★修正：groupData を引数に追加
+  // 編集対象のデータを受け取ってフォーム要素に反映
   function enableEditMode(liElement, groupNameSpan, editButton, groupData) {
     const currentName = groupNameSpan.textContent;
     
@@ -295,7 +294,7 @@
     const editInput = document.createElement('input');
     editInput.type = 'text';
     editInput.className = 'edit-input';
-    editInput.value = groupData.groupName; // ★修正：groupData からグループ名を取得
+    editInput.value = groupData.groupName; // 受け取ったデータからグループ名を設定
     editInput.maxLength = 50; 
     liElement.insertBefore(editInput, groupNameSpan); 
     editInput.focus();
@@ -313,7 +312,7 @@
 
     const adminLabel = document.createElement('label');
     adminLabel.htmlFor = adminEditCheckbox.id;
-    adminLabel.textContent = '卓上端末から見えなくします'; // ★変更：文言を合わせる
+    adminLabel.textContent = '卓上端末から見えなくします';
     
     adminCheckboxDiv.appendChild(adminEditCheckbox);
     adminCheckboxDiv.appendChild(adminLabel);
@@ -325,32 +324,26 @@
     // 編集ボタンを「保存」と「キャンセル」に切り替え
     editButton.textContent = '保存';
     editButton.className = 'save-button';
-    // ★修正：adminEditCheckbox を引数に追加
     editButton.onclick = () => saveGroup(liElement, editInput, groupNameSpan, editButton, adminEditCheckbox);
 
     const cancelButton = document.createElement('button');
     cancelButton.textContent = 'キャンセル';
     cancelButton.className = 'cancel-button';
-    // ★修正：adminCheckboxDiv を引数に追加
     cancelButton.onclick = () => disableEditMode(liElement, editInput, groupNameSpan, editButton, cancelButton, currentName, adminCheckboxDiv);
     editButton.parentNode.insertBefore(cancelButton, editButton.nextSibling); 
   }
 
-  // ★修正：adminEditCheckbox を引数に追加
   async function saveGroup(liElement, editInput, groupNameSpan, saveButton, adminEditCheckbox) {
     const groupId = liElement.dataset.groupId;
     const newName = editInput.value.trim();
     const cancelButton = saveButton.nextSibling;
-    // ★修正：adminEditCheckbox から値を取得
     const newForAdminOnly = adminEditCheckbox.checked;
 
     if (!newName) {
       alert("グループ名を入力してください。");
       return;
     }
-    // ★修正：forAdminOnly の変更もチェック
     if (newName === groupNameSpan.textContent && newForAdminOnly == (liElement.dataset.forAdminOnly === 'true')) {
-        // ★修正：adminEditCheckboxDiv を渡す
         disableEditMode(liElement, editInput, groupNameSpan, saveButton, cancelButton, groupNameSpan.textContent, adminEditCheckbox.parentNode);
         return;
     }
@@ -382,9 +375,7 @@
       
       showToast("グループ名を更新しました！", 3000, 'success'); // alertをToastに変更
       groupNameSpan.textContent = newName;
-      // ★修正：liElementのdatasetも更新
       liElement.dataset.forAdminOnly = newForAdminOnly;
-      // ★修正：adminEditCheckboxDiv を渡す
       disableEditMode(liElement, editInput, groupNameSpan, saveButton, cancelButton, newName, adminEditCheckbox.parentNode);
       // 再表示して「管理者限定」バッジを更新するために再フェッチ
       await fetchAndDisplayGroups(); 
@@ -398,7 +389,6 @@
   }
 
   // 編集モードを終了するヘルパー関数
-  // ★修正：adminCheckboxDiv を引数に追加
   function disableEditMode(liElement, editInput, groupNameSpan, saveButton, cancelButton, originalName, adminCheckboxDiv) {
     editInput.remove(); 
     groupNameSpan.textContent = originalName; 
@@ -412,8 +402,7 @@
 
     saveButton.textContent = '編集';
     saveButton.className = ''; 
-    // ★修正：fetchAndDisplayGroups を直接呼ぶことで、最新のデータでリスト全体を再描画する
-    saveButton.onclick = () => fetchAndDisplayGroups(); 
+    saveButton.onclick = () => fetchAndDisplayGroups();
 
 
     if (cancelButton) {
@@ -447,7 +436,7 @@
         throw new Error('サーバーエラー: ' + response.status + ' - ' + (errorData.message || '未知のエラー'));
       }
       
-      showToast('並び順を更新しました！', 3000, 'success'); // ★追加：Toastのtype指定
+      showToast('並び順を更新しました！', 3000, 'success');
       await fetchAndDisplayGroups(); // 更新後にリストを再読み込みして最新の並び順を表示
     } catch (error) {
       console.error('並び順更新中にエラーが発生しました:', error);

@@ -1,4 +1,3 @@
-// CallReceiveController.java (例: 名前を変えた方が分かりやすいかも)
 package com.order.controller;
 
 import java.time.LocalDateTime;
@@ -35,7 +34,7 @@ public class CallReceiveController {
         public void setSeatId(String seatId) { this.seatId = seatId; }
     }
 
-    // ★ HTMLからのPOSTリクエストを受け取るエンドポイント ★
+    // HTMLからのPOSTリクエストを受け取るエンドポイント
     @PostMapping("/callSeat") // HTMLから /callSeat にPOSTリクエストが来たらここが呼ばれる
     public String receiveCall(@RequestBody CallRequest request) {
         String seatId = request.getSeatId();
@@ -52,7 +51,7 @@ public class CallReceiveController {
         notification.put("seatName", seatName);
         notification.put("callTime", LocalDateTime.now()); 
 
-        // ★ レジ端末が購読しているトピックにメッセージをブロードキャスト
+        // レジ端末が購読しているトピックにメッセージをブロードキャスト
         messagingTemplate.convertAndSend("/topic/seatCalls", notification);
 
         // HTTPリクエストなので、何かしらレスポンスを返す

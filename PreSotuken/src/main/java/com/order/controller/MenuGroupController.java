@@ -76,7 +76,7 @@ public class MenuGroupController {
             List<MenuGroup> menuGroups = menuGroupService.getMenuGroupsByStoreId(storeId);
             List<Map<String, Object>> responseList = menuGroups.stream()
             	    .map(group -> {
-            	        Map<String, Object> groupMap = new java.util.HashMap<>(); // ★ HashMapをインスタンス化
+                        Map<String, Object> groupMap = new java.util.HashMap<>(); // グループ情報を保持するMap
             	        groupMap.put("groupId", group.getGroupId());
             	        groupMap.put("groupName", group.getGroupName());
             	        groupMap.put("sortOrder", group.getSortOrder());

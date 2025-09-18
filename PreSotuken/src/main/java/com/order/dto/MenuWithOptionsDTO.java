@@ -5,23 +5,21 @@ import java.util.List;
 import com.order.entity.Menu;
 
 import lombok.Getter;
-import lombok.NoArgsConstructor; // ★ 追加
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Getter
 @Setter
-@NoArgsConstructor // ★ 引数なしコンストラクタを追加 (toDtoメソッドでnew MenuWithOptionsDTO()と使うため)
+@NoArgsConstructor
 public class MenuWithOptionsDTO {
     // フィールドはプリミティブ型やIDで持つのが一般的
     private Integer menuId;
     private String menuName;
     private Double price;
     
-    // ★ TaxRateの代わりにIDと値を持つ
     private Integer taxRateId;
     private Double taxRateValue; // 税率の値そのもの (例: 0.08, 0.1)
 
-    // ★ MenuGroupの代わりにIDと名前、フラグを持つ
     private Integer menuGroupId;
     private String menuGroupName;
     private Boolean menuGroupIsPlanTarget; // is_plan_target
@@ -32,19 +30,11 @@ public class MenuWithOptionsDTO {
     private Double priceWithTax; // int ではなく Double に修正（税込み価格は小数点以下を含むため）
     private Boolean isSoldOut;
 
-    // ★ 飲み放題関連の新しいフィールド
     private Boolean isPlanStarter;
     private Integer planId;
 
     private List<OptionGroupDTO> optionGroups;
 
-    // ★ Menuを引数に取るコンストラクタは、もしtoDtoメソッドで new MenuWithOptionsDTO(menu) を使うなら必要。
-    //   今回はtoDtoメソッド内でsetterで設定するので、このコンストラクタは不要。
-    //   もしこのコンストラクタを残すなら、中身を上記のtoDtoメソッドのロジックで埋めること。
-    // public MenuWithOptionsDTO(Menu menu) {
-    //     // ... ロジックはMenuService.toDtoのsetter部分を参照 ...
-    // }
-    
     public MenuWithOptionsDTO(Menu menu) {
         this.menuId = menu.getMenuId();
         this.menuName = menu.getMenuName();

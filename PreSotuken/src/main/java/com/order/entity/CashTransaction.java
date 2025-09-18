@@ -21,10 +21,10 @@ import lombok.NoArgsConstructor;
 @Builder
 public class CashTransaction {
 
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@Column(name = "transaction_id") // ★この行を追加するよ★
-	private Integer id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "transaction_id")
+    private Integer id;
 
     @ManyToOne
     @JoinColumn(name = "store_id", nullable = false)

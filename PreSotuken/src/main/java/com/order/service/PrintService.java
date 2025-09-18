@@ -62,7 +62,7 @@ public class PrintService {
     private static final int SUB_TOTAL_AMOUNT_WIDTH = 14;
     private static final int TAX_DETAIL_LABEL_WIDTH = 18;
     private static final int TAX_AMOUNT_WIDTH = 10;
-    // ★★★ 新しい定数: 小計伝票のレイアウト用 (半角換算) ★★★
+    // 小計伝票のレイアウト用（半角換算）の補助定数
     /** レシート全体の幅 (全角17文字) */
     private static final int RECEIPT_TOTAL_WIDTH_HALF = 34;
     /** 品名エリアの最大幅 (全角9文字分)。この幅で数量の開始位置が決まる */
@@ -71,7 +71,7 @@ public class PrintService {
     private static final int RECEIPT_QUANTITY_WIDTH_HALF = 6;
     /** 単価エリアの幅 (数量エリアの右隣) */
     private static final int RECEIPT_PRICE_WIDTH_HALF = 10;
-    // ★★★ ここまで新しい定数 ★★★
+    // --- ここまで補助定数 ---
     // --- ここまで定数定義 ---
 
     // ヘルパー関数: 全角文字を2バイト、半角文字を1バイトとして計算
@@ -116,7 +116,7 @@ public class PrintService {
     }
     
     /**
-     * ★★★ 新しいヘルパー関数 ★★★
+     * レシートの左側・右側に文字列を配置するためのヘルパー関数。
      * 指定した全体幅の中で、文字列を左寄せと右寄せに配置して返す
      * @param leftText 左側に配置する文字列
      * @param rightText 右側に配置する文字列
@@ -178,7 +178,7 @@ public class PrintService {
         Integer currentQuantity = detail.getQuantity();
         int quantity = (currentQuantity != null) ? currentQuantity : 1;
 
-        // ★★★ JSONコマンド組み立て部分 ★★★
+        // JSONコマンドの組み立て処理
         // 各印刷命令をObjectNodeとして作成し、commandsに追加する
 
         // 初期化・リセット系は、印刷ジョブの最初に一度だけ発行する方が効率的
@@ -266,7 +266,7 @@ public class PrintService {
 //        return commands;
     
     
-    // ★★★ 小計伝票印刷メソッド (ここを修正) ★★★
+    // 小計伝票を印刷するメソッド
     public void printReceiptForPayment(
             List<PaymentDetail> detailsForReceipt,
             Integer seatId,
@@ -319,14 +319,14 @@ public class PrintService {
         commands.add(createFeedUnitCommand(5));
         commands.add(createFeedCommand());
         
-        // --- ★★★ ヘッダーのレイアウトを修正 ★★★ ---
+        // --- ヘッダー行のレイアウト設定 ---
         String itemHeaderLine = padRightHalfWidth("品名", RECEIPT_ITEM_NAME_MAX_WIDTH_HALF)
                             + padRightHalfWidth("数量", RECEIPT_QUANTITY_WIDTH_HALF)
                             + padLeftHalfWidth("単価", RECEIPT_PRICE_WIDTH_HALF);
         commands.add(createTextCommand(itemHeaderLine));
         commands.add(createTextCommand("-".repeat(RECEIPT_TOTAL_WIDTH_HALF))); // 罫線
 
-        // --- ★★★ 商品詳細のループ (改行処理を追加) ★★★ ---
+        // --- 商品詳細を複数行に分割して描画 ---
         for (PaymentDetail detail : detailsForReceipt) {
             Menu menu = detail.getMenu();
             List<PaymentDetailOption> optionList = paymentDetailOptionRepo.findByPaymentDetail(detail);
@@ -390,7 +390,7 @@ public class PrintService {
         commands.add(createTextCommand("-".repeat(RECEIPT_TOTAL_WIDTH_HALF))); // 罫線
         commands.add(createFeedUnitCommand(10));
 
-        // --- ★★★ 小計・税額表示のレイアウトを修正 ★★★ ---
+        // --- 小計と税額の表示レイアウト ---
         // 小計 (税込)
         String subtotalAmount = "\\" + String.format("%,d", subtotalIncludingTax.longValue());
         commands.add(createTextCommand(formatToLeftAndRight("小計", subtotalAmount, RECEIPT_TOTAL_WIDTH_HALF)));

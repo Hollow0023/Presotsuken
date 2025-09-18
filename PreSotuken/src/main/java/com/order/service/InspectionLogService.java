@@ -42,6 +42,13 @@ public class InspectionLogService {
     
 //    private static final int[] DENOMINATIONS = {10000, 5000, 1000, 500, 100, 50, 10, 5, 1};
 
+    /**
+     * 点検内容を登録し、必要に応じて出金レコードを生成します。
+     *
+     * @param storeId           店舗ID
+     * @param request           フォームから受け取った点検情報
+     * @param performWithdrawal 出金処理を同時に行うかどうか
+     */
     @Transactional
     public void registerInspection(Integer storeId, InspectionLogRequest request, boolean performWithdrawal) {
         LocalDateTime now = LocalDateTime.now();
@@ -96,10 +103,22 @@ public class InspectionLogService {
         inspectionLogRepository.save(log);
     }
     
+    /**
+     * null セーフな整数変換を行います。
+     *
+     * @param value 金種入力値
+     * @return null の場合は 0、それ以外はそのままの値
+     */
     private int safeInt(Integer value) {
         return value != null ? value : 0;
     }
 
+    /**
+     * null セーフな BigDecimal 変換を行います。
+     *
+     * @param value 合計値
+     * @return null の場合は 0、それ以外はそのままの値
+     */
     private BigDecimal safeBig(BigDecimal value) {
         return value != null ? value : BigDecimal.ZERO;
     }
@@ -119,6 +138,12 @@ public class InspectionLogService {
         return inspectionLogRepository.findByStore_StoreIdOrderByInspectionTimeDesc(storeId);
     }
 
+    /**
+     * 点検画面表示に必要な売上集計と補助情報を構築します。
+     *
+     * @param storeId 店舗ID
+     * @return 画面描画に利用する集計マップ
+     */
     public Map<String, Object> buildInspectionSummary(Integer storeId) {
         LocalDateTime now = LocalDateTime.now();
         LocalDate today = now.toLocalDate();
@@ -154,7 +179,7 @@ public class InspectionLogService {
         result.put("tax10", tax10Sales);
         result.put("tax8", tax8Sales);
 
-        // ★★★ ここから新しい会計種別ごとの税率別売上を追加 ★★★
+        // 会計種別と税率の組み合わせごとの売上を追加集計
         Map<String, BigDecimal> salesByPaymentTypeAndTax = new HashMap<>();
         List<Object[]> salesData = paymentDetailRepository.sumSalesByPaymentTypeAndTaxRate(storeId, start, end);
         
@@ -176,7 +201,7 @@ public class InspectionLogService {
         }
         result.putAll(salesByPaymentTypeAndTax); // Mapごとresultに追加
 
-        // ★★★ ここまで新しい会計種別ごとの税率別売上を追加 ★★★
+        // 会計種別×税率ごとの売上集計はここまで
 
         // 消費税額 (既存のコード)
         BigDecimal taxAmount10 = safe.apply(paymentDetailRepository.sumTaxAmount(storeId, start, end, new BigDecimal("0.10")));
@@ -212,7 +237,8 @@ public class InspectionLogService {
         BigDecimal expectedCash = cashSales.add(deposit).subtract(withdraw);
         result.put("expectedCash", expectedCash);
         
-        List<PaymentType> allPaymentTypes = paymentTypeRepository.findAllByOrderByTypeNameAsc(); // ソートして取得すると表示がきれいだよ
+        // ソート済みの支払種別一覧（画面上での表示順を安定させるため）
+        List<PaymentType> allPaymentTypes = paymentTypeRepository.findAllByOrderByTypeNameAsc();
         result.put("allPaymentTypes", allPaymentTypes);
 
         return result;

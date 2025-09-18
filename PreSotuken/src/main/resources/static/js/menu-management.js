@@ -24,7 +24,7 @@ const printerSelectTemplate = document.querySelector('.printer-select-template')
 
 let selectedMenuId = null; // 現在選択中のメニューID
 
-// ★★★ここから追加！飲み放題関連のDOM要素★★★
+// 飲み放題プラン関連のDOM要素
 const isPlanStarterInput = document.getElementById('isPlanStarterInput');
 const planIdGroup = document.getElementById('planIdGroup');
 const planSelect = document.getElementById('planSelect');
@@ -55,7 +55,7 @@ function resetForm() {
     clearDynamicSelects(printerSelectsContainer, printerSelectTemplate);
     addDynamicSelect(printerSelectsContainer, printerSelectTemplate, window.allPrinters, 'printerIds', '');
 
-    // ★★★ここから追加！飲み放題関連のフィールドをリセット★★★
+    // 飲み放題関連のフィールドを初期状態に戻す
     isPlanStarterInput.checked = false;
     togglePlanIdGroup(); // プルダウンの表示/非表示を更新
     planSelect.value = ''; // プルダウンの選択をリセット
@@ -143,7 +143,7 @@ async function showMenuDetails(menuId) {
 		addDynamicSelect(printerSelectsContainer, printerSelectTemplate, window.allPrinters, 'printerIds', String(printerId));
 
 
-        // ★★★飲み放題関連のフィールドをセット★★★
+        // 飲み放題関連のフィールドを現在のメニュー情報から設定
         isPlanStarterInput.checked = menu.isPlanStarter || false;
         togglePlanIdGroup(); // プルダウンの表示/非表示を更新
         planSelect.value = menu.planId || ''; // プルダウンの選択をセット
@@ -237,7 +237,7 @@ function displayGroupedMenus() {
 
     const groupedMenus = {};
     window.allMenus.forEach(menu => {
-        // ★修正点: menu.menuGroupが存在し、その中にgroupIdがある場合を参照する
+        // menu.menuGroup が存在し、groupId を保持している場合のみ利用する
         const groupId = (menu.menuGroup && menu.menuGroup.groupId !== undefined && menu.menuGroup.groupId !== null) 
                         ? menu.menuGroup.groupId 
                         : 'null'; 
@@ -428,7 +428,7 @@ addOptionSelectBtn.addEventListener('click', () => addDynamicSelect(optionSelect
 //addPrinterSelectBtn.addEventListener('click', () => addDynamicSelect(printerSelectsContainer, printerSelectTemplate, window.allPrinters, 'printerIds', ''));
 
 
-// ★★★ フォームのSUBMITイベントをAjaxに切り替える ★★★
+// フォーム送信をAjax経由で処理
 menuForm.addEventListener('submit', async (event) => {
     event.preventDefault(); // デフォルトのフォーム送信を防止
 
@@ -446,7 +446,7 @@ menuForm.addEventListener('submit', async (event) => {
     // isSoldOut (チェックボックス) はチェックが入ってないとFormDataに含まれないので、明示的に追加
     formData.append('isSoldOut', document.getElementById('isSoldOutInput').checked);
 
-    // ★★★ここから追加！isPlanStarterとplanIdをFormDataに追加★★★
+    // 飲み放題関連の項目もFormDataに含める
     formData.append('isPlanStarter', isPlanStarterInput.checked); // チェックボックスの値
     if (isPlanStarterInput.checked) { // チェックされている場合のみplanIdを送信
         formData.append('planId', planSelect.value);
@@ -510,7 +510,7 @@ menuForm.addEventListener('submit', async (event) => {
 });
 
 
-// ★★★ 削除ボタンのクリックイベントもAjaxに切り替える ★★★
+// 削除処理もAjaxで実行
 deleteMenuBtn.addEventListener('click', async () => {
     if (!selectedMenuId) return;
 

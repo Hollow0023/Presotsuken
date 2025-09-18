@@ -67,7 +67,7 @@ public class MenuAddService {
                     form.setReceiptLabel(menu.getReceiptLabel());
                     form.setIsSoldOut(menu.getIsSoldOut());
 
-                    // ★★★ここから修正！関連エンティティのフィールドをIDと表示名に置き換え★★★
+                    // 関連エンティティからIDと表示用情報を取り出す
                     if (menu.getTimeSlot() != null) {
                         form.setTimeSlotTimeSlotId(menu.getTimeSlot().getTimeSlotId());
                         form.setTimeSlotName(menu.getTimeSlot().getName());
@@ -105,7 +105,7 @@ public class MenuAddService {
 
 
     
-    // ★ 顧客向け注文画面に表示するメニューグループを取得するメソッド (ソート順適用)
+    // 顧客向け注文画面に表示するメニューグループを取得 (ソート順適用)
     public List<MenuGroup> getCustomerMenuGroups(Integer storeId) {
         // forAdminOnlyがfalseまたはnull、かつ isPlanTargetがfalseのメニューグループのみを返す
         // ※このメソッド名だと、`findByStore_StoreIdAndForAdminOnlyFalseOrForAdminOnlyIsNullAndIsPlanTargetFalseOrderBySortOrderAsc`
@@ -113,13 +113,13 @@ public class MenuAddService {
         return menuGroupRepository.findByStore_StoreIdAndIsPlanTargetFalseAndForAdminOnlyFalseOrForAdminOnlyIsNullOrderBySortOrderAsc(storeId);
     }
 
-    // ★ 管理者向け注文画面に表示するメニューグループを取得するメソッド (ソート順適用)
+    // 管理者向け注文画面に表示するメニューグループを取得 (ソート順適用)
     public List<MenuGroup> getAdminMenuGroups(Integer storeId) {
         // 全てのメニューグループをsort_orderでソートして返す
         return menuGroupRepository.findByStore_StoreIdOrderBySortOrderAsc(storeId);
     }
 
- // ★ 追加：飲み放題がアクティブな場合に表示する顧客向けメニューグループを取得 (ソート順適用)
+    // 飲み放題がアクティブな場合に表示する顧客向けメニューグループを取得 (ソート順適用)
     public List<MenuGroup> getPlanActivatedCustomerMenuGroups(Integer storeId, Integer seatId) {
         Set<MenuGroup> combinedGroups = new HashSet<>();
 
@@ -127,13 +127,13 @@ public class MenuAddService {
         combinedGroups.addAll(getCustomerMenuGroups(storeId));
 
         // 2. 現在アクティブな飲み放題プランがあるかチェックし、そのplanId"s"を取得
-        // ★修正！単一のIDではなく、Set<Integer>を受け取る
+        // 複数のプランIDに対応するためSetで保持
         Set<Integer> activePlanIds = getActivePlanIdsForSeat(seatId, storeId);
 
         if (!activePlanIds.isEmpty()) { // activePlanIdsが空でなければ処理
             Set<Integer> allPlanTargetMenuGroupIds = new HashSet<>(); // 収集用Set
 
-            // ★修正！全てのactivePlanIdに対して処理を繰り返す
+            // アクティブな全てのプランについて対象グループを取得
             for (Integer planId : activePlanIds) {
                 List<Integer> groupIdsForPlan = planMenuGroupMapRepository.findByPlanId(planId).stream()
                     .map(map -> map.getMenuGroupId())
@@ -236,7 +236,7 @@ public class MenuAddService {
             menu.setReceiptLabel(menu.getMenuName());
         }
 
-        // ★新規メニューのsortOrder初期値設定（管理画面で設定しない場合）
+        // 新規メニューのsortOrder初期値設定（管理画面で設定しない場合）
         //   例: 現在の最大値+1にするか、0などデフォルト値にする
         //   もし管理画面で設定するならここでの設定は不要
         // menu.setSortOrder(0); // 仮の初期値
