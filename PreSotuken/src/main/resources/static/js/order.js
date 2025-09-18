@@ -392,17 +392,38 @@ function submitOrder() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(orderItems)
-    }).then(res => {
+    }).then(async res => {
+        let responseText = '';
+        try {
+            responseText = await res.text();
+        } catch (readError) {
+            console.error('レスポンスの読み取りに失敗しました:', readError);
+        }
+
+        let responseMessage = '';
+        if (responseText) {
+            try {
+                const data = JSON.parse(responseText);
+                responseMessage = data.message || data.error || '';
+            } catch (parseError) {
+                responseMessage = responseText;
+            }
+        }
+
         if (res.ok) {
             cart.length = 0;
             updateMiniCart();
-            showToast("注文を確定しました", 3000);
+            showToast(responseMessage || '注文を確定しました', 3000);
         } else {
-            cart.splice(index, 1);
+            const message = responseMessage || '注文の送信に失敗しました。再度お試しください。';
+            console.error('注文送信に失敗しました:', res.status, message);
+            showToast(message, 4000, 'error');
+            toggleCart(true);
         }
     }).catch(error => {
         console.error('注文送信中にエラーが発生しました:', error);
-        showToast('注文送信中にエラーが発生しました。ネットワーク接続を確認してください。');
+        showToast('注文送信中にエラーが発生しました。ネットワーク接続を確認してください。', 4000, 'error');
+        toggleCart(true);
     });
 }
 
