@@ -42,6 +42,12 @@ public void updateSeatStatus(Integer seatId, SeatStatus status) {
 - `SimpMessagingTemplate` - WebSocket メッセージ送信
 - `@Entity`, `@Table` - JPA エンティティ定義
 
+## Git・PR作成ガイドライン
+- **コミットメッセージ**: 日本語で機能や修正を説明（例: 座席管理機能の状態更新処理を追加）
+- **プルリクエスト**: タイトルと説明を日本語で記述
+- **コメント・レビュー**: 日本語でディスカッション
+- **ブランチ名**: 英語で機能表現（例: `feature/seat-management`）
+
 ## 注意事項
 - 座席状態の変更時は必ずWebSocketで通知
 - 会計処理は税率計算（8%/10%）に注意
