@@ -1,0 +1,195 @@
+/**
+ * メニューグループ管理画面専用スタイル
+ */
+
+/* グループ管理用のボディとコンテナ */
+body {
+    margin: 20px;
+}
+
+.container {
+    max-width: 800px;
+    margin: 20px auto;
+    padding: 30px;
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* 見出しスタイル */
+h2, h3 {
+    color: #0056b3;
+    border-bottom: 2px solid #007bff;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+
+/* リンクスタイル */
+a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* 水平線 */
+hr {
+    border: none;
+    border-top: 1px solid #eee;
+    margin: 25px 0;
+}
+
+/* セクション */
+.input-section,
+.list-section {
+    margin-bottom: 30px;
+}
+
+/* 入力フィールド */
+input[type="text"] {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    margin-right: 10px;
+    width: calc(100% - 120px);
+    box-sizing: border-box;
+}
+
+/* ボタン共通スタイル */
+button {
+    padding: 10px 20px;
+    cursor: pointer;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
+/* グループリスト */
+.group-list {
+    list-style: none;
+    padding: 0;
+}
+
+.group-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 15px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    background-color: #fbfbfb;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.group-name {
+    flex-grow: 1;
+    font-weight: bold;
+}
+
+/* グループアクション */
+.group-actions label {
+    margin-left: 10px;
+    font-size: 0.9em;
+    color: #555;
+    white-space: nowrap; /* 折り返しを防ぐ */
+}
+
+.group-actions button {
+    margin-left: 8px;
+    padding: 6px 12px;
+    font-size: 0.9em;
+    border-radius: 4px;
+}
+
+/* 管理者バッジ */
+.admin-badge {
+    background-color: #f0ad4e; /* オレンジ系 */
+    color: white;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.8em;
+    margin-left: 10px;
+    white-space: nowrap;
+}
+
+/* 上下移動ボタン */
+.up-down-buttons button {
+    background-color: #6c757d;
+}
+
+.up-down-buttons button:hover {
+    background-color: #5a6268;
+}
+
+/* 編集入力フィールド */
+input.edit-input {
+    width: 240px;
+    padding: 8px;
+    border: 1px solid #007bff;
+    border-radius: 4px;
+}
+
+/* キャンセル・保存ボタン */
+.cancel-button {
+    background-color: #dc3545;
+}
+
+.cancel-button:hover {
+    background-color: #c82333;
+}
+
+.save-button {
+    background-color: #28a745;
+}
+
+.save-button:hover {
+    background-color: #218838;
+}
+
+/* メッセージ表示 */
+#noGroupsMessage {
+    text-align: center;
+    color: #888;
+    padding: 20px;
+    border: 1px dashed #ddd;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+}
+
+/* トーストメッセージ */
+#toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 12px 24px;
+    border-radius: 4px;
+    color: white;
+    background-color: #28a745;
+    z-index: 1000;
+    display: none;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out;
+}
+
+/* チェックボックスコンテナ */
+.checkbox-container {
+    margin-top: 10px;
+    margin-bottom: 10px;
+}

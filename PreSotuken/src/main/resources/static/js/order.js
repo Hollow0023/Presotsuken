@@ -1,110 +1,183 @@
-// 注文画面メイン処理
+/**
+ * 注文画面メイン処理
+ * 座席での注文機能を提供するメインスクリプト
+ */
 
+// =============================================================================
+// グローバル変数定義
+// =============================================================================
+
+/** @type {Array} カート内の商品データを保持する配列 */
 const cart = [];
+
+/** @type {Object} 税率データを保持するマップオブジェクト */
 let taxRateMap = {};
 
-// 座席情報の表示
+/** @type {string|number} 現在の座席ID */
 let seatId = getCookie("seatId");
+
+// =============================================================================
+// 初期化処理
+// =============================================================================
+
+// 座席情報の初期化と表示
 if (!seatId || seatId === "null" || seatId === "undefined") {
     seatId = window.seatIdFromModel;
 }
 document.getElementById("seatInfo").innerText = `${seatId}`;
 
-// モーダル・パネルの開閉処理
-// -----------------------------------------------------------------------------
+// =============================================================================
+// ユーティリティ関数
+// =============================================================================
+
+/**
+ * Cookieから指定されたキーの値を取得する
+ * @param {string} name - 取得するCookieのキー名
+ * @returns {string|null} Cookieの値、存在しない場合はnull
+ */
+function getCookie(name) {
+    const cookies = document.cookie.split(';');
+    for (let cookie of cookies) {
+        const [key, value] = cookie.trim().split('=');
+        if (key === name) {
+            return decodeURIComponent(value);
+        }
+    }
+    return null;
+}
+
+/**
+ * トーストメッセージを表示する
+ * @param {string} message - 表示するメッセージ
+ * @param {number} duration - 表示時間（ミリ秒）
+ * @param {string} type - メッセージタイプ（success, error, info）
+ */
+function showToast(message, duration = 3000, type = 'success') {
+    const toast = document.getElementById('toast');
+    if (!toast) {
+        console.warn('Toast element not found');
+        alert(message);
+        return;
+    }
+    
+    toast.textContent = message;
+    toast.className = `toast show ${type}`;
+    
+    setTimeout(() => {
+        toast.classList.remove('show');
+    }, duration);
+}
+
+// =============================================================================
+// モーダル・パネル制御関数
+// =============================================================================
 
 /**
  * 注文履歴モーダルを開閉する関数
+ * モーダルが開いている場合は閉じ、閉じている場合は履歴データを取得して表示する
  */
 function toggleHistory() {
     const historyModal = document.getElementById("historyModal");
     const toggleBtn = document.getElementById("historyToggleButton");
+    
+    // 座席IDをCookieに保存
     document.cookie = `seatId=${seatId};`; 
 
     // モーダルが表示されている場合は閉じる
     if (historyModal.classList.contains("show")) {
         historyModal.classList.remove("show");
-        toggleBtn.textContent = "注文履歴"; // ボタンのテキストを「注文履歴」に戻す
+        toggleBtn.textContent = "注文履歴";
     } else {
         // モーダルが閉じている場合は、履歴を取得して表示
-        fetch('/order/history')
-            .then(res => res.json())
-            .then(data => {
-                const tbody = document.querySelector('#historyTable tbody');
-                const totalEl = document.getElementById('historyTotal');
-                const countEl = document.getElementById('historyCount');
-                const taxEl = document.getElementById('historyTax'); // 税率ごとの合計表示エリア
-                tbody.innerHTML = ''; // テーブルの中身をクリア
-                taxEl.innerHTML = ''; // 税率ごとの合計表示エリアをクリア
-
-                let total = 0; // 合計金額
-                let count = 0; // 合計点数
-                const rateTotals = {}; // 税率ごとの合計金額を保持 { 10: 1000, 8: 500 } の形式
-
-                // 取得した履歴データをループして表示を生成
-                data.forEach(item => {
-                    const subtotal = parseInt(item.subtotal) || 0; // 小計
-                    const quantity = parseInt(item.quantity) || 0; // 数量
-                    // バックエンドから返される税率は0.1や0.08の形なので、そのまま使う
-                    const rate = parseFloat(item.taxRate) || 0; 
-
-                    total += subtotal; // 合計金額に加算
-                    count += quantity; // 合計点数に加算
-
-                    // 税率ごとの合計を計算 (税抜きの価格で計算し直す)
-                    // item.price は税抜きの単価としてバックエンドから返される前提
-                    if (!rateTotals[rate]) rateTotals[rate] = 0;
-                    rateTotals[rate] += item.price * quantity; 
-
-                    // オプション表示用の文字列を生成
-                    let optionsText = '';
-                    if (item.selectedOptionNames && item.selectedOptionNames.length > 0) {
-                        optionsText = ` (${item.selectedOptionNames.join(', ')})`;
-                    }
-
-                    // テーブルに行を追加
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>${item.menuName}${optionsText}</td>
-                        <td style="text-align: center;">${quantity}</td>
-                        <td style="text-align: right;">${subtotal}円</td>
-                    `;
-                    tbody.appendChild(row);
-                });
-
-                totalEl.textContent = `${total}円`; // 合計金額を表示
-                countEl.textContent = `${count}点`; // 合計点数を表示
-
-                // 税率ごとの合計を表示
-                Object.entries(rateTotals)
-                    .sort((a, b) => a[0] - b[0]) // 税率でソート
-                    .forEach(([rate, amount]) => {
-                        const line = document.createElement('div');
-                        // 税率をパーセンテージに変換 (例: 0.1 -> 10%)
-                        const percent = (parseFloat(rate) * 100).toFixed(0); 
-                        line.textContent = `${percent}%対象：¥${amount}(税別)`;
-                        line.style.textAlign = "right";
-                        taxEl.appendChild(line);
-                    });
-
-                historyModal.classList.add('show'); // モーダルを表示
-                toggleBtn.textContent = "✕ 注文履歴を閉じる"; // ボタンのテキストを「閉じる」に変更
-            })
-            .catch(error => {
-                console.error("注文履歴の取得に失敗しました:", error);
-                const tbody = document.querySelector('#historyTable tbody');
-                tbody.innerHTML = '<tr><td colspan="3">注文履歴の読み込み中にエラーが発生しました。</td></tr>';
-            });
+        fetchOrderHistoryForDisplay(historyModal, toggleBtn);
     }
 }
-window.toggleHistory = toggleHistory; // グローバルに公開（外部からの呼び出し用）
+
+/**
+ * 注文履歴データを取得して表示する内部関数
+ * @param {HTMLElement} historyModal - 履歴モーダル要素
+ * @param {HTMLElement} toggleBtn - トグルボタン要素
+ */
+function fetchOrderHistoryForDisplay(historyModal, toggleBtn) {
+    fetch('/order/history')
+        .then(res => res.json())
+        .then(data => {
+            const tbody = document.querySelector('#historyTable tbody');
+            const totalEl = document.getElementById('historyTotal');
+            const countEl = document.getElementById('historyCount');
+            const taxEl = document.getElementById('historyTax');
+            
+            // テーブルの中身をクリア
+            tbody.innerHTML = '';
+            taxEl.innerHTML = '';
+
+            let total = 0;
+            let count = 0;
+            const rateTotals = {}; // 税率ごとの合計金額を保持
+
+            // 取得した履歴データをループして表示を生成
+            data.forEach(item => {
+                const subtotal = parseInt(item.subtotal) || 0;
+                const quantity = parseInt(item.quantity) || 0;
+                const rate = parseFloat(item.taxRate) || 0;
+
+                total += subtotal;
+                count += quantity;
+
+                // 税率ごとの合計を計算
+                if (!rateTotals[rate]) rateTotals[rate] = 0;
+                rateTotals[rate] += item.price * quantity;
+
+                // オプション表示用の文字列を生成
+                let optionsText = '';
+                if (item.selectedOptionNames && item.selectedOptionNames.length > 0) {
+                    optionsText = ` (${item.selectedOptionNames.join(', ')})`;
+                }
+
+                // テーブルに行を追加
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.menuName}${optionsText}</td>
+                    <td class="text-center">${quantity}</td>
+                    <td class="text-right">${subtotal}円</td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            totalEl.textContent = `${total}円`;
+            countEl.textContent = `${count}点`;
+
+            // 税率ごとの合計を表示
+            Object.entries(rateTotals)
+                .sort((a, b) => a[0] - b[0])
+                .forEach(([rate, amount]) => {
+                    const line = document.createElement('div');
+                    const percent = (parseFloat(rate) * 100).toFixed(0);
+                    line.textContent = `${percent}%対象：¥${amount}(税別)`;
+                    line.className = 'text-right';
+                    taxEl.appendChild(line);
+                });
+
+            historyModal.classList.add('show');
+            toggleBtn.textContent = "✕ 注文履歴を閉じる";
+        })
+        .catch(error => {
+            console.error("注文履歴の取得に失敗しました:", error);
+            const tbody = document.querySelector('#historyTable tbody');
+            tbody.innerHTML = '<tr><td colspan="3">注文履歴の読み込み中にエラーが発生しました。</td></tr>';
+        });
+    }
+}
+
+// グローバル関数として公開（外部からの呼び出し用）
+window.toggleHistory = toggleHistory;
 
 /**
  * 注文履歴モーダルを閉じる関数
  */
 function closeHistoryModal() {
     document.getElementById('historyModal').classList.remove('show');
-    document.getElementById("historyToggleButton").textContent = "注文履歴"; // ボタンのテキストを戻す
+    document.getElementById("historyToggleButton").textContent = "注文履歴";
 }
 
 /**
@@ -180,8 +253,9 @@ function toggleDetails(elem) {
     }
 }
 
-// カート関連処理
-// -----------------------------------------------------------------------------
+// =============================================================================
+// カート管理関数
+// =============================================================================
 
 /**
  * カート内の商品の数量を更新する関数
@@ -216,9 +290,9 @@ function updateMiniCart() {
     // ヘッダー行を追加
     const header = document.createElement('tr');
     header.innerHTML = `
-        <th style="text-align: left;">商品名</th>
-        <th style="text-align: center;">数量</th>
-        <th style="text-align: right;">小計</th>
+        <th class="text-left">商品名</th>
+        <th class="text-center">数量</th>
+        <th class="text-right">小計</th>
         <th></th>
     `;
     list.appendChild(header);
@@ -247,12 +321,12 @@ function updateMiniCart() {
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>${item.name}${optionsText}</td>
-            <td style="text-align: center;">
+            <td class="text-center">
                 <input type="number" min="1" value="${item.quantity}" 
                         onchange="updateQuantity(${index}, this.value)" 
-                        style="width: 50px;" />
+                        class="quantity-input" />
             </td>
-            <td style="text-align: right;">${subtotalRounded}円</td>
+            <td class="text-right">${subtotalRounded}円</td>
             <td><button onclick="removeFromCart(${index})">削除</button></td>
         `;
         list.appendChild(row);
@@ -275,7 +349,7 @@ function updateMiniCart() {
 
     // カートが空の場合の表示
     if (cart.length === 0) {
-        list.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 10px;">カートは空です</td></tr>`;
+        list.innerHTML = `<tr><td colspan="4" class="text-center empty-cart">カートは空です</td></tr>`;
         totalEl.textContent = `0円`;
         countEl.textContent = `0点`;
         taxEl.innerHTML = '';
@@ -362,13 +436,26 @@ function addToCart(button) {
  * カートから商品を削除する関数
  * @param {number} index - 削除する商品のカート配列内のインデックス
  */
+/**
+ * カートから商品を削除する関数
+ * @param {number} index - 削除する商品のカート内インデックス
+ */
 function removeFromCart(index) {
     // 削除ボタンのクリックイベントがメニューアイテムのクリックイベントに伝播しないように
     event.stopPropagation(); 
-    cart.splice(index, 1); // 指定されたインデックスの要素を削除
+    cart.splice(index, 1);
     showToast("カートから削除しました");
-    updateMiniCart(); // ミニカートの表示を更新
+    updateMiniCart();
 }
+
+// =============================================================================
+// 注文処理関数
+// =============================================================================
+
+/**
+ * 注文をサーバーに送信する関数
+ * カート内の商品をまとめて注文として送信する
+ */
 
 /**
  * 注文を確定する関数
@@ -444,8 +531,8 @@ function fetchOrderHistoryForHistoryModal() {
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>${item.menuName}${optionsText}</td>
-                    <td style="text-align: center;">${quantity}</td>
-                    <td style="text-align: right;">${subtotal}円</td>
+                    <td class="text-center">${quantity}</td>
+                    <td class="text-right">${subtotal}円</td>
                 `;
                 tbody.appendChild(row);
             });
@@ -482,6 +569,19 @@ function showDescriptionFromData(btn) {
     showToast(`${title}\n\n${desc}`, 5000); // alertをshowToastに変更済み
 }
 
+// =============================================================================
+// UI制御・ユーティリティ関数
+// =============================================================================
+
+/**
+ * 商品説明をデータから表示する関数
+ * @param {HTMLElement} btn - 説明表示ボタン要素
+ */
+function showDescriptionFromData(btn) {
+    const description = btn.getAttribute('data-description');
+    alert(description || '説明がありません。');
+}
+
 /**
  * タブを切り替える関数
  * @param {HTMLElement} tabElement - クリックされたタブ要素
@@ -489,28 +589,25 @@ function showDescriptionFromData(btn) {
 function switchTab(tabElement) {
     // 全てのタブからactiveクラスを削除
     document.querySelectorAll('.menu-tab').forEach(t => t.classList.remove('active'));
-    tabElement.classList.add('active'); // クリックされたタブにactiveクラスを追加
+    tabElement.classList.add('active');
 
-    const groupId = tabElement.getAttribute('data-group-id'); // タブのgroup-idを取得
+    const groupId = tabElement.getAttribute('data-group-id');
 
     // 関連するメニューアイテムのみ表示し、他は非表示にする
     document.querySelectorAll('.menu-item').forEach(item => {
         const itemGroupId = item.getAttribute('data-group-id');
-
-        // ★変更点: 現在選択されているタブのグループIDに一致するメニューアイテムのみを表示
-        // 飲み放題のアクティブ状況によるメニューアイテム個別の表示制御は、
-        // そもそもバックエンドが送ってこない or CSSでタブが非表示になることで間接的に制御される
+        
         if (itemGroupId === groupId) {
-            item.style.display = 'block';
+            item.classList.remove('d-none');
         } else {
-            item.style.display = 'none';
+            item.classList.add('d-none');
         }
     });
 }
 
-
-// イベントリスナーと初期化
-// -----------------------------------------------------------------------------
+// =============================================================================
+// イベントリスナーと初期化処理
+// =============================================================================
 
 // DOMコンテンツが完全にロードされた後に実行される処理
 window.addEventListener('DOMContentLoaded', () => {

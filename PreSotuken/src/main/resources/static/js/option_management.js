@@ -1,3 +1,4 @@
+
 // グローバル変数として定義
 let optionGroupsTableBody;
 let newGroupNameInput;
@@ -132,6 +133,7 @@ window.deleteOptionGroup = async (groupId) => {
     if (!confirm('このオプショングループと、その中の全てのアイテムを本当に削除しますか？')) {
         return;
     }
+
 
     try {
         const response = await fetch(`/options/groups/${groupId}`, {
@@ -292,6 +294,7 @@ window.deleteOptionItem = async (itemId) => {
             throw new Error('オプションアイテムの削除に失敗しました。');
         }
 
+
         // 成功したらDOMから行を削除
         document.querySelector(`li[data-item-id="${itemId}"]`).remove();
         showMessage('オプションアイテムを削除しました！', 'success');
@@ -300,3 +303,4 @@ window.deleteOptionItem = async (itemId) => {
         showMessage('オプションアイテムの削除中にエラーが発生しました: ' + error.message, 'error');
     }
 };
+

@@ -1,19 +1,6 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8">
-    <title>入出金履歴</title>
-    <style>
-        /* 簡単なCSS */
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        .container { max-width: 900px; margin: auto; }
-        .filter-form { margin-bottom: 20px; padding: 15px; border: 1px solid #ccc; border-radius: 5px; background-color: #f9f9f9; display: flex; align-items: center; }
-        .filter-form label { margin-right: 10px; }
-        .filter-form input, .filter-form select { padding: 8px; margin-right: 10px; border: 1px solid #ddd; border-radius: 4px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        th { background-color: #f2f2f2; }
-    </style>
+<head th:replace="fragments/common-head :: common-head('入出金履歴', ${'cash-transaction-history.css'})">
 </head>
 <body>
     <div class="container">
