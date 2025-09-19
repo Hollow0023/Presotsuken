@@ -1,0 +1,93 @@
+/**
+ * プリンタ設定画面専用スタイル
+ */
+
+/* 基本設定 */
+body {
+    font-family: sans-serif;
+    padding: 20px;
+}
+
+/* コンテナレイアウト */
+.container {
+    display: flex;
+    gap: 40px;
+}
+
+.form-section {
+    width: 400px;
+}
+
+.list-section {
+    flex: 1;
+}
+
+/* テーブルスタイル */
+table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+th, td {
+    border: 1px solid #ccc;
+    padding: 8px;
+    text-align: left;
+}
+
+/* メッセージ表示 */
+.message {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+    padding: 10px;
+    margin-bottom: 15px;
+    border-radius: 4px;
+}
+
+/* フォームグループ */
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+}
+
+.form-group input[type="text"] {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+/* ボタンスタイル */
+.btn {
+    padding: 8px 12px;
+    border-radius: 4px;
+    text-decoration: none;
+    display: inline-block;
+    cursor: pointer;
+    border: 1px solid #ccc;
+}
+
+.btn-primary {
+    background-color: #007bff;
+    color: white;
+}
+
+.btn-danger {
+    background-color: #dc3545;
+    color: white;
+}
+
+/* ラジオボタンセクション */
+.radioButtonSetion {
+    width: 120px;
+}
+
+/* トップボタン */
+.topBtn {
+    margin-top: 10px;
+}

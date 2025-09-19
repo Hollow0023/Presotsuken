@@ -59,4 +59,15 @@ public class SeatService {
     public void deleteSeat(int seatId) {
         seatRepository.deleteById(seatId);
     }
+    
+    /**
+     * 座席IDから座席情報を取得します
+     * 
+     * @param seatId 座席ID
+     * @return 座席情報
+     * @throws RuntimeException 座席が見つからない場合
+     */
+    public Seat findSeatById(Integer seatId) {
+        return seatRepository.findBySeatId(seatId);
+    }
 }
