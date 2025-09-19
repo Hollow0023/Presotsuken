@@ -1,15 +1,13 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-<head>
-  <meta charset="UTF-8">
-  <title>メニューグループ管理</title>
-  <link rel="stylesheet" th:href="@{/css/menu-group-management.css}">
-  <script th:inline="javascript">
-    // Thymeleafを使ってサーバーからstoreIdを受け取る
-    const storeId = /*[[${storeId}]]*/ null; 
-  </script>
+<head th:replace="fragments/common-head :: common-head('メニューグループ管理', ${'menu-group-management.css'})">
 </head>
 <body>
+
+<script th:inline="javascript">
+    // Thymeleafを使ってサーバーからstoreIdを受け取る
+    const storeId = /*[[${storeId}]]*/ null; 
+</script>
 
 <div class="container">
   <h2>メニューグループ管理</h2>

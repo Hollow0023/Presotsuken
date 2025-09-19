@@ -4,10 +4,7 @@
 
 /* 基本設定 */
 body {
-    font-family: sans-serif;
     margin: 20px;
-    background-color: #f4f7f6;
-    color: #333;
 }
 
 h1 {
@@ -201,6 +198,11 @@ tbody tr:hover {
 /* 成功用のトーストスタイル */
 #toast.success {
     background-color: #28a745;
+}
+
+/* ユーティリティクラス */
+.text-center {
+    text-align: center;
 }
 
 /* アクション列 */

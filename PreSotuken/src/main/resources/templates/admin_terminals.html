@@ -1,10 +1,6 @@
 <!DOCTYPE html>
 <html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>端末管理</title>
-    <link rel="stylesheet" th:href="@{/css/admin-terminals.css}">
+<head th:replace="fragments/common-head :: common-head('端末管理', ${'admin-terminals.css'})">
 </head>
 <body>
     <h1>端末管理</h1>
@@ -184,12 +180,12 @@
         async function fetchTerminals() {
             const terminalListTbody = document.querySelector('#terminalListTable tbody');
             // colspanの数を5に修正
-            terminalListTbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">読み込み中...</td></tr>';
+            terminalListTbody.innerHTML = '<tr><td colspan="5" class="text-center">読み込み中...</td></tr>';
             const storeId = getCookie('storeId');
 
             if (!storeId) { 
                 // colspanの数を5に修正
-                terminalListTbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">店舗IDが取得できませんでした。</td></tr>'; 
+                terminalListTbody.innerHTML = '<tr><td colspan="5" class="text-center">店舗IDが取得できませんでした。</td></tr>'; 
                 return; 
             }
 
@@ -201,7 +197,7 @@
                 terminalListTbody.innerHTML = '';
                 if (terminals.length === 0) {
                     // colspanの数を5に修正
-                    terminalListTbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">登録されている端末はありません。</td></tr>';
+                    terminalListTbody.innerHTML = '<tr><td colspan="5" class="text-center">登録されている端末はありません。</td></tr>';
                 } else {
                     terminals.forEach(terminal => {
                         const row = document.createElement('tr');
@@ -223,7 +219,7 @@
             } catch (error) {
                 console.error('端末リストの取得に失敗しました:', error);
                 // colspanの数を5に修正
-                terminalListTbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">端末リストの読み込みに失敗しました。</td></tr>';
+                terminalListTbody.innerHTML = '<tr><td colspan="5" class="text-center">端末リストの読み込みに失敗しました。</td></tr>';
                 showToast('端末リストの読み込みに失敗しました。', 3000, 'error');
             }
         }

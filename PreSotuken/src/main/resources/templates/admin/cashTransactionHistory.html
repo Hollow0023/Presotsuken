@@ -1,9 +1,6 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8">
-    <title>入出金履歴</title>
-    <link rel="stylesheet" th:href="@{/css/cash-transaction-history.css}">
+<head th:replace="fragments/common-head :: common-head('入出金履歴', ${'cash-transaction-history.css'})">
 </head>
 <body>
     <div class="container">

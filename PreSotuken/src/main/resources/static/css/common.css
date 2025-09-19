@@ -23,6 +23,8 @@ body {
     margin: 0;
     font-family: "Hiragino Kaku Gothic ProN", "メイリオ", Meiryo, "ＭＳ ゴシック", "MS Gothic", sans-serif;
     touch-action: manipulation;
+    background-color: #f4f7f6;
+    color: #333;
 }
 
 /* ========================================
@@ -277,6 +279,16 @@ body {
 .justify-content-between { justify-content: space-between; }
 .justify-content-center { justify-content: center; }
 .align-items-center { align-items: center; }
+
+/* 数量入力フィールド */
+.quantity-input {
+    width: 50px;
+}
+
+/* 空のカート表示 */
+.empty-cart {
+    padding: 10px;
+}
 
 /* ========================================
    共通レイアウトコンポーネント

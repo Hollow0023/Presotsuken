@@ -4,10 +4,7 @@
 
 /* グループ管理用のボディとコンテナ */
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     margin: 20px;
-    background-color: #f4f7f6;
-    color: #333;
 }
 
 .container {
