@@ -1,53 +1,86 @@
-document.addEventListener('DOMContentLoaded', () => {
-    const optionGroupsTableBody = document.getElementById('optionGroupsTableBody');
-    const newGroupNameInput = document.getElementById('newGroupNameInput');
-    const createNewGroupBtn = document.querySelector('.add-group-form .primary');
-    const currentStoreId = document.getElementById('currentStoreId').value;
-    const messageArea = document.getElementById('messageArea');
+/**
+ * オプション管理画面用JavaScript
+ * オプショングループとオプションアイテムの管理機能を提供
+ */
 
-    // メッセージ表示関数
-    const showMessage = (message, type = 'success') => {
-        messageArea.textContent = message;
-        messageArea.className = type + '-message'; // success-message or error-message
-        messageArea.style.display = 'block';
-        setTimeout(() => {
-            messageArea.style.display = 'none';
-        }, 3000); // 3秒後に消える
-    };
+// =============================================================================
+// グローバル変数とDOM要素の取得
+// =============================================================================
 
-    // DOM要素の表示/非表示を切り替えるヘルパー
-    const toggleDisplay = (element, show) => {
-        element.style.display = show ? 'inline-block' : 'none';
-    };
+/** @type {string} 現在の店舗ID */
+let currentStoreId;
 
-    // --- オプショングループ関連のJavaScript関数 ---
+/** @type {HTMLElement} メッセージ表示エリア */
+let messageArea;
 
-    // 新規オプショングループ作成
-    window.createNewOptionGroup = async () => {
-        const groupName = newGroupNameInput.value.trim();
-        if (!groupName) {
-            showMessage('グループ名を入力してください。', 'error');
-            return;
+/** @type {HTMLElement} オプショングループのテーブルボディ */
+let optionGroupsTableBody;
+
+/** @type {HTMLInputElement} 新規グループ名入力フィールド */
+let newGroupNameInput;
+
+// =============================================================================
+// ユーティリティ関数
+// =============================================================================
+
+/**
+ * メッセージを表示する関数
+ * @param {string} message - 表示するメッセージ
+ * @param {string} type - メッセージタイプ（success, error）
+ */
+const showMessage = (message, type = 'success') => {
+    messageArea.textContent = message;
+    messageArea.className = type + '-message';
+    messageArea.style.display = 'block';
+    setTimeout(() => {
+        messageArea.style.display = 'none';
+    }, 3000);
+};
+
+/**
+ * DOM要素の表示/非表示を切り替えるヘルパー関数
+ * @param {HTMLElement} element - 対象の要素
+ * @param {boolean} show - 表示するかどうか
+ */
+const toggleDisplay = (element, show) => {
+    element.style.display = show ? 'inline-block' : 'none';
+};
+
+// =============================================================================
+// オプショングループ管理関数
+// =============================================================================
+
+/**
+ * 新規オプショングループを作成する関数
+ */
+window.createNewOptionGroup = async () => {
+    const groupName = newGroupNameInput.value.trim();
+    if (!groupName) {
+        showMessage('グループ名を入力してください。', 'error');
+        return;
+    }
+
+    try {
+        const response = await fetch('/options/groups', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ 
+                groupName: groupName, 
+                storeId: parseInt(currentStoreId) 
+            }),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'オプショングループの作成に失敗しました。');
         }
 
-        try {
-            const response = await fetch('/options/groups', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ groupName: groupName, storeId: parseInt(currentStoreId) }),
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'オプショングループの作成に失敗しました。');
-            }
-
-            const newGroup = await response.json();
-            showMessage('オプショングループを作成しました！', 'success');
-            newGroupNameInput.value = ''; // 入力欄をクリア
-            // ページをリロードして新しいグループを表示
+        const newGroup = await response.json();
+        showMessage('オプショングループを作成しました！', 'success');
+        newGroupNameInput.value = '';
+        // ページをリロードして新しいグループを表示
             location.reload(); 
             // もしくは、DOMに直接新しい行を追加する処理を実装することも可能だが、リロードがシンプル
         } catch (error) {
@@ -285,4 +318,27 @@ document.addEventListener('DOMContentLoaded', () => {
             showMessage('オプションアイテムの削除中にエラーが発生しました: ' + error.message, 'error');
         }
     };
-});
+
+    // =============================================================================
+    // 初期化処理
+    // =============================================================================
+    
+    /**
+     * DOMが読み込まれた時の初期化処理
+     */
+    initializeOptionManagement();
+}
+
+/**
+ * オプション管理画面の初期化関数
+ */
+function initializeOptionManagement() {
+    // DOM要素の取得
+    optionGroupsTableBody = document.getElementById('optionGroupsTableBody');
+    newGroupNameInput = document.getElementById('newGroupNameInput');
+    currentStoreId = document.getElementById('currentStoreId').value;
+    messageArea = document.getElementById('messageArea');
+}
+
+// DOMコンテンツ読み込み完了時に初期化を実行
+document.addEventListener('DOMContentLoaded', initializeOptionManagement);
