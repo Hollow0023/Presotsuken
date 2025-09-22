@@ -69,12 +69,11 @@
     <script src="/js/plan-manager.js"></script>
     <script th:inline="javascript">
         /*<![CDATA[*/
-        const initialPlans = /*[[${plans}]]*/ [];
-        const allMenuGroups = /*[[${allMenuGroups}]]*/ [];
-        
         // ページロード後に初期化
         document.addEventListener('DOMContentLoaded', function() {
-            initializePlanManager(initialPlans, allMenuGroups);
+            const plans = /*[[${plans}]]*/ [];
+            const menuGroups = /*[[${allMenuGroups}]]*/ [];
+            initializePlanManager(plans, menuGroups);
         });
         /*]]>*/
     </script>
