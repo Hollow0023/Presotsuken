@@ -138,3 +138,33 @@
             cursor: pointer;
             margin-top: 10px;
         }
+        
+        /* メニューグループ選択に関するスタイル */
+        .select-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            gap: 8px;
+        }
+        
+        .select-group select {
+            flex-grow: 1;
+        }
+        
+        .remove-group-btn {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 6px 10px;
+            cursor: pointer;
+            min-width: auto;
+        }
+        
+        .remove-group-btn:hover {
+            background-color: #c82333;
+        }
+        
+        .add-group-btn:hover {
+            background-color: #218838;
+        }
