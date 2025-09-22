@@ -93,3 +93,73 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; 
         .item-list li span, .item-list li input { width: 100%; }
         .item-list li button { width: auto; /* ボタンは自動幅に戻す */ margin-left: 0; margin-right: 5px; }
     }
+
+    /* モーダルスタイル */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+    }
+
+    .modal-content {
+        background-color: #fefefe;
+        margin: 10% auto;
+        padding: 30px;
+        border: none;
+        border-radius: 10px;
+        width: 80%;
+        max-width: 500px;
+        position: relative;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    }
+
+    .close {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+        position: absolute;
+        right: 15px;
+        top: 10px;
+        cursor: pointer;
+    }
+
+    .close:hover,
+    .close:focus {
+        color: #000;
+        text-decoration: none;
+    }
+
+    .modal-buttons {
+        margin-top: 20px;
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+    }
+
+    .modal-buttons button {
+        padding: 10px 20px;
+        font-size: 1em;
+    }
+
+    .modal ul {
+        background-color: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 5px;
+        padding: 15px 20px;
+        margin: 15px 0;
+    }
+
+    .modal ul li {
+        padding: 5px 0;
+        border-bottom: 1px dotted #dee2e6;
+    }
+
+    .modal ul li:last-child {
+        border-bottom: none;
+    }

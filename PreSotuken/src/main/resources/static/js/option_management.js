@@ -130,28 +130,89 @@ window.toggleEditGroup = (button, groupId) => {
 
 // オプショングループの削除
 window.deleteOptionGroup = async (groupId) => {
-    if (!confirm('このオプショングループと、その中の全てのアイテムを本当に削除しますか？')) {
-        return;
-    }
-
-
     try {
-        const response = await fetch(`/options/groups/${groupId}`, {
-            method: 'DELETE',
-        });
-
-        if (!response.ok) {
-            throw new Error('オプショングループの削除に失敗しました。');
+        // まず削除前チェックを行う
+        const checkResponse = await fetch(`/options/groups/${groupId}/deletion-check`);
+        if (!checkResponse.ok) {
+            throw new Error('削除前チェックに失敗しました。');
         }
-
-        // 成功したらDOMから行を削除
-        document.querySelector(`tr[data-group-id="${groupId}"]`).remove();
-        showMessage('オプショングループを削除しました！', 'success');
+        
+        const checkResult = await checkResponse.json();
+        
+        if (checkResult.hasLinkedMenus) {
+            // 関連するメニューがある場合はモーダル表示
+            showMenuLinkageModal(groupId, checkResult.linkedMenus);
+        } else {
+            // 関連するメニューがない場合は通常の削除確認
+            if (confirm('このオプショングループと、その中の全てのアイテムを本当に削除しますか？')) {
+                await performOptionGroupDeletion(groupId);
+            }
+        }
     } catch (error) {
-        console.error('Error deleting option group:', error);
-        showMessage('オプショングループの削除中にエラーが発生しました: ' + error.message, 'error');
+        console.error('Error checking option group deletion:', error);
+        showMessage('削除チェック中にエラーが発生しました: ' + error.message, 'error');
     }
 };
+
+// メニュー関連表示モーダルを表示
+function showMenuLinkageModal(groupId, linkedMenus) {
+    // モーダルHTMLを動的に作成
+    const modalHtml = `
+        <div id="menuLinkageModal" class="modal" style="display: block;">
+            <div class="modal-content">
+                <span class="close" onclick="closeMenuLinkageModal()">&times;</span>
+                <h3>メニューとの関連が見つかりました</h3>
+                <p>このオプショングループは以下のメニューに紐づいています：</p>
+                <ul>
+                    ${linkedMenus.map(menu => `<li>${menu.menuName}</li>`).join('')}
+                </ul>
+                <p>削除を続けると、これらのメニューからオプションの紐づけも削除されます。</p>
+                <p>本当に削除しますか？</p>
+                <div class="modal-buttons">
+                    <button class="primary" onclick="confirmMenuLinkageDeletion(${groupId})">削除する</button>
+                    <button class="secondary" onclick="closeMenuLinkageModal()">キャンセル</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // モーダルをページに追加
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+// メニュー関連削除の確認
+window.confirmMenuLinkageDeletion = async (groupId) => {
+    try {
+        await performOptionGroupDeletion(groupId);
+        closeMenuLinkageModal();
+    } catch (error) {
+        console.error('Error during option group deletion:', error);
+        showMessage('削除中にエラーが発生しました: ' + error.message, 'error');
+    }
+};
+
+// モーダルを閉じる
+window.closeMenuLinkageModal = () => {
+    const modal = document.getElementById('menuLinkageModal');
+    if (modal) {
+        modal.remove();
+    }
+};
+
+// 実際のオプショングループ削除処理
+async function performOptionGroupDeletion(groupId) {
+    const response = await fetch(`/options/groups/${groupId}`, {
+        method: 'DELETE',
+    });
+
+    if (!response.ok) {
+        throw new Error('オプショングループの削除に失敗しました。');
+    }
+
+    // 成功したらDOMから行を削除
+    document.querySelector(`tr[data-group-id="${groupId}"]`).remove();
+    showMessage('オプショングループを削除しました！', 'success');
+}
 
 // --- オプションアイテム関連のJavaScript関数 ---
 

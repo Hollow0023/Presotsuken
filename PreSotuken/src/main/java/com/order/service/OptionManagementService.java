@@ -2,12 +2,16 @@ package com.order.service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.order.dto.OptionDeletionCheckDTO;
+import com.order.entity.MenuOption;
 import com.order.entity.OptionGroup;
 import com.order.entity.OptionItem;
+import com.order.repository.MenuOptionRepository;
 import com.order.repository.OptionGroupRepository;
 import com.order.repository.OptionItemRepository;
 
@@ -19,6 +23,7 @@ public class OptionManagementService {
 
     private final OptionGroupRepository optionGroupRepository;
     private final OptionItemRepository optionItemRepository;
+    private final MenuOptionRepository menuOptionRepository;
 
     // オプショングループ関連のメソッド
 
@@ -49,11 +54,49 @@ public class OptionManagementService {
 
     @Transactional
     public void deleteOptionGroup(int id) {
-        // オプショングループを削除する前に、関連するオプションアイテムも削除する（あるいは関連付けを解除する）
-        // cascade設定によっては自動で削除されるが、明示的に削除する方が安全な場合もある
+        // オプショングループを削除する前に、関連するオプションアイテム・メニューオプションも削除する
         List<OptionItem> items = optionItemRepository.findByOptionGroupId(id);
         optionItemRepository.deleteAll(items); // 関連アイテムを削除
+        
+        // 関連するMenuOptionも削除
+        List<MenuOption> menuOptions = menuOptionRepository.findByOptionGroupId(id);
+        menuOptionRepository.deleteAll(menuOptions);
+        
         optionGroupRepository.deleteById(id);
+    }
+
+    /**
+     * オプショングループの削除前チェック：関連するメニューがあるかを確認
+     */
+    public OptionDeletionCheckDTO checkOptionGroupDeletion(int optionGroupId) {
+        List<MenuOption> linkedMenuOptions = menuOptionRepository.findByOptionGroupIdWithMenu(optionGroupId);
+        
+        if (linkedMenuOptions.isEmpty()) {
+            return new OptionDeletionCheckDTO(false, List.of());
+        }
+        
+        List<OptionDeletionCheckDTO.LinkedMenuInfo> linkedMenus = linkedMenuOptions.stream()
+            .map(menuOption -> new OptionDeletionCheckDTO.LinkedMenuInfo(
+                menuOption.getMenu().getMenuId(),
+                menuOption.getMenu().getMenuName()
+            ))
+            .distinct() // 重複排除
+            .collect(Collectors.toList());
+            
+        return new OptionDeletionCheckDTO(true, linkedMenus);
+    }
+    
+    /**
+     * オプショングループと関連するメニューオプションを全て削除
+     */
+    @Transactional
+    public void deleteOptionGroupWithMenuOptions(int optionGroupId) {
+        // 関連するMenuOptionを削除
+        List<MenuOption> menuOptions = menuOptionRepository.findByOptionGroupId(optionGroupId);
+        menuOptionRepository.deleteAll(menuOptions);
+        
+        // 通常のオプショングループ削除処理を実行
+        deleteOptionGroup(optionGroupId);
     }
 
     // オプションアイテム関連のメソッド

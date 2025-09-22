@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import com.order.dto.OptionDeletionCheckDTO;
 import com.order.entity.OptionGroup;
 import com.order.entity.OptionItem;
 import com.order.service.OptionManagementService;
@@ -81,10 +82,22 @@ public class OptionManagementController {
     @ResponseBody // ステータスコードのみ返す
     public ResponseEntity<Void> deleteOptionGroup(@PathVariable int groupId) {
         try {
-            optionManagementService.deleteOptionGroup(groupId);
+            optionManagementService.deleteOptionGroupWithMenuOptions(groupId);
             return ResponseEntity.noContent().build(); // 成功（コンテンツなし）
         } catch (IllegalArgumentException e) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND); // 存在しないグループの場合
+        }
+    }
+    
+    // オプショングループ削除前のメニュー関連チェック
+    @GetMapping("/groups/{groupId}/deletion-check")
+    @ResponseBody
+    public ResponseEntity<OptionDeletionCheckDTO> checkOptionGroupDeletion(@PathVariable int groupId) {
+        try {
+            OptionDeletionCheckDTO checkResult = optionManagementService.checkOptionGroupDeletion(groupId);
+            return ResponseEntity.ok(checkResult);
+        } catch (Exception e) {
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
