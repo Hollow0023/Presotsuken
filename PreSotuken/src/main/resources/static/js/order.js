@@ -166,8 +166,8 @@ function fetchOrderHistoryForDisplay(historyModal, toggleBtn) {
             const tbody = document.querySelector('#historyTable tbody');
             tbody.innerHTML = '<tr><td colspan="3">注文履歴の読み込み中にエラーが発生しました。</td></tr>';
         });
-    }
 }
+
 
 // グローバル関数として公開（外部からの呼び出し用）
 window.toggleHistory = toggleHistory;
