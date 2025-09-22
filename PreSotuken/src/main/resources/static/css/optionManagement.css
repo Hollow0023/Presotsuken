@@ -104,18 +104,25 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; 
         width: 100%;
         height: 100%;
         background-color: rgba(0, 0, 0, 0.5);
+        /* フレックスボックスを使用して完全な中央配置 */
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        box-sizing: border-box;
     }
 
     .modal-content {
         background-color: #fefefe;
-        margin: 10% auto;
+        margin: 0; /* marginを削除、flexboxで中央配置 */
         padding: 30px;
         border: none;
         border-radius: 10px;
-        width: 80%;
+        width: 100%;
         max-width: 500px;
+        max-height: 85vh; /* 画面の85%以下に制限 */
         position: relative;
         box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        overflow-y: auto; /* 縦方向スクロールを許可 */
     }
 
     .close {
