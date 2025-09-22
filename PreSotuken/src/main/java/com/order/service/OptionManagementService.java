@@ -80,7 +80,12 @@ public class OptionManagementService {
                 menuOption.getMenu().getMenuId(),
                 menuOption.getMenu().getMenuName()
             ))
-            .distinct() // 重複排除
+            .collect(Collectors.toMap(
+                OptionDeletionCheckDTO.LinkedMenuInfo::getMenuId,
+                linkedMenu -> linkedMenu,
+                (existing, replacement) -> existing)) // 重複時は既存のものを保持
+            .values()
+            .stream()
             .collect(Collectors.toList());
             
         return new OptionDeletionCheckDTO(true, linkedMenus);
@@ -95,8 +100,12 @@ public class OptionManagementService {
         List<MenuOption> menuOptions = menuOptionRepository.findByOptionGroupId(optionGroupId);
         menuOptionRepository.deleteAll(menuOptions);
         
-        // 通常のオプショングループ削除処理を実行
-        deleteOptionGroup(optionGroupId);
+        // 関連するOptionItemも削除
+        List<OptionItem> items = optionItemRepository.findByOptionGroupId(optionGroupId);
+        optionItemRepository.deleteAll(items);
+        
+        // オプショングループ本体を削除
+        optionGroupRepository.deleteById(optionGroupId);
     }
 
     // オプションアイテム関連のメソッド
