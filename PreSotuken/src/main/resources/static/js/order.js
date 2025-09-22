@@ -600,6 +600,8 @@ function switchTab(tabElement) {
             item.classList.remove('d-none');
         } else {
             item.classList.add('d-none');
+            // 飲み放題メニューの表示クラスも削除して確実に非表示にする
+            item.classList.remove('active-plan-menu');
         }
     });
 }
