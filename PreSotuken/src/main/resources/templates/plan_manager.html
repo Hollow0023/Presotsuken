@@ -66,15 +66,235 @@
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="/js/utils.js"></script>
-    <script src="/js/plan-manager.js"></script>
     <script th:inline="javascript">
         /*<![CDATA[*/
         const initialPlans = /*[[${plans}]]*/ [];
         const allMenuGroups = /*[[${allMenuGroups}]]*/ [];
         
-        // ページロード後に初期化
-        document.addEventListener('DOMContentLoaded', function() {
-            initializePlanManager(initialPlans, allMenuGroups);
+        const currentStoreId = getCookie("storeId");
+
+        if (currentStoreId === null || isNaN(currentStoreId)) {
+            alert("店舗IDがCookieに設定されていません。管理画面へ戻ります。");
+            window.location.href = "/admin/dashboard"; // 適切な管理画面の入り口へ
+        }
+
+        // DOM要素の参照
+        const planListContainer = document.getElementById('planList');
+        const formTitle = document.getElementById('formTitle');
+        const planForm = document.getElementById('planForm');
+        const planIdInput = document.getElementById('planIdInput');
+        const planNameInput = document.getElementById('planNameInput');
+        const planDescriptionInput = document.getElementById('planDescriptionInput');
+        const submitBtn = document.getElementById('submitBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const deleteBtn = document.getElementById('deleteBtn');
+        const newPlanBtn = document.getElementById('newPlanBtn');
+        const storeIdFormInput = document.getElementById('storeIdFormInput');
+        const currentStoreIdDisplay = document.getElementById('currentStoreIdDisplay');
+
+        const menuGroupSelectsContainer = document.getElementById('menuGroupSelectsContainer');
+        const addMenuGroupBtn = document.getElementById('addMenuGroupBtn');
+
+        let selectedGroupIds = new Set(); // 既に選択されているグループIDを管理するSet
+
+        // プルダウンを生成・更新する関数
+        function createOrUpdateSelect(selectElement = null, selectedValue = null) {
+            let select;
+
+            if (selectElement === null) {
+                // 新しいプルダウンを作成
+                const selectDiv = document.createElement('div');
+                selectDiv.className = 'select-group';
+
+                select = document.createElement('select');
+                select.className = 'menu-group-select';
+                select.name = 'menuGroupIds';
+                select.required = true;
+
+                const removeBtn = document.createElement('button');
+                removeBtn.type = 'button';
+                removeBtn.textContent = '削除';
+                removeBtn.className = 'remove-group-btn';
+                removeBtn.onclick = function() {
+                    selectDiv.remove();
+                    updateAllSelectOptions(); // 削除後にオプションを更新
+                };
+
+                selectDiv.appendChild(select);
+                selectDiv.appendChild(removeBtn);
+                menuGroupSelectsContainer.appendChild(selectDiv);
+            } else {
+                // 既存のプルダウンを更新
+                select = selectElement;
+            }
+
+            // 現在の選択値を保存
+            const currentSelectValue = select.value;
+
+            // 他のプルダウンで選択されているIDを一時的に収集
+            const tempSelectedIds = new Set();
+            document.querySelectorAll('.menu-group-select').forEach(otherSelect => {
+                if (otherSelect !== select && otherSelect.value !== "") {
+                    tempSelectedIds.add(parseInt(otherSelect.value));
+                }
+            });
+
+            // 既存のオプションをクリア
+            select.innerHTML = '';
+
+            // デフォルトオプションを追加
+            const defaultOption = document.createElement('option');
+            defaultOption.value = '';
+            defaultOption.textContent = 'メニューグループを選択';
+            select.appendChild(defaultOption);
+
+            // メニューグループのオプションを追加
+            allMenuGroups.forEach(group => {
+                // 他のプルダウンで既に選択されていないか、またはこのプルダウン自身で選択されているグループである場合
+                if (!tempSelectedIds.has(group.groupId) || group.groupId === currentSelectValue || group.groupId === selectedValue) {
+                    const option = document.createElement('option');
+                    option.value = group.groupId;
+                    option.textContent = group.groupName;
+                    select.appendChild(option);
+                }
+            });
+
+            // 選択値をセット
+            if (selectedValue !== null) { // 初期ロード時や編集時の明示的な選択値
+                select.value = selectedValue;
+            } else if (currentSelectValue !== null) { // プルダウン更新時の元の選択値
+                select.value = currentSelectValue;
+            } else {
+                select.value = ""; // デフォルトに戻す
+            }
+        }
+
+        // 全てのプルダウンのオプションを更新する関数
+        function updateAllSelectOptions() {
+            selectedGroupIds.clear(); // 全ての選択済みIDをリセット
+
+            // 現在の全てのプルダウンの選択値を収集し、selectedGroupIdsに格納
+            document.querySelectorAll('.menu-group-select').forEach(select => {
+                if (select.value !== "") {
+                    selectedGroupIds.add(parseInt(select.value));
+                }
+            });
+
+            // 各プルダウンのオプションを再生成（現在の選択値を保持しながら）
+            document.querySelectorAll('.menu-group-select').forEach(select => {
+                createOrUpdateSelect(select); // 既存のselect要素を渡して更新
+            });
+        }
+
+        // フォームをリセットする関数
+        function resetForm() {
+            formTitle.textContent = "新規プラン作成";
+            planForm.action = "/admin/plans/create";
+            planIdInput.value = "";
+            planNameInput.value = "";
+            planDescriptionInput.value = "";
+            storeIdFormInput.value = currentStoreId;
+            submitBtn.textContent = "作成";
+            deleteBtn.style.display = "none";
+
+            // 既存のプルダウンを全てクリア
+            menuGroupSelectsContainer.innerHTML = '';
+            selectedGroupIds.clear(); // 選択済みIDをクリア
+
+            // 最初の空のプルダウンを追加
+            createOrUpdateSelect();
+        }
+
+        // プランデータをフォームに読み込む関数
+        function loadPlanIntoForm(plan) {
+            formTitle.textContent = "プラン編集 (ID: " + plan.planId + ")";
+            planForm.action = "/admin/plans/update";
+            planIdInput.value = plan.planId;
+            planNameInput.value = plan.planName;
+            planDescriptionInput.value = plan.planDescription;
+            storeIdFormInput.value = plan.storeId;
+            submitBtn.textContent = "更新";
+            deleteBtn.style.display = "inline-block";
+
+            // 既存のプルダウンを全てクリア
+            menuGroupSelectsContainer.innerHTML = '';
+            selectedGroupIds.clear(); // 選択済みIDをクリア
+
+            // 紐づくグループの数だけプルダウンを生成し、値をセット
+            if (plan.menuGroupIds && plan.menuGroupIds.length > 0) {
+                plan.menuGroupIds.forEach(groupId => {
+                    createOrUpdateSelect(null, groupId); // nullを渡して新しいselectを作成し、groupIdを選択
+                    selectedGroupIds.add(groupId); // 選択済みとして追加
+                });
+            } else {
+                createOrUpdateSelect(); // グループがない場合は最初の空のプルダウンを追加
+            }
+            // initialPlansが空の場合にupdateAllSelectOptionsが呼ばれないため、明示的に呼ぶ
+            // loadPlanIntoFormの最後でもう一度updateAllSelectOptionsを呼び出す
+            updateAllSelectOptions(); // オプションを更新して重複を避ける
+        }
+
+        // 初期ロード時に全てのプランアイテムにイベントリスナーを設定
+        planListContainer.addEventListener('click', function(event) {
+            const planItem = event.target.closest('.plan-item');
+            if (planItem) {
+                const planId = parseInt(planItem.getAttribute('data-plan-id'));
+                // APIからプランデータを取得してフォームにロード
+                fetch(`/admin/plans/api/${planId}`)
+                    .then(response => response.json())
+                    .then(plan => {
+                        loadPlanIntoForm(plan);
+                    })
+                    .catch(error => {
+                        console.error('プランデータの取得に失敗しました:', error);
+                        alert('プランデータの取得に失敗しました。');
+                    });
+            }
+        });
+
+        // 新規プランボタンのイベントリスナー
+        newPlanBtn.addEventListener('click', resetForm);
+
+        // リセットボタンのイベントリスナー
+        resetBtn.addEventListener('click', resetForm);
+
+        // 「グループ追加」ボタンのイベントリスナー
+        addMenuGroupBtn.addEventListener('click', () => {
+            createOrUpdateSelect(); // 新しいプルダウンを追加
+            updateAllSelectOptions(); // 他のプルダウンのオプションを更新
+        });
+
+        // 削除ボタンのイベントリスナー
+        deleteBtn.addEventListener('click', function() {
+            const planId = planIdInput.value;
+            if (planId && confirm('本当にこのプランを削除しますか？')) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = `/admin/plans/delete/${planId}`;
+                document.body.appendChild(form);
+                form.submit();
+            }
+        });
+
+        // ページロード時の処理
+        window.addEventListener('load', () => {
+            // 現在の店舗IDを画面に表示
+            currentStoreIdDisplay.textContent = currentStoreId;
+
+            // 初期状態として新規作成フォームをセット
+            resetForm();
+
+            // URLからメッセージパラメータを取得して表示
+            const urlParams = new URLSearchParams(window.location.search);
+            const message = urlParams.get('message');
+            
+            if (message) {
+                alert(decodeURIComponent(message));
+                // URLからメッセージパラメータを削除
+                const newUrl = new URL(window.location.href);
+                newUrl.searchParams.delete('message');
+                window.history.replaceState({}, document.title, newUrl.toString());
+            }
         });
         /*]]>*/
     </script>
