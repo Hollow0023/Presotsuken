@@ -144,9 +144,13 @@ window.deleteOptionGroup = async (groupId) => {
             showMenuLinkageModal(groupId, checkResult.linkedMenus);
         } else {
             // 関連するメニューがない場合は通常の削除確認
-            if (confirm('このオプショングループと、その中の全てのアイテムを本当に削除しますか？')) {
-                await performOptionGroupDeletion(groupId);
-            }
+            showConfirmationModal(
+                '削除確認',
+                'このオプショングループと、その中の全てのアイテムを本当に削除しますか？',
+                async () => {
+                    await performOptionGroupDeletion(groupId);
+                }
+            );
         }
     } catch (error) {
         console.error('Error checking option group deletion:', error);
@@ -158,7 +162,7 @@ window.deleteOptionGroup = async (groupId) => {
 function showMenuLinkageModal(groupId, linkedMenus) {
     // モーダルHTMLを動的に作成
     const modalHtml = `
-        <div id="menuLinkageModal" class="modal" style="display: block;">
+        <div id="menuLinkageModal" class="modal" style="display: flex;">
             <div class="modal-content">
                 <span class="close" onclick="closeMenuLinkageModal()">&times;</span>
                 <h3>メニューとの関連が見つかりました</h3>
@@ -197,6 +201,47 @@ window.closeMenuLinkageModal = () => {
     if (modal) {
         modal.remove();
     }
+};
+
+// 汎用的な確認モーダルを表示
+function showConfirmationModal(title, message, onConfirm) {
+    const modalHtml = `
+        <div id="confirmationModal" class="modal" style="display: flex;">
+            <div class="modal-content">
+                <span class="close" onclick="closeConfirmationModal()">&times;</span>
+                <h3>${title}</h3>
+                <p>${message}</p>
+                <div class="modal-buttons">
+                    <button class="primary" onclick="confirmAction()">はい</button>
+                    <button class="secondary" onclick="closeConfirmationModal()">キャンセル</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // 確認アクションを一時的にグローバルスコープに保存
+    window.confirmationAction = onConfirm;
+    
+    // モーダルをページに追加
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+// 確認モーダルを閉じる
+window.closeConfirmationModal = () => {
+    const modal = document.getElementById('confirmationModal');
+    if (modal) {
+        modal.remove();
+    }
+    // 確認アクションをクリア
+    window.confirmationAction = null;
+};
+
+// 確認アクションを実行
+window.confirmAction = () => {
+    if (window.confirmationAction) {
+        window.confirmationAction();
+    }
+    closeConfirmationModal();
 };
 
 // 実際のオプショングループ削除処理
@@ -342,26 +387,27 @@ window.toggleEditItem = (button, itemId) => {
 
 // オプションアイテムの削除
 window.deleteOptionItem = async (itemId) => {
-    if (!confirm('このオプションアイテムを本当に削除しますか？')) {
-        return;
-    }
+    showConfirmationModal(
+        '削除確認',
+        'このオプションアイテムを本当に削除しますか？',
+        async () => {
+            try {
+                const response = await fetch(`/options/items/${itemId}`, {
+                    method: 'DELETE',
+                });
 
-    try {
-        const response = await fetch(`/options/items/${itemId}`, {
-            method: 'DELETE',
-        });
+                if (!response.ok) {
+                    throw new Error('オプションアイテムの削除に失敗しました。');
+                }
 
-        if (!response.ok) {
-            throw new Error('オプションアイテムの削除に失敗しました。');
+                // 成功したらDOMから行を削除
+                document.querySelector(`li[data-item-id="${itemId}"]`).remove();
+                showMessage('オプションアイテムを削除しました！', 'success');
+            } catch (error) {
+                console.error('Error deleting option item:', error);
+                showMessage('オプションアイテムの削除中にエラーが発生しました: ' + error.message, 'error');
+            }
         }
-
-
-        // 成功したらDOMから行を削除
-        document.querySelector(`li[data-item-id="${itemId}"]`).remove();
-        showMessage('オプションアイテムを削除しました！', 'success');
-    } catch (error) {
-        console.error('Error deleting option item:', error);
-        showMessage('オプションアイテムの削除中にエラーが発生しました: ' + error.message, 'error');
-    }
+    );
 };
 
