@@ -50,90 +50,9 @@
         </nav>
     </div>
 
-    <!-- バーガーメニューのCSS -->
+    <!-- バーガーメニューのCSS（navigation.cssで定義済みのため、ここでは空のフラグメント） -->
     <div th:fragment="burger-menu-css">
-        <style>
-            .burger {
-                position: fixed;
-                top: 16px;
-                left: 16px;
-                z-index: 1001;
-                font-size: 24px;
-                background: none;
-                border: none;
-                color: black;
-            }
-
-            /*メニュー部分*/
-            .menu-drawer {
-                position: fixed;
-                top: 0;
-                left: -100%;
-                width: 300px;
-                background-color: #333;
-                color: white;
-                padding: 80px 20px 20px;
-                box-shadow: 2px 0 6px rgba(0, 0, 0, 0.3);
-                transition: left 0.3s ease;
-                z-index: 1000;
-                display: flex;
-                flex-direction: column;
-                justify-content: space-between;
-                box-sizing: border-box;
-                overflow-y: auto;
-                height: 92vh; 
-            }
-
-            .menu-drawer.open {
-                left: 0;
-            }
-
-            .menu-drawer a {
-                display: block;
-                color: white;
-                text-decoration: none;
-                margin-bottom: 16px;
-                font-size: 20px;
-                margin-bottom: 15px;
-            }
-
-            .menu-drawer a:hover {
-                text-decoration: underline;
-            }
-
-            .menu-group {
-                margin-bottom: 24px;
-            }
-
-            .menu-group-title {
-                margin: 0;
-                font-size: 18px;
-                font-weight: bold;
-                cursor: pointer;
-                margin-bottom: 8px;
-                list-style: none;
-            }
-
-            .menu-group-title::-webkit-details-marker,
-            .menu-group-title::marker {
-                display: none;
-            }
-
-            .menu-group-title::before {
-                content: "\25B6"; /* ▶ */
-                display: inline-block;
-                margin-right: 6px;
-                transition: transform 0.2s;
-            }
-
-            .menu-group[open] > .menu-group-title::before {
-                transform: rotate(90deg);
-            }
-
-            .menu-group a {
-                padding-left: 20px;
-            }
-        </style>
+        <!-- CSS is already defined in /css/components/navigation.css -->
     </div>
 
     <!-- バーガーメニューのJavaScript -->

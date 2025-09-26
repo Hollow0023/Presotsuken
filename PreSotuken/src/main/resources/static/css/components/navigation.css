@@ -43,6 +43,10 @@
     transition: left 0.3s ease;
     z-index: 1000;
     overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-sizing: border-box;
 }
 
 .menu-drawer.open {
@@ -59,17 +63,15 @@
 
 .menu-drawer a {
     display: block;
-    color: #ccc;
+    color: white;
     text-decoration: none;
-    padding: 12px 0;
-    border-bottom: 1px solid #555;
+    margin-bottom: 15px;
+    font-size: 20px;
     transition: color 0.2s ease;
 }
 
 .menu-drawer a:hover {
-    color: white;
-    background-color: rgba(255, 255, 255, 0.1);
-    padding-left: 10px;
+    text-decoration: underline;
 }
 
 /* ========================================
@@ -77,29 +79,37 @@
 ======================================== */
 
 .menu-group {
-    margin-bottom: 10px;
+    margin-bottom: 24px;
 }
 
 .menu-group-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: bold;
     color: white;
-    font-weight: 600;
-    padding: 10px 0;
     cursor: pointer;
-    border-bottom: 1px solid #555;
-    margin-bottom: 5px;
+    margin-bottom: 8px;
+    list-style: none;
 }
 
-.menu-group-title:hover {
-    color: #ddd;
+.menu-group-title::-webkit-details-marker,
+.menu-group-title::marker {
+    display: none;
 }
 
-.menu-group[open] .menu-group-title {
-    color: #4CAF50;
+.menu-group-title::before {
+    content: "▶"; /* ▶ */
+    display: inline-block;
+    margin-right: 6px;
+    transition: transform 0.2s;
+}
+
+.menu-group[open] > .menu-group-title::before {
+    transform: rotate(90deg);
 }
 
 .menu-group a {
     padding-left: 20px;
-    font-size: 14px;
 }
 
 /* ========================================
