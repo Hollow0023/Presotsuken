@@ -8,9 +8,9 @@
 ======================================== */
 
 .burger {
-    position: fixed;
-    top: 16px;
-    left: 16px;
+    position: fixed !important;
+    top: 16px !important;
+    left: 16px !important;
     z-index: 1001;
     font-size: 24px;
     background: none;
@@ -189,4 +189,29 @@
     .menu-tab {
         padding: 10px 16px;
     }
+}
+
+/* ========================================
+   ページコンテンツのスペース確保
+======================================== */
+
+/* バーガーメニューボタンとの重複を避けるため、ページタイトルや内容に適切なマージンを設定 */
+
+/* ページタイトル（h1, h2）の上マージンを調整 - バーガーメニューと重複しないように */
+body h1:first-child,
+body h2:first-child,
+body .container h1:first-child,
+body .container h2:first-child {
+    margin-top: 60px !important;
+}
+
+/* 入出金登録ページのような body に直接 padding があるページの対応 */
+body[style*="padding"] h1,
+body[style*="padding"] h2 {
+    margin-top: 60px !important;
+}
+
+/* インライン style で padding が設定されているページでの burger menu 位置確保 */
+body {
+    position: relative;
 }
