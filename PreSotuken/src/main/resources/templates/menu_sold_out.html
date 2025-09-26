@@ -1,11 +1,20 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>メニュー品切れ登録</title>
-    <link rel="stylesheet" href="/css/sold_out.css"> </head>
+    <link rel="stylesheet" href="/css/sold_out.css">
+    <!-- バーガーメニューのCSS -->
+    <div th:replace="~{fragments/burger-menu :: burger-menu-css}"></div>
+</head>
 <body>
+    <!-- バーガーメニューボタン -->
+    <div th:replace="~{fragments/burger-menu :: burger-button}"></div>
+    
+    <!-- バーガーメニュードロワー -->
+    <div th:replace="~{fragments/burger-menu :: burger-drawer}"></div>
+    
     <div class="container">
         <h1>メニュー品切れ登録</h1>
         <p>ここでメニューの品切れ状態を切り替えることができます。</p>
@@ -32,5 +41,9 @@
         </table>
     </div>
 
-    <script src="/js/sold_out.js"></script> </body>
+    <script src="/js/sold_out.js"></script>
+    
+    <!-- バーガーメニューのJavaScript -->
+    <div th:replace="~{fragments/burger-menu :: burger-menu-js}"></div>
+</body>
 </html>

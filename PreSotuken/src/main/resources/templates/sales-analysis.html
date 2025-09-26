@@ -4,8 +4,16 @@
     <meta charset="UTF-8">
     <title>売上分析</title>
     <link rel="stylesheet" href="/css/sales-analysis.css">
+    <!-- バーガーメニューのCSS -->
+    <div th:replace="~{fragments/burger-menu :: burger-menu-css}"></div>
 </head>
 <body>
+    <!-- バーガーメニューボタン -->
+    <div th:replace="~{fragments/burger-menu :: burger-button}"></div>
+    
+    <!-- バーガーメニュードロワー -->
+    <div th:replace="~{fragments/burger-menu :: burger-drawer}"></div>
+    
 <h1>売上分析</h1>
 <a href="/">← トップに戻る</a>
 
@@ -74,5 +82,8 @@ document.querySelectorAll('#analysisTable tbody tr').forEach(row => {
     });
 });
 </script>
+
+<!-- バーガーメニューのJavaScript -->
+<div th:replace="~{fragments/burger-menu :: burger-menu-js}"></div>
 </body>
 </html>

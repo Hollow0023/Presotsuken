@@ -10,8 +10,16 @@
         input, select, textarea { width: 100%; padding: 8px; box-sizing: border-box; }
         button { margin-top: 20px; padding: 10px; width: 100%; }
     </style>
+    <!-- バーガーメニューのCSS -->
+    <div th:replace="~{fragments/burger-menu :: burger-menu-css}"></div>
 </head>
 <body>
+    <!-- バーガーメニューボタン -->
+    <div th:replace="~{fragments/burger-menu :: burger-button}"></div>
+    
+    <!-- バーガーメニュードロワー -->
+    <div th:replace="~{fragments/burger-menu :: burger-drawer}"></div>
+    
     <h2>入出金登録</h2>
 	<a href="/">← トップに戻る</a>
     <form th:action="@{/admin/cash/transaction}" method="post" th:object="${cashTransactionRequest}">
@@ -41,5 +49,8 @@
     <div th:if="${param.success}">
         <p style="color: green;">登録しました！</p>
     </div>
+    
+    <!-- バーガーメニューのJavaScript -->
+    <div th:replace="~{fragments/burger-menu :: burger-menu-js}"></div>
 </body>
 </html>

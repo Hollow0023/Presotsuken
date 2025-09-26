@@ -3,8 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <title>プラン管理</title>
-    <link rel="stylesheet" href="/css/plan_manager.css"> </head>
+    <link rel="stylesheet" href="/css/plan_manager.css">
+    <!-- バーガーメニューのCSS -->
+    <div th:replace="~{fragments/burger-menu :: burger-menu-css}"></div>
+</head>
 <body>
+    <!-- バーガーメニューボタン -->
+    <div th:replace="~{fragments/burger-menu :: burger-button}"></div>
+    
+    <!-- バーガーメニュードロワー -->
+    <div th:replace="~{fragments/burger-menu :: burger-drawer}"></div>
+    
     <div class="left-panel">
         <div class="list-header">
             <h1>
@@ -77,6 +86,9 @@
         });
         /*]]>*/
     </script>
+
+    <!-- バーガーメニューのJavaScript -->
+    <div th:replace="~{fragments/burger-menu :: burger-menu-js}"></div>
 
 </body>
 </html>

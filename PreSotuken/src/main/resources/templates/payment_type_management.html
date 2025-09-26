@@ -3,8 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <title>支払い方法管理</title>
+    <!-- バーガーメニューのCSS -->
+    <div th:replace="~{fragments/burger-menu :: burger-menu-css}"></div>
 </head>
 <body>
+    <!-- バーガーメニューボタン -->
+    <div th:replace="~{fragments/burger-menu :: burger-button}"></div>
+    
+    <!-- バーガーメニュードロワー -->
+    <div th:replace="~{fragments/burger-menu :: burger-drawer}"></div>
+    
 <h1>支払い方法管理</h1>
 <a href="/">← トップに戻る</a>
 <input type="hidden" id="currentStoreId" th:value="${storeId}">
@@ -25,5 +33,8 @@
 <button type="button" onclick="createPaymentType()">追加</button>
 
 <script src="/js/payment-type-management.js"></script>
+
+<!-- バーガーメニューのJavaScript -->
+<div th:replace="~{fragments/burger-menu :: burger-menu-js}"></div>
 </body>
 </html>

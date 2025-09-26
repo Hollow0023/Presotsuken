@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+</head>
+<body>
+    <!-- バーガーメニューボタン -->
+    <div th:fragment="burger-button">
+        <button class="burger" onclick="toggleMenu()">☰</button>
+    </div>
+
+    <!-- バーガーメニュードロワー -->
+    <div th:fragment="burger-drawer">
+        <nav id="menuDrawer" class="menu-drawer">
+            <div>
+                <details class="menu-group" close>
+                    <summary class="menu-group-title">メニュー設定</summary>
+                    <a href="/menu/list">メニュー管理</a>
+                    <a href="/menu/group/add">メニューグループ管理</a>
+                    <a href="/options">オプション管理</a>
+                    <a href="/menu/sold-out-management">メニュー品切れ管理</a>
+                </details>
+
+                <details class="menu-group" close>
+                    <summary class="menu-group-title">事務操作</summary>
+                    <a th:href="@{/admin/cash/transaction}">入出金</a>
+                    <a th:href="@{/admin/cash/history}">入出金履歴</a>
+                    <a th:href="@{/payments/history}">会計履歴</a>
+                    <a th:href="@{/payment-types}">支払い方法管理</a>
+                    <a th:href="@{/sales-analysis}">売上分析</a>
+                    <a th:href="@{/admin/inspection/form}">点検</a>
+                    <a th:href="@{/admin/inspection/history}">点検履歴</a>
+                </details>
+
+                <details class="menu-group" close>
+                    <summary class="menu-group-title">店舗設定</summary>
+                    <a href="/admin/printers" >プリンター管理</a>
+                    <a href="/admin/plans">プラン管理</a>
+                    <a href="/admin/terminals">端末管理</a>
+                    <a th:href="@{/admin/terminals/logo}">ロゴ設定</a>
+                    <a th:href="@{/admin/store/edit}">店舗設定</a>
+                    <a th:href="@{/seat/edit}">座席グループ・座席編集</a>
+                    <a th:href="@{/admin/staff}">スタッフ編集</a>
+                </details>
+            </div>
+
+            <form th:action="@{/logout}" method="get" onsubmit="clearUserIdCookie()">
+                <button type="submit">ログアウト</button>
+            </form>
+        </nav>
+    </div>
+
+    <!-- バーガーメニューのCSS -->
+    <div th:fragment="burger-menu-css">
+        <style>
+            .burger {
+                position: fixed;
+                top: 16px;
+                left: 16px;
+                z-index: 1001;
+                font-size: 24px;
+                background: none;
+                border: none;
+                color: black;
+            }
+
+            /*メニュー部分*/
+            .menu-drawer {
+                position: fixed;
+                top: 0;
+                left: -100%;
+                width: 300px;
+                background-color: #333;
+                color: white;
+                padding: 80px 20px 20px;
+                box-shadow: 2px 0 6px rgba(0, 0, 0, 0.3);
+                transition: left 0.3s ease;
+                z-index: 1000;
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+                box-sizing: border-box;
+                overflow-y: auto;
+                height: 92vh; 
+            }
+
+            .menu-drawer.open {
+                left: 0;
+            }
+
+            .menu-drawer a {
+                display: block;
+                color: white;
+                text-decoration: none;
+                margin-bottom: 16px;
+                font-size: 20px;
+                margin-bottom: 15px;
+            }
+
+            .menu-drawer a:hover {
+                text-decoration: underline;
+            }
+
+            .menu-group {
+                margin-bottom: 24px;
+            }
+
+            .menu-group-title {
+                margin: 0;
+                font-size: 18px;
+                font-weight: bold;
+                cursor: pointer;
+                margin-bottom: 8px;
+                list-style: none;
+            }
+
+            .menu-group-title::-webkit-details-marker,
+            .menu-group-title::marker {
+                display: none;
+            }
+
+            .menu-group-title::before {
+                content: "\25B6"; /* ▶ */
+                display: inline-block;
+                margin-right: 6px;
+                transition: transform 0.2s;
+            }
+
+            .menu-group[open] > .menu-group-title::before {
+                transform: rotate(90deg);
+            }
+
+            .menu-group a {
+                padding-left: 20px;
+            }
+        </style>
+    </div>
+
+    <!-- バーガーメニューのJavaScript -->
+    <div th:fragment="burger-menu-js">
+        <script>
+            /**
+             * メニュー外のクリックを検知してメニューを閉じる関数
+             * @param {Event} event - クリックイベントオブジェクト
+             */
+            function handleOutsideMenuClick(event) {
+                const drawer = document.getElementById("menuDrawer");
+                const burger = document.querySelector(".burger");
+
+                if (!drawer.contains(event.target) && event.target !== burger) {
+                    toggleMenu();
+                }
+            }
+
+            function toggleMenu() {
+                const drawer = document.getElementById("menuDrawer");
+                const burger = document.querySelector(".burger");
+
+                drawer.classList.toggle("open");
+
+                if (drawer.classList.contains("open")) {
+                    document.addEventListener("click", handleOutsideMenuClick, true); 
+                    burger.style.color = "white";
+                } else {
+                    document.removeEventListener("click", handleOutsideMenuClick, true);
+                    burger.style.color = "black";
+                }
+            }
+
+            function clearUserIdCookie() {
+                document.cookie = "userId=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+            }
+        </script>
+    </div>
+</body>
+</html>

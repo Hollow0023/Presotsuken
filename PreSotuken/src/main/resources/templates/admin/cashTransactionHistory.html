@@ -3,6 +3,15 @@
 <head th:replace="fragments/common-head :: common-head('入出金履歴', ${'cash-transaction-history.css'})">
 </head>
 <body>
+    <!-- バーガーメニューのCSS -->
+    <div th:replace="~{fragments/burger-menu :: burger-menu-css}"></div>
+    
+    <!-- バーガーメニューボタン -->
+    <div th:replace="~{fragments/burger-menu :: burger-button}"></div>
+    
+    <!-- バーガーメニュードロワー -->
+    <div th:replace="~{fragments/burger-menu :: burger-drawer}"></div>
+    
     <div class="container">
         <h1>入出金履歴</h1>
 		<a href="/">← トップに戻る</a>
@@ -73,5 +82,8 @@
             }
         });
     </script>
+    
+    <!-- バーガーメニューのJavaScript -->
+    <div th:replace="~{fragments/burger-menu :: burger-menu-js}"></div>
 </body>
 </html>

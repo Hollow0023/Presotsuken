@@ -8,9 +8,16 @@
     <title>メニュー一覧と編集</title>
     <link rel="stylesheet" th:href="@{/css/menu-management.css}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+    <!-- バーガーメニューのCSS -->
+    <div th:replace="~{fragments/burger-menu :: burger-menu-css}"></div>
 
 </head>
 <body>
+    <!-- バーガーメニューボタン -->
+    <div th:replace="~{fragments/burger-menu :: burger-button}"></div>
+    
+    <!-- バーガーメニュードロワー -->
+    <div th:replace="~{fragments/burger-menu :: burger-drawer}"></div>
     <div class="container">
         <div th:if="${message}" th:text="${message}" class="message"></div>
     	<div th:if="${error}" th:text="${error}" class="error-message"></div>
@@ -154,5 +161,7 @@
     <script th:src="@{/js/menu-management.js}"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
     
+    <!-- バーガーメニューのJavaScript -->
+    <div th:replace="~{fragments/burger-menu :: burger-menu-js}"></div>
 </body>
 </html>
