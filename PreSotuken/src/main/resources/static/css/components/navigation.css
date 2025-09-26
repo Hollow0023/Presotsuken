@@ -212,13 +212,13 @@ body h1:first-child,
 body h2:first-child,
 body .container h1:first-child,
 body .container h2:first-child {
-    margin-top: 60px !important;
+    margin-top: 80px !important;
 }
 
 /* 入出金登録ページのような body に直接 padding があるページの対応 */
 body[style*="padding"] h1,
 body[style*="padding"] h2 {
-    margin-top: 60px !important;
+    margin-top: 80px !important;
 }
 
 /* インライン style で padding が設定されているページでの burger menu 位置確保 */
