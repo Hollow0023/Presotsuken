@@ -12,38 +12,6 @@ function decrease() {
     }
 }
 
-/**
- * メニュー外のクリックを検知してメニューを閉じる関数
- * @param {Event} event - クリックイベントオブジェクト
- */
-function handleOutsideMenuClick(event) {
-    const drawer = document.getElementById("menuDrawer");
-    const burger = document.querySelector(".burger");
-
-    if (!drawer.contains(event.target) && event.target !== burger) {
-        toggleMenu();
-    }
-}
-
-function toggleMenu() {
-    const drawer = document.getElementById("menuDrawer");
-    const burger = document.querySelector(".burger");
-
-    drawer.classList.toggle("open");
-
-    if (drawer.classList.contains("open")) {
-        document.addEventListener("click", handleOutsideMenuClick, true); 
-        burger.style.color = "white";
-    } else {
-        document.removeEventListener("click", handleOutsideMenuClick, true);
-        burger.style.color = "black";
-    }
-}
-
-function clearUserIdCookie() {
-    document.cookie = "userId=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-}
-
 function openSeat(elem) {
     const seatId = elem.getAttribute('data-seat-id');
     const seatName = elem.getAttribute('data-seat-name');
