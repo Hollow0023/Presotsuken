@@ -5,8 +5,16 @@
     <title>座席管理</title>
     <link rel="stylesheet" th:href="@{/css/seatEdit.css}">
     <script th:src="@{/js/seatEdit.js}" defer></script>
+    <!-- バーガーメニューのCSS -->
+    <div th:replace="~{fragments/burger-menu :: burger-menu-css}"></div>
 </head>
 <body>
+    <!-- バーガーメニューボタン -->
+    <div th:replace="~{fragments/burger-menu :: burger-button}"></div>
+    
+    <!-- バーガーメニュードロワー -->
+    <div th:replace="~{fragments/burger-menu :: burger-drawer}"></div>
+    
 <div class="container">
     <div class="sidebar">
         <h2>座席グループ</h2>
@@ -47,6 +55,9 @@
         <button id="cancelSeatBtn">キャンセル</button>
     </div>
 </div>
+
+<!-- バーガーメニューのJavaScript -->
+<div th:replace="~{fragments/burger-menu :: burger-menu-js}"></div>
 
 </body>
 </html>

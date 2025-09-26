@@ -48,9 +48,17 @@ th, td {
 	font-size: 16px;
 }
 </style>
+<!-- バーガーメニューのCSS -->
+<div th:replace="~{fragments/burger-menu :: burger-menu-css}"></div>
 </head>
 
 <body>
+	<!-- バーガーメニューボタン -->
+	<div th:replace="~{fragments/burger-menu :: burger-button}"></div>
+	
+	<!-- バーガーメニュードロワー -->
+	<div th:replace="~{fragments/burger-menu :: burger-drawer}"></div>
+	
 	<h1>点検フォーム</h1>
 	<div style="margin-bottom: 15px;">
 		<a href="/">← トップに戻る</a>
@@ -257,5 +265,8 @@ th, td {
     });
 
 </script>
+
+<!-- バーガーメニューのJavaScript -->
+<div th:replace="~{fragments/burger-menu :: burger-menu-js}"></div>
 </body>
 </html>

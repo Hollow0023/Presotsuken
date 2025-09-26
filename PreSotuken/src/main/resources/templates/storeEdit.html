@@ -15,8 +15,16 @@
         .success { background-color: #d4edda; color: #155724; border: 1px solid #badbcc; }
         .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
     </style>
+    <!-- バーガーメニューのCSS -->
+    <div th:replace="~{fragments/burger-menu :: burger-menu-css}"></div>
 </head>
 <body>
+    <!-- バーガーメニューボタン -->
+    <div th:replace="~{fragments/burger-menu :: burger-button}"></div>
+    
+    <!-- バーガーメニュードロワー -->
+    <div th:replace="~{fragments/burger-menu :: burger-drawer}"></div>
+    
     <div class="container">
         <h1>店舗情報編集</h1>
         <a href="/">← トップに戻る</a>
@@ -53,5 +61,8 @@
             </div>
         </form>
     </div>
+    
+    <!-- バーガーメニューのJavaScript -->
+    <div th:replace="~{fragments/burger-menu :: burger-menu-js}"></div>
 </body>
 </html>

@@ -1,8 +1,17 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="fragments/common-head :: common-head('端末管理', ${'admin-terminals.css'})">
 </head>
 <body>
+    <!-- バーガーメニューのCSS -->
+    <div th:replace="~{fragments/burger-menu :: burger-menu-css}"></div>
+    
+    <!-- バーガーメニューボタン -->
+    <div th:replace="~{fragments/burger-menu :: burger-button}"></div>
+    
+    <!-- バーガーメニュードロワー -->
+    <div th:replace="~{fragments/burger-menu :: burger-drawer}"></div>
+    
     <h1>端末管理</h1>
     <a href="/">← トップに戻る</a>
     <div class="form-section">
@@ -502,5 +511,8 @@
         }
 
     </script>
+    
+    <!-- バーガーメニューのJavaScript -->
+    <div th:replace="~{fragments/burger-menu :: burger-menu-js}"></div>
 </body>
 </html>

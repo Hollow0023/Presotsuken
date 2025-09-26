@@ -3,6 +3,14 @@
 <head th:replace="fragments/common-head :: common-head('プリンタ設定', ${'printer-edit.css'})">
 </head>
 <body>
+	<!-- バーガーメニューのCSS -->
+	<div th:replace="~{fragments/burger-menu :: burger-menu-css}"></div>
+	
+	<!-- バーガーメニューボタン -->
+	<div th:replace="~{fragments/burger-menu :: burger-button}"></div>
+	
+	<!-- バーガーメニュードロワー -->
+	<div th:replace="~{fragments/burger-menu :: burger-drawer}"></div>
 
 	<h1>プリンタ設定</h1>
 	<a href="/" class="topBtn">トップに戻る</a>
@@ -88,6 +96,9 @@
 			</table>
 		</div>
 	</div>
+
+	<!-- バーガーメニューのJavaScript -->
+	<div th:replace="~{fragments/burger-menu :: burger-menu-js}"></div>
 
 </body>
 </html>

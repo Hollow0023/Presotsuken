@@ -5,8 +5,16 @@
     <title>スタッフ管理</title>
     <link rel="stylesheet" th:href="@{/css/staff_management.css}">
     <script th:src="@{/js/staff_management.js}" defer></script>
+    <!-- バーガーメニューのCSS -->
+    <div th:replace="~{fragments/burger-menu :: burger-menu-css}"></div>
 </head>
 <body>
+    <!-- バーガーメニューボタン -->
+    <div th:replace="~{fragments/burger-menu :: burger-button}"></div>
+    
+    <!-- バーガーメニュードロワー -->
+    <div th:replace="~{fragments/burger-menu :: burger-drawer}"></div>
+    
 <div class="container">
     <div class="header">
         <h1>スタッフ管理</h1>
@@ -63,6 +71,9 @@
     <div id="messageContent"></div>
     <button id="closeMessageBtn">×</button>
 </div>
+
+<!-- バーガーメニューのJavaScript -->
+<div th:replace="~{fragments/burger-menu :: burger-menu-js}"></div>
 
 </body>
 </html>

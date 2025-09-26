@@ -5,8 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ロゴ設定</title>
     <link rel="stylesheet" th:href="@{/css/logoSetting.css}">
+    <!-- バーガーメニューのCSS -->
+    <div th:replace="~{fragments/burger-menu :: burger-menu-css}"></div>
 </head>
 <body>
+    <!-- バーガーメニューボタン -->
+    <div th:replace="~{fragments/burger-menu :: burger-button}"></div>
+    
+    <!-- バーガーメニュードロワー -->
+    <div th:replace="~{fragments/burger-menu :: burger-drawer}"></div>
+    
     <div class="container">
         <h1>店舗ロゴ設定</h1>
 		<a id="backToSeatList" href="/">← 座席リストに戻る</a><br><br>
@@ -43,5 +51,8 @@
     </div>
 
     <script th:src="@{/js/logo.js}"></script>
+    
+    <!-- バーガーメニューのJavaScript -->
+    <div th:replace="~{fragments/burger-menu :: burger-menu-js}"></div>
 </body>
 </html>
