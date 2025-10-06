@@ -416,6 +416,22 @@ main {
     transition: opacity 0.5s ease;
 }
 
+#toast.show {
+    display: block;
+}
+
+#toast.success {
+    background-color: #28a745;
+}
+
+#toast.error {
+    background-color: #dc3545;
+}
+
+#toast.info {
+    background-color: #007bff;
+}
+
 
 /* 注文履歴モーダル (現在はcartクラスを再利用) */
 /* ----------------------------------------------------------------------------- */
