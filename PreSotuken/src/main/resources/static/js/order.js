@@ -46,28 +46,6 @@ function getCookie(name) {
     return null;
 }
 
-/**
- * トーストメッセージを表示する
- * @param {string} message - 表示するメッセージ
- * @param {number} duration - 表示時間（ミリ秒）
- * @param {string} type - メッセージタイプ（success, error, info）
- */
-function showToast(message, duration = 3000, type = 'success') {
-    const toast = document.getElementById('toast');
-    if (!toast) {
-        console.warn('Toast element not found');
-        alert(message);
-        return;
-    }
-    
-    toast.textContent = message;
-    toast.className = `toast show ${type}`;
-    
-    setTimeout(() => {
-        toast.classList.remove('show');
-    }, duration);
-}
-
 // =============================================================================
 // モーダル・パネル制御関数
 // =============================================================================
@@ -269,7 +247,7 @@ function updateQuantity(index, newVal) {
         cart[index].quantity = qty;
         updateMiniCart(); // ミニカートの表示も更新
     } else {
-        showToast("数量は1以上を指定してください");
+        showToast("数量は1以上を指定してください", 3000, 'error');
     }
 }
 
@@ -375,7 +353,7 @@ function addToCart(button) {
 
     // 数量のバリデーション
     if (isNaN(quantity) || quantity <= 0) {
-        showToast('数量は1以上を入力してください。');
+        showToast('数量は1以上を入力してください。', 3000, 'error');
         return;
     }
 
@@ -422,7 +400,7 @@ function addToCart(button) {
         cart.push({ menuId, taxRateId, price, priceWithTax, quantity, name, selectedOptions, selectedOptionNames });
     }
 
-    showToast("カートに追加しました"); // トーストメッセージを表示
+    showToast("カートに追加しました", 3000, 'success'); // トーストメッセージを表示
 
     // メニューアイテムが展開状態であれば閉じる
     if (menuItem && menuItem.classList.contains('expanded')) {
@@ -444,7 +422,7 @@ function removeFromCart(index) {
     // 削除ボタンのクリックイベントがメニューアイテムのクリックイベントに伝播しないように
     event.stopPropagation(); 
     cart.splice(index, 1);
-    showToast("カートから削除しました");
+    showToast("カートから削除しました", 3000, 'info');
     updateMiniCart();
 }
 
@@ -462,7 +440,7 @@ function removeFromCart(index) {
  */
 function submitOrder() {
     if (cart.length === 0) {
-        showToast('カートに商品がありません。');
+        showToast('カートに商品がありません。', 3000, 'info');
         return;
     }
     
@@ -489,7 +467,7 @@ function submitOrder() {
         }
     }).catch(error => {
         console.error('注文送信中にエラーが発生しました:', error);
-        showToast('注文送信中にエラーが発生しました。ネットワーク接続を確認してください。');
+        showToast('注文送信中にエラーが発生しました。ネットワーク接続を確認してください。', 4000, 'error');
     });
 }
 
