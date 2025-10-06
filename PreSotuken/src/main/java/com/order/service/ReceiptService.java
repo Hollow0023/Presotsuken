@@ -36,6 +36,7 @@ public class ReceiptService {
     private final PaymentRepository paymentRepository;
     private final PaymentDetailRepository paymentDetailRepository;
     private final UserRepository userRepository;
+    private final PrintService printService;
     
     // Receipt number counter per day
     private static final Map<String, AtomicInteger> dailyCounters = new HashMap<>();
@@ -138,6 +139,14 @@ public class ReceiptService {
         
         log.info("Receipt issued: {}", receipt.getReceiptNo());
         
+        // Print the receipt
+        try {
+            printService.printOfficialReceipt(receipt, payment.getStore().getStoreId());
+        } catch (Exception e) {
+            log.error("Failed to print receipt: {}", e.getMessage(), e);
+            // Don't fail the transaction if printing fails
+        }
+        
         return convertToResponse(receipt);
     }
     
@@ -159,6 +168,14 @@ public class ReceiptService {
         receipt = receiptRepository.save(receipt);
         
         log.info("Receipt reprinted: {}, count: {}", receipt.getReceiptNo(), receipt.getReprintCount());
+        
+        // Print the receipt
+        try {
+            printService.printOfficialReceipt(receipt, receipt.getPayment().getStore().getStoreId());
+        } catch (Exception e) {
+            log.error("Failed to print receipt: {}", e.getMessage(), e);
+            // Don't fail the transaction if printing fails
+        }
         
         return convertToResponse(receipt);
     }
