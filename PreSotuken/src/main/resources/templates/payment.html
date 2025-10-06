@@ -103,6 +103,34 @@
 			width: 400px;
 			border-radius: 8px;
 		}
+
+		.tab-container {
+			display: flex;
+			margin-bottom: 15px;
+		}
+
+		.tab-btn {
+			flex: 1;
+			padding: 10px;
+			background-color: #f0f0f0;
+			border: 1px solid #ccc;
+			cursor: pointer;
+		}
+
+		.tab-btn.active {
+			background-color: #4caf50;
+			color: white;
+			border-color: #4caf50;
+		}
+
+		.tab-content {
+			display: none;
+			padding: 15px 0;
+		}
+
+		.tab-content.active {
+			display: block;
+		}
 	</style>
 </head>
 <body>
@@ -174,6 +202,11 @@
 			</select>
 		</div>
 
+		<div class="section">
+			<label>領収書印刷</label>
+			<input type="checkbox" id="receiptPrintCheckbox" style="width: auto; height: auto;">
+		</div>
+
 		<button class="full-btn purple">会計前レシート</button>
 		<button class="full-btn green" onclick="finalizePayment()">会計完了</button>
 		<button class="full-btn red" onclick="goBackToSeats()">取引中止</button>
@@ -185,6 +218,34 @@
 			<input type="number" id="peopleInput" min="1" value="1"> 名
 			<button onclick="applyPeopleCount()">保存</button> 
 			<button onclick="closeModal('peopleModal')">閉じる</button>
+		</div>
+	</div>
+
+	<!-- 領収書発行モーダル -->
+	<div id="receiptModal" class="modal">
+		<div class="modal-content" style="width: 500px;">
+			<h3>領収書発行</h3>
+			<div class="tab-container">
+				<button class="tab-btn active" onclick="switchReceiptTab('full')">全額</button>
+				<button class="tab-btn" onclick="switchReceiptTab('amount')">金額指定</button>
+			</div>
+			
+			<div id="fullTab" class="tab-content active">
+				<p>会計全額で領収書を発行します。</p>
+				<p>発行額: <span id="fullAmount">0</span>円</p>
+			</div>
+			
+			<div id="amountTab" class="tab-content">
+				<p>発行金額を指定してください。</p>
+				<label>発行額:</label>
+				<input type="number" id="receiptAmountInput" min="0" placeholder="発行額を入力">円
+				<p style="font-size: 0.9em; color: #666;">
+					残高: <span id="remainingAmount">0</span>円
+				</p>
+			</div>
+			
+			<button onclick="issueReceipt()" style="margin-top: 10px;">発行</button>
+			<button onclick="closeModal('receiptModal')">キャンセル</button>
 		</div>
 	</div>
 
@@ -324,6 +385,7 @@
 			const change = parseInt(document.getElementById("change").innerText.replace('円', '')) || 0;
 			const staffId = document.getElementById("staffSelect").value;
 			const people = numberOfPeople;
+			const receiptPrintChecked = document.getElementById("receiptPrintCheckbox").checked;
 
 			if (!paymentTypeId || !staffId || change < 0) return alert("入力内容に不備があります");
 
@@ -362,8 +424,16 @@
 				})
 			}).then(res => {
 				if (res.ok){
-					alert("会計が完了しました");
-					window.location.href = '/seats';
+					// 領収書印刷チェックボックスがチェックされている場合、モーダルを表示
+					if (receiptPrintChecked) {
+						// 会計完了後に領収書発行モーダルを表示
+						document.getElementById("fullAmount").innerText = total;
+						document.getElementById("remainingAmount").innerText = total;
+						openModal('receiptModal');
+					} else {
+						alert("会計が完了しました");
+						window.location.href = '/seats';
+					}
 				}
 				else alert("確定に失敗しました。");
 			}).catch(error => {
@@ -465,6 +535,73 @@
 				closeModal(event.target.id);
 			}
 		});
+
+		// 領収書モーダルのタブ切り替え
+		function switchReceiptTab(tab) {
+			const fullTab = document.getElementById('fullTab');
+			const amountTab = document.getElementById('amountTab');
+			const tabs = document.querySelectorAll('.tab-btn');
+
+			if (tab === 'full') {
+				fullTab.classList.add('active');
+				amountTab.classList.remove('active');
+				tabs[0].classList.add('active');
+				tabs[1].classList.remove('active');
+			} else {
+				fullTab.classList.remove('active');
+				amountTab.classList.add('active');
+				tabs[0].classList.remove('active');
+				tabs[1].classList.add('active');
+			}
+		}
+
+		// 領収書を発行する
+		function issueReceipt() {
+			const paymentId = document.getElementById("paymentId")?.value || 0;
+			const staffId = document.getElementById("staffSelect").value;
+			const fullTab = document.getElementById('fullTab');
+			const isFullMode = fullTab.classList.contains('active');
+			const total = parseInt(document.getElementById("total").innerText.replace('円', '')) || 0;
+
+			let requestData = {
+				paymentId: parseInt(paymentId),
+				userId: parseInt(staffId),
+				idempotencyKey: paymentId + '-' + Date.now()
+			};
+
+			if (isFullMode) {
+				requestData.mode = 'FULL';
+			} else {
+				const amount = parseFloat(document.getElementById('receiptAmountInput').value);
+				if (!amount || amount <= 0) {
+					alert('発行額を入力してください');
+					return;
+				}
+				if (amount > total) {
+					alert('発行額が残高を超えています');
+					return;
+				}
+				requestData.mode = 'AMOUNT';
+				requestData.amount = amount;
+			}
+
+			fetch('/api/receipts/issue', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(requestData)
+			}).then(res => {
+				if (res.ok) {
+					alert('領収書を発行しました');
+					closeModal('receiptModal');
+					window.location.href = '/seats';
+				} else {
+					alert('領収書の発行に失敗しました');
+				}
+			}).catch(error => {
+				console.error('Error:', error);
+				alert('領収書の発行中にエラーが発生しました');
+			});
+		}
 	</script>
 </body>
 </html>

@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>会計詳細・領収書管理</title>
+	<style>
+		body {
+			font-family: sans-serif;
+			padding: 20px;
+			margin: 0;
+		}
+
+		.container {
+			max-width: 1200px;
+			margin: 0 auto;
+		}
+
+		h2 {
+			color: #333;
+			border-bottom: 2px solid #4caf50;
+			padding-bottom: 10px;
+		}
+
+		.section {
+			background: #f9f9f9;
+			padding: 15px;
+			margin-bottom: 20px;
+			border-radius: 5px;
+		}
+
+		table {
+			width: 100%;
+			border-collapse: collapse;
+			margin-top: 10px;
+		}
+
+		table th, table td {
+			border: 1px solid #ddd;
+			padding: 8px;
+			text-align: left;
+		}
+
+		table th {
+			background-color: #4caf50;
+			color: white;
+		}
+
+		button {
+			padding: 8px 15px;
+			margin: 5px;
+			border: none;
+			border-radius: 4px;
+			cursor: pointer;
+		}
+
+		.btn-primary {
+			background-color: #4caf50;
+			color: white;
+		}
+
+		.btn-secondary {
+			background-color: #2196F3;
+			color: white;
+		}
+
+		.btn-danger {
+			background-color: #f44336;
+			color: white;
+		}
+
+		.btn-primary:hover {
+			background-color: #45a049;
+		}
+
+		.modal {
+			display: none;
+			position: fixed;
+			z-index: 20;
+			left: 0;
+			top: 0;
+			width: 100%;
+			height: 100%;
+			background: rgba(0, 0, 0, 0.5);
+		}
+
+		.modal-content {
+			background: white;
+			padding: 20px;
+			margin: 10% auto;
+			width: 500px;
+			border-radius: 8px;
+		}
+
+		.tab-container {
+			display: flex;
+			margin-bottom: 15px;
+		}
+
+		.tab-btn {
+			flex: 1;
+			padding: 10px;
+			background-color: #f0f0f0;
+			border: 1px solid #ccc;
+			cursor: pointer;
+		}
+
+		.tab-btn.active {
+			background-color: #4caf50;
+			color: white;
+			border-color: #4caf50;
+		}
+
+		.tab-content {
+			display: none;
+			padding: 15px 0;
+		}
+
+		.tab-content.active {
+			display: block;
+		}
+
+		.voided {
+			background-color: #ffcccc !important;
+		}
+	</style>
+</head>
+<body>
+	<div class="container">
+		<h2>会計詳細・領収書管理</h2>
+		<a href="/payments/history">← 会計履歴一覧へ戻る</a>
+
+		<div class="section">
+			<h3>会計サマリ</h3>
+			<p><strong>会計ID:</strong> <span id="paymentId"></span></p>
+			<p><strong>会計日時:</strong> <span id="paymentTime"></span></p>
+			<p><strong>合計金額:</strong> <span id="totalAmount"></span>円</p>
+			
+			<h4>税率別内訳</h4>
+			<table>
+				<thead>
+					<tr>
+						<th>税率</th>
+						<th>税抜金額</th>
+						<th>税額</th>
+						<th>税込金額</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td>10%</td>
+						<td><span id="netAmount10"></span>円</td>
+						<td><span id="taxAmount10"></span>円</td>
+						<td><span id="grossAmount10"></span>円</td>
+					</tr>
+					<tr>
+						<td>8%</td>
+						<td><span id="netAmount8"></span>円</td>
+						<td><span id="taxAmount8"></span>円</td>
+						<td><span id="grossAmount8"></span>円</td>
+					</tr>
+				</tbody>
+			</table>
+
+			<h4>領収書発行残高</h4>
+			<table>
+				<thead>
+					<tr>
+						<th>税率</th>
+						<th>未発行分</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td>10%</td>
+						<td><span id="remaining10"></span>円</td>
+					</tr>
+					<tr>
+						<td>8%</td>
+						<td><span id="remaining8"></span>円</td>
+					</tr>
+					<tr>
+						<td><strong>合計</strong></td>
+						<td><strong><span id="remainingTotal"></span>円</strong></td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+
+		<div class="section">
+			<h3>発行済み領収書一覧</h3>
+			<button class="btn-primary" onclick="openIssueModal()">新規領収書発行</button>
+			<table id="receiptTable">
+				<thead>
+					<tr>
+						<th>領収書ID</th>
+						<th>印字番号</th>
+						<th>発行額</th>
+						<th>発行日時</th>
+						<th>発行者</th>
+						<th>再印字回数</th>
+						<th>状態</th>
+						<th>操作</th>
+					</tr>
+				</thead>
+				<tbody id="receiptTableBody">
+					<!-- 動的に追加される -->
+				</tbody>
+			</table>
+		</div>
+	</div>
+
+	<!-- 領収書発行モーダル -->
+	<div id="receiptModal" class="modal">
+		<div class="modal-content">
+			<h3>領収書発行</h3>
+			<div class="tab-container">
+				<button class="tab-btn active" onclick="switchReceiptTab('full')">全額</button>
+				<button class="tab-btn" onclick="switchReceiptTab('amount')">金額指定</button>
+			</div>
+			
+			<div id="fullTab" class="tab-content active">
+				<p>残高全額で領収書を発行します。</p>
+				<p>発行額: <span id="fullAmount">0</span>円</p>
+			</div>
+			
+			<div id="amountTab" class="tab-content">
+				<p>発行金額を指定してください。</p>
+				<label>発行額:</label>
+				<input type="number" id="receiptAmountInput" min="0" placeholder="発行額を入力">円
+				<p style="font-size: 0.9em; color: #666;">
+					残高: <span id="remainingAmount">0</span>円
+				</p>
+			</div>
+			
+			<button class="btn-primary" onclick="issueReceipt()">発行</button>
+			<button class="btn-secondary" onclick="closeModal('receiptModal')">キャンセル</button>
+		</div>
+	</div>
+
+	<input type="hidden" id="currentPaymentId" th:value="${paymentId}">
+	<input type="hidden" id="currentUserId" th:value="${userId}">
+
+	<script>
+		const paymentId = document.getElementById('currentPaymentId').value;
+		const userId = document.getElementById('currentUserId').value;
+
+		// 初期表示時にデータを読み込む
+		window.addEventListener('DOMContentLoaded', function() {
+			loadPaymentSummary();
+			loadReceipts();
+		});
+
+		// 会計サマリを読み込む
+		function loadPaymentSummary() {
+			fetch(`/api/payments/${paymentId}/summary`)
+				.then(res => res.json())
+				.then(data => {
+					document.getElementById('paymentId').innerText = data.paymentId;
+					document.getElementById('totalAmount').innerText = Math.round(data.totalAmount);
+					document.getElementById('netAmount10').innerText = Math.round(data.netAmount10);
+					document.getElementById('taxAmount10').innerText = Math.round(data.taxAmount10);
+					document.getElementById('grossAmount10').innerText = Math.round(data.grossAmount10);
+					document.getElementById('netAmount8').innerText = Math.round(data.netAmount8);
+					document.getElementById('taxAmount8').innerText = Math.round(data.taxAmount8);
+					document.getElementById('grossAmount8').innerText = Math.round(data.grossAmount8);
+					document.getElementById('remaining10').innerText = Math.round(data.remainingAmount10);
+					document.getElementById('remaining8').innerText = Math.round(data.remainingAmount8);
+					document.getElementById('remainingTotal').innerText = Math.round(data.remainingTotal);
+					
+					// モーダル用にも設定
+					document.getElementById('fullAmount').innerText = Math.round(data.remainingTotal);
+					document.getElementById('remainingAmount').innerText = Math.round(data.remainingTotal);
+				})
+				.catch(error => console.error('Error loading summary:', error));
+		}
+
+		// 領収書一覧を読み込む
+		function loadReceipts() {
+			fetch(`/api/payments/${paymentId}/receipts`)
+				.then(res => res.json())
+				.then(receipts => {
+					const tbody = document.getElementById('receiptTableBody');
+					tbody.innerHTML = '';
+					
+					receipts.forEach(receipt => {
+						const tr = document.createElement('tr');
+						if (receipt.voided) {
+							tr.classList.add('voided');
+						}
+						
+						tr.innerHTML = `
+							<td>${receipt.receiptId}</td>
+							<td>${receipt.receiptNo}</td>
+							<td>${Math.round(receipt.totalAmount)}円</td>
+							<td>${new Date(receipt.issuedAt).toLocaleString('ja-JP')}</td>
+							<td>${receipt.issuerName}</td>
+							<td>${receipt.reprintCount}</td>
+							<td>${receipt.voided ? '取消済み' : '有効'}</td>
+							<td>
+								${!receipt.voided ? `
+									<button class="btn-secondary" onclick="reprintReceipt(${receipt.receiptId})">再印字</button>
+									<button class="btn-danger" onclick="voidReceipt(${receipt.receiptId})">取消</button>
+								` : ''}
+							</td>
+						`;
+						tbody.appendChild(tr);
+					});
+				})
+				.catch(error => console.error('Error loading receipts:', error));
+		}
+
+		// モーダルを開く
+		function openModal(id) {
+			document.getElementById(id).style.display = 'block';
+		}
+
+		// モーダルを閉じる
+		function closeModal(id) {
+			document.getElementById(id).style.display = 'none';
+		}
+
+		// 発行モーダルを開く
+		function openIssueModal() {
+			loadPaymentSummary(); // 最新の残高を取得
+			openModal('receiptModal');
+		}
+
+		// タブ切り替え
+		function switchReceiptTab(tab) {
+			const fullTab = document.getElementById('fullTab');
+			const amountTab = document.getElementById('amountTab');
+			const tabs = document.querySelectorAll('.tab-btn');
+
+			if (tab === 'full') {
+				fullTab.classList.add('active');
+				amountTab.classList.remove('active');
+				tabs[0].classList.add('active');
+				tabs[1].classList.remove('active');
+			} else {
+				fullTab.classList.remove('active');
+				amountTab.classList.add('active');
+				tabs[0].classList.remove('active');
+				tabs[1].classList.add('active');
+			}
+		}
+
+		// 領収書を発行する
+		function issueReceipt() {
+			const fullTab = document.getElementById('fullTab');
+			const isFullMode = fullTab.classList.contains('active');
+			const remainingTotal = parseFloat(document.getElementById('remainingTotal').innerText);
+
+			let requestData = {
+				paymentId: parseInt(paymentId),
+				userId: parseInt(userId),
+				idempotencyKey: paymentId + '-' + Date.now()
+			};
+
+			if (isFullMode) {
+				requestData.mode = 'FULL';
+			} else {
+				const amount = parseFloat(document.getElementById('receiptAmountInput').value);
+				if (!amount || amount <= 0) {
+					alert('発行額を入力してください');
+					return;
+				}
+				if (amount > remainingTotal) {
+					alert('発行額が残高を超えています');
+					return;
+				}
+				requestData.mode = 'AMOUNT';
+				requestData.amount = amount;
+			}
+
+			fetch('/api/receipts/issue', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(requestData)
+			}).then(res => {
+				if (res.ok) {
+					alert('領収書を発行しました');
+					closeModal('receiptModal');
+					loadPaymentSummary();
+					loadReceipts();
+				} else {
+					alert('領収書の発行に失敗しました');
+				}
+			}).catch(error => {
+				console.error('Error:', error);
+				alert('領収書の発行中にエラーが発生しました');
+			});
+		}
+
+		// 領収書を再印字する
+		function reprintReceipt(receiptId) {
+			if (!confirm('この領収書を再印字しますか？')) return;
+
+			fetch(`/api/receipts/${receiptId}/reprint`, {
+				method: 'POST'
+			}).then(res => {
+				if (res.ok) {
+					alert('領収書を再印字しました');
+					loadReceipts();
+				} else {
+					alert('再印字に失敗しました');
+				}
+			}).catch(error => {
+				console.error('Error:', error);
+				alert('再印字中にエラーが発生しました');
+			});
+		}
+
+		// 領収書を取消する
+		function voidReceipt(receiptId) {
+			if (!confirm('この領収書を取り消しますか？取り消した領収書は復元できません。')) return;
+
+			fetch(`/api/receipts/${receiptId}/void?userId=${userId}`, {
+				method: 'POST'
+			}).then(res => {
+				if (res.ok) {
+					alert('領収書を取り消しました');
+					loadPaymentSummary();
+					loadReceipts();
+				} else {
+					alert('取消に失敗しました');
+				}
+			}).catch(error => {
+				console.error('Error:', error);
+				alert('取消中にエラーが発生しました');
+			});
+		}
+	</script>
+</body>
+</html>

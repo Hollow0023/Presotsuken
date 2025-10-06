@@ -428,6 +428,116 @@ public class PrintService {
     }
 
 
+    /**
+     * 領収書を印刷する
+     * @param receipt 領収書エンティティ
+     * @param storeId 店舗ID
+     * @param reprint 再印字フラグ
+     */
+    public void printReceipt(com.order.entity.Receipt receipt, Integer storeId, boolean reprint) {
+        ArrayNode commands = objectMapper.createArrayNode();
+
+        // ロゴを追加
+        String logoImageBase64 = logoService.getLogoBase64Data((long)storeId);
+        if(logoImageBase64 != null) {
+            commands.add(createAddImageCommand(logoImageBase64, 0, 0, 256, 60, "COLOR_1", "MONO"));
+            commands.add(createFeedUnitCommand(10));
+        }
+        commands.add(createFeedCommand());
+
+        // ヘッダー：店名と発行日時
+        String storeName = receipt.getStore().getStoreName();
+        LocalDateTime issuedAt = receipt.getIssuedAt();
+        String dateStr = issuedAt.format(DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm"));
+
+        commands.add(createTextAlignCommand("center"));
+        commands.add(createTextCommand(storeName));
+        commands.add(createTextCommand("領収書"));
+        if (reprint) {
+            commands.add(createTextCommand("【再印字】"));
+        }
+        commands.add(createTextAlignCommand("left"));
+        commands.add(createFeedUnitCommand(5));
+
+        // 印字番号と発行日時
+        commands.add(createTextCommand("印字番号: " + receipt.getReceiptNo()));
+        commands.add(createTextCommand("発行日時: " + dateStr));
+        commands.add(createTextCommand("発行者: " + receipt.getIssuer().getUserName()));
+        commands.add(createFeedUnitCommand(5));
+        commands.add(createTextCommand("-".repeat(RECEIPT_TOTAL_WIDTH_HALF)));
+
+        // 合計金額（税込）
+        BigDecimal totalAmount = BigDecimal.ZERO;
+        if (receipt.getNetAmount10() != null) {
+            totalAmount = totalAmount.add(BigDecimal.valueOf(receipt.getNetAmount10()));
+        }
+        if (receipt.getTaxAmount10() != null) {
+            totalAmount = totalAmount.add(BigDecimal.valueOf(receipt.getTaxAmount10()));
+        }
+        if (receipt.getNetAmount8() != null) {
+            totalAmount = totalAmount.add(BigDecimal.valueOf(receipt.getNetAmount8()));
+        }
+        if (receipt.getTaxAmount8() != null) {
+            totalAmount = totalAmount.add(BigDecimal.valueOf(receipt.getTaxAmount8()));
+        }
+
+        String totalAmountStr = "\\" + String.format("%,d", totalAmount.longValue());
+        commands.add(createTextCommand(formatToLeftAndRight("合計金額", totalAmountStr, RECEIPT_TOTAL_WIDTH_HALF)));
+        commands.add(createFeedUnitCommand(5));
+
+        // 税率別内訳
+        commands.add(createTextCommand("【内訳】"));
+
+        // 10%対象
+        if (receipt.getNetAmount10() != null && receipt.getNetAmount10() > 0) {
+            String net10Str = "\\" + String.format("%,d", receipt.getNetAmount10().longValue());
+            commands.add(createTextCommand(formatToLeftAndRight("10%対象(税抜)", net10Str, RECEIPT_TOTAL_WIDTH_HALF)));
+            
+            String tax10Str = "\\" + String.format("%,d", receipt.getTaxAmount10().longValue());
+            commands.add(createTextCommand(formatToLeftAndRight("10%税額", tax10Str, RECEIPT_TOTAL_WIDTH_HALF)));
+            
+            BigDecimal gross10 = BigDecimal.valueOf(receipt.getNetAmount10()).add(BigDecimal.valueOf(receipt.getTaxAmount10()));
+            String gross10Str = "\\" + String.format("%,d", gross10.longValue());
+            commands.add(createTextCommand(formatToLeftAndRight("10%税込", gross10Str, RECEIPT_TOTAL_WIDTH_HALF)));
+        }
+
+        // 8%対象
+        if (receipt.getNetAmount8() != null && receipt.getNetAmount8() > 0) {
+            String net8Str = "\\" + String.format("%,d", receipt.getNetAmount8().longValue());
+            commands.add(createTextCommand(formatToLeftAndRight("8%対象(税抜)", net8Str, RECEIPT_TOTAL_WIDTH_HALF)));
+            
+            String tax8Str = "\\" + String.format("%,d", receipt.getTaxAmount8().longValue());
+            commands.add(createTextCommand(formatToLeftAndRight("8%税額", tax8Str, RECEIPT_TOTAL_WIDTH_HALF)));
+            
+            BigDecimal gross8 = BigDecimal.valueOf(receipt.getNetAmount8()).add(BigDecimal.valueOf(receipt.getTaxAmount8()));
+            String gross8Str = "\\" + String.format("%,d", gross8.longValue());
+            commands.add(createTextCommand(formatToLeftAndRight("8%税込", gross8Str, RECEIPT_TOTAL_WIDTH_HALF)));
+        }
+
+        commands.add(createFeedUnitCommand(5));
+        commands.add(createTextCommand("-".repeat(RECEIPT_TOTAL_WIDTH_HALF)));
+
+        // フッター：会計ID、領収書ID、発行者ID
+        commands.add(createFeedUnitCommand(5));
+        commands.add(createTextCommand("会計ID: " + receipt.getPayment().getPaymentId()));
+        commands.add(createTextCommand("領収書ID: " + receipt.getReceiptId()));
+        commands.add(createTextCommand("発行者ID: " + receipt.getIssuer().getUserId()));
+
+        // QRコード（印字番号を埋め込み）
+        commands.add(createFeedUnitCommand(5));
+        commands.add(createQRCodeCommand(receipt.getReceiptNo()));
+
+        commands.add(createFeedUnitCommand(15));
+        commands.add(createCutCommand("feed"));
+
+        // プリンター取得
+        PrinterConfig printer = printerConfigRepository.findByStoreIdAndReceiptOutput(storeId, true);
+        String printerIp = printer.getPrinterIp();
+
+        // フロントエンドに送信（seatIdは領収書印刷では不要なので0を使用）
+        sendPrintCommandsToFrontend(printerIp, 0, commands.toString());
+    }
+
     // JSONコマンドをフロントエンドに送信するヘルパーメソッド
     public void sendPrintCommandsToFrontend(String printerIp, Integer seatId, String jsonCommands) {
         String targetPrinterIp = printerIp; // サンプルコードのIPアドレスを仮に使う
@@ -542,5 +652,20 @@ public class PrintService {
         payload.put("type", "PRINT_ERROR");
         payload.put("message", message);
         messagingTemplate.convertAndSend("/topic/seats/" + seatId, payload);
+    }
+
+    /**
+     * QRコード生成コマンド
+     */
+    private ObjectNode createQRCodeCommand(String data) {
+        ObjectNode cmd = objectMapper.createObjectNode();
+        cmd.put("api", "addSymbol");
+        cmd.put("type", "pdf417_standard"); // または "qrcode_model_2"
+        cmd.put("level", "level_m");
+        cmd.put("width", 3);
+        cmd.put("height", 0);
+        cmd.put("size", 0);
+        cmd.put("data", data);
+        return cmd;
     }
 }

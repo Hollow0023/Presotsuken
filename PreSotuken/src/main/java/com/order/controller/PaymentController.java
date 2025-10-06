@@ -109,6 +109,17 @@ public class PaymentController {
         return "paymentHistory";
     }
 
+    @GetMapping("/payments/history/detail")
+    public String showPaymentDetail(
+            @RequestParam("paymentId") Integer paymentId,
+            @CookieValue(name = "storeId", required = false) Integer storeId,
+            @CookieValue(name = "userId", required = false) Integer userId,
+            Model model) {
+        model.addAttribute("paymentId", paymentId);
+        model.addAttribute("userId", userId);
+        return "payment-detail";
+    }
+
     @GetMapping("/payments/history/{paymentId}")
     public ResponseEntity<Map<String, Object>> getPaymentHistoryDetail(
             @CookieValue(name = "storeId", required = false) Integer storeId,
