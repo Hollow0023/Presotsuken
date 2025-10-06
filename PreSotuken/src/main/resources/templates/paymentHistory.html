@@ -25,6 +25,7 @@
         <th>税抜合計</th>
         <th>税込合計</th>
         <th>担当</th>
+        <th>操作</th>
     </tr>
     </thead>
     <tbody>
@@ -37,6 +38,12 @@
         <td><span th:text="${#numbers.formatDecimal(subtotalMap[payment.paymentId],0,0)}"></span>円</td>
         <td><span th:text="${#numbers.formatDecimal(payment.total,0,0)}"></span>円</td>
         <td th:text="${payment.cashier != null ? payment.cashier.userName : ''}"></td>
+        <td>
+            <a th:href="@{/payments/history/detail(paymentId=${payment.paymentId})}" 
+               style="color: #4caf50; text-decoration: none; font-weight: bold;">
+                領収書管理
+            </a>
+        </td>
     </tr>
     </tbody>
 </table>
@@ -215,7 +222,11 @@ function loadDetail(id, row) {
 }
 
 document.querySelectorAll('#historyTable tbody tr').forEach(row => {
-    row.addEventListener('click', () => {
+    row.addEventListener('click', (e) => {
+        // リンクをクリックした場合は詳細モーダルを開かない
+        if (e.target.tagName === 'A' || e.target.closest('a')) {
+            return;
+        }
         const id = row.dataset.paymentId;
         loadDetail(id, row);
     });
