@@ -2,27 +2,33 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>支払い方法管理</title>
+    <link rel="stylesheet" href="/css/payment-type-management.css">
 </head>
 <body>
-<h1>支払い方法管理</h1>
-<a href="/">← トップに戻る</a>
-<input type="hidden" id="currentStoreId" th:value="${storeId}">
+<div class="container">
+    <h1>支払い方法管理</h1>
+    <a href="/">← トップに戻る</a>
+    <input type="hidden" id="currentStoreId" th:value="${storeId}">
 
-<h2>支払い方法一覧</h2>
-<ul id="paymentTypeList">
-    <li th:each="pt : ${paymentTypes}" th:data-type-id="${pt.typeId}">
-        <input type="text" th:value="${pt.typeName}" class="type-name-input">
-        <label><input type="checkbox" th:checked="${pt.isInspectionTarget}" class="inspection-checkbox">点検対象</label>
-        <button type="button" th:attr="onclick='updatePaymentType(this.parentElement)'">更新</button>
-        <button type="button" th:attr="onclick='deletePaymentType(' + ${pt.typeId} + ')'">削除</button>
-    </li>
-</ul>
+    <h2>支払い方法一覧</h2>
+    <ul id="paymentTypeList">
+        <li th:each="pt : ${paymentTypes}" th:data-type-id="${pt.typeId}">
+            <input type="text" th:value="${pt.typeName}" class="type-name-input">
+            <label><input type="checkbox" th:checked="${pt.isInspectionTarget}" class="inspection-checkbox">点検対象</label>
+            <button type="button" th:attr="onclick='updatePaymentType(this.parentElement)'">更新</button>
+            <button type="button" th:attr="onclick='deletePaymentType(' + ${pt.typeId} + ')'">削除</button>
+        </li>
+    </ul>
 
-<h2>新規支払い方法</h2>
-<input type="text" id="newPaymentTypeName" placeholder="支払い方法名">
-<label><input type="checkbox" id="newIsInspectionTarget">点検対象</label>
-<button type="button" onclick="createPaymentType()">追加</button>
+    <h2>新規支払い方法</h2>
+    <div class="new-payment-form">
+        <input type="text" id="newPaymentTypeName" placeholder="支払い方法名">
+        <label><input type="checkbox" id="newIsInspectionTarget">点検対象</label>
+        <button type="button" onclick="createPaymentType()">追加</button>
+    </div>
+</div>
 
 <script src="/js/payment-type-management.js"></script>
 </body>
