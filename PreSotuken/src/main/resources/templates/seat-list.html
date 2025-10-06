@@ -6,9 +6,9 @@
     <meta charset="UTF-8">
     <title>座席一覧</title>
     <link rel="stylesheet" href="/css/seat-list.css">
+    <link rel="stylesheet" href="/css/components/navigation.css">
 </head>
 <body>
-	<button class="burger" onclick="toggleMenu()">☰</button>
 	<div class = "title">テーブル一覧</div>
     <div style="margin: 10px;">
        <label for="userSelect">担当者:</label>
@@ -19,44 +19,12 @@
     </div>
     <button onclick="openCallListModal()">呼び出し状況確認</button>
     
+        <!-- バーガーメニューボタン -->
+    <div th:replace="~{fragments/burger-menu :: burger-button}"></div>
     
-        <nav id="menuDrawer" class="menu-drawer">
-            <div>
-                <details class="menu-group" close>
-                    <summary class="menu-group-title">メニュー設定</summary>
-                    <a href="/menu/list">メニュー管理</a>
-                    <a href="/menu/group/add">メニューグループ管理</a>
-                    <a href="/options">オプション管理</a>
-                    <a href="/menu/sold-out-management">メニュー品切れ管理</a>
-                </details>
+    <!-- バーガーメニュードロワー -->
+    <div th:replace="~{fragments/burger-menu :: burger-drawer}"></div>
 
-                <details class="menu-group" close>
-                    <summary class="menu-group-title">事務操作</summary>
-                    <a th:href="@{/admin/cash/transaction}">入出金</a>
-                    <a th:href="@{/admin/cash/history}">入出金履歴</a>
-                    <a th:href="@{/payments/history}">会計履歴</a>
-                    <a th:href="@{/payment-types}">支払い方法管理</a>
-                    <a th:href="@{/sales-analysis}">売上分析</a>
-                    <a th:href="@{/admin/inspection/form}">点検</a>
-                    <a th:href="@{/admin/inspection/history}">点検履歴</a>
-                </details>
-
-                <details class="menu-group" close>
-                    <summary class="menu-group-title">店舗設定</summary>
-                    <a href="/admin/printers" >プリンター管理</a>
-                    <a href="/admin/plans">プラン管理</a>
-                    <a href="/admin/terminals">端末管理</a>
-                    <a th:href="@{/admin/terminals/logo}">ロゴ設定</a>
-                    <a th:href="@{/admin/store/edit}">店舗設定</a>
-                    <a th:href="@{/seat/edit}">座席グループ・座席編集</a>
-                    <a th:href="@{/admin/staff}">スタッフ編集</a>
-                </details>
-            </div>
-
-            <form th:action="@{/logout}" method="get" onsubmit="clearUserIdCookie()">
-                <button type="submit">ログアウト</button>
-            </form>
-        </nav>
 
 	<div  th:each="entry : ${groupedSeats}" class="group">
 		<h3 class="groupTitle" th:text="${entry.key.seatGroupName}">グループ名</h3>
@@ -129,6 +97,7 @@
 	<script src="/js/utils.js"></script>
 	<script src="/js/call-system.js"></script>
 	<script src="/js/seat-list.js"></script>
+	<div th:replace="~{fragments/burger-menu :: burger-menu-js}"></div>
 	
 </body>
 </html>
