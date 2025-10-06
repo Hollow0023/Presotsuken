@@ -174,6 +174,11 @@
 			</select>
 		</div>
 
+		<div class="section">
+			<label>領収書発行</label>
+			<input type="checkbox" id="receiptCheckbox" style="width: auto; margin-left: auto;">
+		</div>
+
 		<button class="full-btn purple">会計前レシート</button>
 		<button class="full-btn green" onclick="finalizePayment()">会計完了</button>
 		<button class="full-btn red" onclick="goBackToSeats()">取引中止</button>
@@ -218,6 +223,52 @@
 			<button onclick="closeModal('detailDiscountModal')">閉じる</button>
 		</div>
 	</div>
+
+	<div id="receiptModal" class="modal">
+		<div class="modal-content">
+			<h3>領収書発行</h3>
+			<div style="margin-bottom: 15px;">
+				<button id="fullAmountTab" class="tab-button active" onclick="switchReceiptTab('full')">全額</button>
+				<button id="amountTab" class="tab-button" onclick="switchReceiptTab('amount')">金額指定</button>
+			</div>
+			<div id="fullAmountContent" class="tab-content active">
+				<p>会計全額で領収書を発行します</p>
+				<p>金額: <span id="fullAmountDisplay">0円</span></p>
+				<button onclick="issueReceipt('FULL')">発行</button>
+				<button onclick="closeModal('receiptModal')">キャンセル</button>
+			</div>
+			<div id="amountContent" class="tab-content">
+				<p>金額を指定して領収書を発行します</p>
+				<p>残高: <span id="remainingAmountDisplay">0円</span></p>
+				<label>発行金額:</label>
+				<input type="number" id="specifiedAmount" min="0" placeholder="金額を入力"> 円
+				<button onclick="issueReceipt('AMOUNT')">発行</button>
+				<button onclick="closeModal('receiptModal')">キャンセル</button>
+			</div>
+		</div>
+	</div>
+
+	<style>
+		.tab-button {
+			padding: 8px 16px;
+			margin-right: 5px;
+			border: 1px solid #ccc;
+			background-color: #f0f0f0;
+			cursor: pointer;
+		}
+		.tab-button.active {
+			background-color: #4caf50;
+			color: white;
+			border-color: #4caf50;
+		}
+		.tab-content {
+			display: none;
+			padding: 15px 0;
+		}
+		.tab-content.active {
+			display: block;
+		}
+	</style>
 
 	<script>
 		// グローバル変数の宣言
@@ -324,6 +375,7 @@
 			const change = parseInt(document.getElementById("change").innerText.replace('円', '')) || 0;
 			const staffId = document.getElementById("staffSelect").value;
 			const people = numberOfPeople;
+			const shouldIssueReceipt = document.getElementById("receiptCheckbox").checked;
 
 			if (!paymentTypeId || !staffId || change < 0) return alert("入力内容に不備があります");
 
@@ -362,13 +414,75 @@
 				})
 			}).then(res => {
 				if (res.ok){
-					alert("会計が完了しました");
-					window.location.href = '/seats';
+					if (shouldIssueReceipt) {
+						// Show receipt modal
+						document.getElementById("fullAmountDisplay").innerText = total + '円';
+						document.getElementById("remainingAmountDisplay").innerText = total + '円';
+						openModal('receiptModal');
+					} else {
+						alert("会計が完了しました");
+						window.location.href = '/seats';
+					}
 				}
 				else alert("確定に失敗しました。");
 			}).catch(error => {
 				console.error('Error:', error);
 				alert('会計処理中にエラーが発生しました。');
+			});
+		}
+
+		function switchReceiptTab(tab) {
+			if (tab === 'full') {
+				document.getElementById('fullAmountTab').classList.add('active');
+				document.getElementById('amountTab').classList.remove('active');
+				document.getElementById('fullAmountContent').classList.add('active');
+				document.getElementById('amountContent').classList.remove('active');
+			} else {
+				document.getElementById('fullAmountTab').classList.remove('active');
+				document.getElementById('amountTab').classList.add('active');
+				document.getElementById('fullAmountContent').classList.remove('active');
+				document.getElementById('amountContent').classList.add('active');
+			}
+		}
+
+		function issueReceipt(mode) {
+			const paymentId = document.getElementById("paymentId")?.value || 0;
+			const staffId = document.getElementById("staffSelect").value;
+			let amount = null;
+
+			if (mode === 'AMOUNT') {
+				amount = parseFloat(document.getElementById("specifiedAmount").value);
+				if (!amount || amount <= 0) {
+					alert("有効な金額を入力してください");
+					return;
+				}
+			}
+
+			const idempotencyKey = `${paymentId}-${Date.now()}-${Math.random()}`;
+
+			fetch("/receipts/issue", {
+				method: "POST",
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					paymentId: parseInt(paymentId),
+					mode: mode,
+					amount: amount,
+					issuedByUserId: parseInt(staffId),
+					idempotencyKey: idempotencyKey
+				})
+			}).then(res => {
+				if (res.ok) {
+					return res.json();
+				} else {
+					throw new Error('領収書の発行に失敗しました');
+				}
+			}).then(data => {
+				alert("領収書を発行しました\n領収書番号: " + data.receiptNo);
+				closeModal('receiptModal');
+				window.location.href = '/seats';
+			}).catch(error => {
+				console.error('Error:', error);
+				alert('領収書の発行中にエラーが発生しました。');
 			});
 		}
 

@@ -79,9 +79,15 @@ function loadDetail(id, row) {
                 html += `<tr data-detail-id="${d.paymentDetailId}" data-price="${d.price}" data-tax-rate="${d.taxRate}"><td>${d.menuName}</td><td><input type="number" class="qty-input" min="1" value="${d.quantity}"></td><td class="subtotal">${subIn}円</td><td class="subtotal-ex">${subEx}円</td><td><button type="button" class="delete-detail">削除</button></td></tr>`;
             });
             html += `</tbody></table>`;
+            html += `<hr style="margin: 20px 0;">`;
+            html += `<h3>領収書管理</h3>`;
+            html += `<div id="receiptSection">読み込み中...</div>`;
             html += `<button id="saveChanges" class="save-btn">保存</button>`;
             modalBody.innerHTML = html;
             modal.style.display = 'block';
+
+            // Load receipts for this payment
+            loadReceipts(id);
 
             if (row) {
                 row.querySelector('td:nth-child(2)').textContent = data.seatName;
@@ -147,6 +153,200 @@ document.querySelectorAll('#historyTable tbody tr').forEach(row => {
         loadDetail(id, row);
     });
 });
+
+function loadReceipts(paymentId) {
+    Promise.all([
+        fetch(`/receipts/payment/${paymentId}`).then(res => res.json()),
+        fetch(`/receipts/payment/${paymentId}/remaining`).then(res => res.json())
+    ]).then(([receipts, remaining]) => {
+        let html = `<p>残高: 10%対象 ${remaining.remaining10}円、8%対象 ${remaining.remaining8}円、合計 ${remaining.totalRemaining}円</p>`;
+        
+        if (receipts.length > 0) {
+            html += `<h4>発行済み領収書</h4>`;
+            html += `<table style="width:100%; margin-top:10px;">`;
+            html += `<thead><tr><th>領収書番号</th><th>金額</th><th>発行者</th><th>再印字回数</th><th>状態</th><th>操作</th></tr></thead>`;
+            html += `<tbody>`;
+            receipts.forEach(r => {
+                const status = r.voided ? '取消済' : '有効';
+                html += `<tr>`;
+                html += `<td>${r.receiptNo}</td>`;
+                html += `<td>${r.totalAmount}円</td>`;
+                html += `<td>${r.issuedByUserName}</td>`;
+                html += `<td>${r.reprintCount}</td>`;
+                html += `<td>${status}</td>`;
+                html += `<td>`;
+                if (!r.voided) {
+                    html += `<button onclick="reprintReceipt(${r.receiptId})">再印字</button> `;
+                    html += `<button onclick="voidReceipt(${r.receiptId})">取消</button>`;
+                }
+                html += `</td>`;
+                html += `</tr>`;
+            });
+            html += `</tbody></table>`;
+        }
+        
+        if (parseFloat(remaining.totalRemaining) > 0) {
+            html += `<button onclick="openReceiptIssueModal(${paymentId}, ${remaining.totalRemaining})" style="margin-top:10px;">新規領収書発行</button>`;
+        }
+        
+        document.getElementById('receiptSection').innerHTML = html;
+    }).catch(err => {
+        document.getElementById('receiptSection').innerHTML = '<p>領収書情報の読み込みに失敗しました</p>';
+        console.error('Error loading receipts:', err);
+    });
+}
+
+function openReceiptIssueModal(paymentId, totalRemaining) {
+    const html = `
+        <div id="receiptIssueModal" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:1000;">
+            <div style="background:white;padding:20px;border-radius:8px;min-width:400px;">
+                <h3>領収書発行</h3>
+                <div style="margin-bottom:15px;">
+                    <button id="fullTab" class="tab-btn active" onclick="switchTab('full')">全額</button>
+                    <button id="amountTab" class="tab-btn" onclick="switchTab('amount')">金額指定</button>
+                </div>
+                <div id="fullContent" class="tab-content" style="display:block;">
+                    <p>残高全額で発行します</p>
+                    <p>金額: ${totalRemaining}円</p>
+                    <button onclick="issueReceiptFromHistory(${paymentId}, 'FULL', null)">発行</button>
+                </div>
+                <div id="amountContent" class="tab-content" style="display:none;">
+                    <p>金額を指定して発行します</p>
+                    <p>残高: ${totalRemaining}円</p>
+                    <label>発行金額:</label>
+                    <input type="number" id="specAmount" min="0" max="${totalRemaining}"> 円
+                    <button onclick="issueReceiptFromHistory(${paymentId}, 'AMOUNT', document.getElementById('specAmount').value)">発行</button>
+                </div>
+                <button onclick="closeReceiptIssueModal()" style="margin-top:10px;">キャンセル</button>
+            </div>
+        </div>
+        <style>
+            .tab-btn { padding:8px 16px; margin-right:5px; border:1px solid #ccc; background:#f0f0f0; cursor:pointer; }
+            .tab-btn.active { background:#4caf50; color:white; }
+        </style>
+    `;
+    document.body.insertAdjacentHTML('beforeend', html);
+}
+
+function closeReceiptIssueModal() {
+    const modal = document.getElementById('receiptIssueModal');
+    if (modal) modal.remove();
+}
+
+function switchTab(tab) {
+    if (tab === 'full') {
+        document.getElementById('fullTab').classList.add('active');
+        document.getElementById('amountTab').classList.remove('active');
+        document.getElementById('fullContent').style.display = 'block';
+        document.getElementById('amountContent').style.display = 'none';
+    } else {
+        document.getElementById('fullTab').classList.remove('active');
+        document.getElementById('amountTab').classList.add('active');
+        document.getElementById('fullContent').style.display = 'none';
+        document.getElementById('amountContent').style.display = 'block';
+    }
+}
+
+function issueReceiptFromHistory(paymentId, mode, amount) {
+    // Get user ID from cookie or prompt
+    const userId = getCookie('userId') || prompt('担当者IDを入力してください');
+    if (!userId) {
+        alert('担当者IDが必要です');
+        return;
+    }
+    
+    if (mode === 'AMOUNT' && (!amount || parseFloat(amount) <= 0)) {
+        alert('有効な金額を入力してください');
+        return;
+    }
+    
+    const idempotencyKey = `${paymentId}-${Date.now()}-${Math.random()}`;
+    
+    fetch('/receipts/issue', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            paymentId: parseInt(paymentId),
+            mode: mode,
+            amount: amount ? parseFloat(amount) : null,
+            issuedByUserId: parseInt(userId),
+            idempotencyKey: idempotencyKey
+        })
+    }).then(res => {
+        if (res.ok) return res.json();
+        throw new Error('領収書の発行に失敗しました');
+    }).then(data => {
+        alert('領収書を発行しました\n領収書番号: ' + data.receiptNo);
+        closeReceiptIssueModal();
+        loadReceipts(paymentId);
+    }).catch(err => {
+        console.error('Error:', err);
+        alert('領収書の発行中にエラーが発生しました。');
+    });
+}
+
+function reprintReceipt(receiptId) {
+    const userId = getCookie('userId') || prompt('担当者IDを入力してください');
+    if (!userId) {
+        alert('担当者IDが必要です');
+        return;
+    }
+    
+    if (!confirm('この領収書を再印字しますか？')) return;
+    
+    fetch(`/receipts/${receiptId}/reprint`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({userId: parseInt(userId)})
+    }).then(res => {
+        if (res.ok) return res.json();
+        throw new Error('再印字に失敗しました');
+    }).then(data => {
+        alert('領収書を再印字しました');
+        const paymentId = data.paymentId;
+        loadReceipts(paymentId);
+    }).catch(err => {
+        console.error('Error:', err);
+        alert('再印字中にエラーが発生しました。');
+    });
+}
+
+function voidReceipt(receiptId) {
+    const userId = getCookie('userId') || prompt('担当者IDを入力してください');
+    if (!userId) {
+        alert('担当者IDが必要です');
+        return;
+    }
+    
+    if (!confirm('この領収書を取り消しますか？この操作は元に戻せません。')) return;
+    
+    fetch(`/receipts/${receiptId}/void`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({userId: parseInt(userId)})
+    }).then(res => {
+        if (!res.ok) throw new Error('取消に失敗しました');
+        alert('領収書を取り消しました');
+        // Reload receipts - need to get payment ID first
+        const rows = document.querySelectorAll('#historyTable tbody tr');
+        rows.forEach(row => {
+            if (row.style.backgroundColor) {
+                const paymentId = row.dataset.paymentId;
+                loadReceipts(paymentId);
+            }
+        });
+    }).catch(err => {
+        console.error('Error:', err);
+        alert('取消中にエラーが発生しました。');
+    });
+}
+
+function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+    return null;
+}
 </script>
 </body>
 </html>
