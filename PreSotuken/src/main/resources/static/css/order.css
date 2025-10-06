@@ -402,6 +402,7 @@ main {
 /* トースト通知 */
 /* ----------------------------------------------------------------------------- */
 #toast {
+	opacity: 0;
     position: fixed;
     bottom: 20px;
     left: 50%;
@@ -410,12 +411,30 @@ main {
     color: #fff;
     padding: 12px 20px;
     border-radius: 4px;
-    display: none;
+    visibility: hidden;
     z-index: 1000;
     box-shadow: 0 0 8px rgba(0,0,0,0.3);
-    transition: opacity 0.5s ease;
+    transition: opacity 0.5s ease, visibility 0.5s ease;
 }
 
+#toast.show {
+	
+	opacity: 1;
+	transition: opacity 0.5s ease;
+    visibility: visible;
+}
+
+#toast.success {
+    background-color: #28a745;
+}
+
+#toast.error {
+    background-color: #dc3545;
+}
+
+#toast.info {
+    background-color: #007bff;
+}
 
 /* 注文履歴モーダル (現在はcartクラスを再利用) */
 /* ----------------------------------------------------------------------------- */
