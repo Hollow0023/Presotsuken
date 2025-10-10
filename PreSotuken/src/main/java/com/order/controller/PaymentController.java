@@ -205,7 +205,20 @@ public class PaymentController {
         }
         Double discount = body.get("discount");
         payment.setDiscount(discount);
-        payment.setTotal(payment.getSubtotal() - (discount != null ? discount : 0));
+        
+        // 税込み合計金額を計算
+        List<PaymentDetail> details = paymentDetailRepository.findByPaymentPaymentId(paymentId);
+        double totalWithTax = details.stream()
+                .mapToDouble(pd -> {
+                    double base = pd.getSubtotal() != null ? pd.getSubtotal() : 0;
+                    double detailDiscount = pd.getDiscount() != null ? pd.getDiscount() : 0;
+                    double netSubtotalWithoutTax = Math.max(base - detailDiscount, 0);
+                    double taxRate = pd.getTaxRate() != null ? pd.getTaxRate().getRate() : 0;
+                    return netSubtotalWithoutTax * (1 + taxRate);
+                })
+                .sum();
+        
+        payment.setTotal(totalWithTax - (discount != null ? discount : 0));
         paymentRepository.save(payment);
         return ResponseEntity.ok().build();
     }
