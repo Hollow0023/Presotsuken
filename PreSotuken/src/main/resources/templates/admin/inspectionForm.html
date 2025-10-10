@@ -81,7 +81,7 @@ th, td {
 			8%対象: <span th:text="${tax8 ?: 0}">0</span> 円
 		</div>
 		<div>
-			現金売上: <span id="cashSales" th:text="${cashSalesPure ?: 0}">0</span> 円
+			現金売上: <span id="cashSales" th:text="${#numbers.formatDecimal(cashSalesPure ?: 0, 0, 0)}">0</span> 円
 		</div>
 
 		<th:block th:each="paymentType : ${allPaymentTypes}">
@@ -121,7 +121,7 @@ th, td {
 		</div>
 	</div>
 
-	<span id="expectedCashCalculated" th:text="${expectedCash ?: 0}"
+	<span id="expectedCashCalculated" th:text="${#numbers.formatDecimal(expectedCash ?: 0, 0, 0)}"
 		style="display: none;">0</span>
 
 	<!-- ▼ 入力フォーム -->
@@ -218,7 +218,7 @@ th, td {
 			</label>
 		</div>
                 <button id="submitBtn" type="submit">登録</button>
-		<span id="expectedCashCalculated" th:text="${expectedCash ?: 0}"
+		<span id="expectedCashCalculated" th:text="${#numbers.formatDecimal(expectedCash ?: 0, 0, 0)}"
 			style="display: none;">0</span>
 
 	</form>
