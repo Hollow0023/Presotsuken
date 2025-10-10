@@ -283,8 +283,20 @@ public class PaymentController {
                 })
                 .sum();
         payment.setSubtotal(subtotal);
+        
+        // 税込み合計金額を計算
+        double totalWithTax = remaining.stream()
+                .mapToDouble(pd -> {
+                    double base = pd.getSubtotal() != null ? pd.getSubtotal() : 0;
+                    double detailDiscount = pd.getDiscount() != null ? pd.getDiscount() : 0;
+                    double netSubtotalWithoutTax = Math.max(base - detailDiscount, 0);
+                    double taxRate = pd.getTaxRate() != null ? pd.getTaxRate().getRate() : 0;
+                    return netSubtotalWithoutTax * (1 + taxRate);
+                })
+                .sum();
+        
         double discount = payment.getDiscount() != null ? payment.getDiscount() : 0;
-        payment.setTotal(subtotal - discount);
+        payment.setTotal(totalWithTax - discount);
         paymentRepository.save(payment);
 
         return ResponseEntity.ok().build();
