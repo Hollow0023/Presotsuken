@@ -17,6 +17,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import com.order.dto.PaymentFinalizeRequest;
+import com.order.dto.SplitPaymentRequest;
+import com.order.dto.IndividualPaymentRequest;
+import com.order.dto.RemainingPaymentDto;
 import com.order.entity.Payment;
 import com.order.entity.PaymentDetail;
 import com.order.entity.PaymentType;
@@ -30,6 +33,7 @@ import com.order.repository.PaymentTypeRepository;
 import com.order.repository.UserRepository;
 import com.order.repository.VisitRepository;
 import com.order.repository.SeatRepository;
+import com.order.service.PaymentSplitService;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -45,6 +49,7 @@ public class PaymentController {
     private final SimpMessagingTemplate messagingTemplate;
     private final UserRepository userRepository;
     private final SeatRepository seatRepository;
+    private final PaymentSplitService paymentSplitService;
 
     @GetMapping("/payments")
     public String showPaymentDetail(@RequestParam("visitId") int visitId,
@@ -400,5 +405,66 @@ public class PaymentController {
         paymentRepository.save(payment);
         visitRepository.save(visit);
         return ResponseEntity.ok().build();
+    }
+    
+    /**
+     * 割り勘会計処理
+     */
+    @Transactional
+    @PostMapping("/payments/split")
+    public ResponseEntity<Map<String, Object>> processSplitPayment(@RequestBody SplitPaymentRequest request) {
+        try {
+            Payment childPayment = paymentSplitService.processSplitPayment(request);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("paymentId", childPayment.getPaymentId());
+            response.put("amount", childPayment.getTotal());
+            response.put("completed", "COMPLETED".equals(childPayment.getPaymentStatus()));
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
+    
+    /**
+     * 個別会計処理
+     */
+    @Transactional
+    @PostMapping("/payments/individual")
+    public ResponseEntity<Map<String, Object>> processIndividualPayment(@RequestBody IndividualPaymentRequest request) {
+        try {
+            Payment childPayment = paymentSplitService.processIndividualPayment(request);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("paymentId", childPayment.getPaymentId());
+            response.put("amount", childPayment.getTotal());
+            response.put("completed", "COMPLETED".equals(childPayment.getPaymentStatus()));
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
+    
+    /**
+     * 残り会計情報を取得
+     */
+    @GetMapping("/payments/{paymentId}/remaining")
+    public ResponseEntity<RemainingPaymentDto> getRemainingPayment(@PathVariable Integer paymentId) {
+        try {
+            RemainingPaymentDto remaining = paymentSplitService.getRemainingPayment(paymentId);
+            return ResponseEntity.ok(remaining);
+        } catch (Exception e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 }
