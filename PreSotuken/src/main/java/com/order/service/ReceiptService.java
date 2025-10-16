@@ -54,6 +54,11 @@ public class ReceiptService {
         BigDecimal tax8 = BigDecimal.ZERO;
 
         for (PaymentDetail detail : details) {
+            // null チェック: taxRate が null の場合はスキップ
+            if (detail.getTaxRate() == null) {
+                continue;
+            }
+            
             BigDecimal unitPrice = BigDecimal.valueOf(detail.getMenu().getPrice());
             BigDecimal quantity = BigDecimal.valueOf(detail.getQuantity());
             BigDecimal taxRate = BigDecimal.valueOf(detail.getTaxRate().getRate());
@@ -141,6 +146,7 @@ public class ReceiptService {
 
         PaymentSummaryDto summary = new PaymentSummaryDto();
         summary.setPaymentId(paymentId);
+        summary.setPaymentTime(payment.getPaymentTime());
         summary.setTotalAmount(payment.getTotal());
         summary.setSubtotal(payment.getSubtotal());
         summary.setDiscount(payment.getDiscount());

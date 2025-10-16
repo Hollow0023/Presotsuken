@@ -1,5 +1,7 @@
 package com.order.dto;
 
+import java.time.LocalDateTime;
+
 import lombok.Data;
 
 /**
@@ -8,6 +10,7 @@ import lombok.Data;
 @Data
 public class PaymentSummaryDto {
     private Integer paymentId;
+    private LocalDateTime paymentTime;
     
     // 会計全体の金額
     private Double totalAmount;
