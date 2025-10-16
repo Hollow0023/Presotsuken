@@ -423,4 +423,50 @@ public class ReceiptServiceTest {
             receiptService.issueReceipt(request);
         });
     }
+
+    @Test
+    @DisplayName("税率がnullのPaymentDetailが含まれていても正しく処理される")
+    void testCalculatePaymentSummary_WithNullTaxRate() {
+        // Arrange
+        List<PaymentDetail> details = new ArrayList<>();
+        
+        // 正常な商品（10%）
+        Menu menu1 = new Menu();
+        menu1.setPrice(500.0);
+        PaymentDetail detail1 = new PaymentDetail();
+        detail1.setMenu(menu1);
+        detail1.setQuantity(1);
+        detail1.setTaxRate(taxRate10);
+        detail1.setSubtotal(500.0);
+        detail1.setDiscount(0.0);
+        
+        // 税率がnullの商品（スキップされるべき）
+        Menu menu2 = new Menu();
+        menu2.setPrice(300.0);
+        PaymentDetail detail2 = new PaymentDetail();
+        detail2.setMenu(menu2);
+        detail2.setQuantity(1);
+        detail2.setTaxRate(null); // null
+        detail2.setSubtotal(300.0);
+        detail2.setDiscount(0.0);
+        
+        details.add(detail1);
+        details.add(detail2);
+
+        when(paymentRepository.findById(1)).thenReturn(Optional.of(testPayment));
+        when(paymentDetailRepository.findByPaymentPaymentId(1)).thenReturn(details);
+        when(receiptRepository.findByPaymentPaymentIdAndVoidedFalseOrderByIssuedAtDesc(1)).thenReturn(new ArrayList<>());
+
+        // Act
+        PaymentSummaryDto summary = receiptService.calculatePaymentSummary(1);
+
+        // Assert - nullのものはスキップされ、10%のものだけが集計される
+        assertNotNull(summary);
+        assertEquals(500.0, summary.getNetAmount10(), 0.01);
+        assertEquals(50.0, summary.getTaxAmount10(), 0.01);
+        assertEquals(550.0, summary.getGrossAmount10(), 0.01);
+        assertEquals(0.0, summary.getNetAmount8(), 0.01);
+        assertEquals(0.0, summary.getTaxAmount8(), 0.01);
+        assertEquals(0.0, summary.getGrossAmount8(), 0.01);
+    }
 }
