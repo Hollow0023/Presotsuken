@@ -18,7 +18,15 @@ public interface PaymentRepository extends JpaRepository<Payment, Integer> {
 
     List<Payment> findByStoreStoreIdOrderByPaymentTimeDesc(Integer storeId);
 
-    List<Payment> findByStoreStoreIdAndVisitCancelOrderByPaymentTimeDesc(Integer storeId, Boolean visitCancel);
+    @Query("""
+        SELECT p FROM Payment p
+        WHERE p.store.storeId = :storeId
+          AND (p.visitCancel = :isCancelled OR p.cancel = :isCancelled)
+        ORDER BY p.paymentTime DESC
+    """)
+    List<Payment> findByStoreStoreIdAndCancelledStatus(
+        @Param("storeId") Integer storeId,
+        @Param("isCancelled") Boolean isCancelled);
 
     List<Payment> findByStoreStoreIdAndPaymentTimeBetween(Integer storeId, LocalDateTime start, LocalDateTime end);
 

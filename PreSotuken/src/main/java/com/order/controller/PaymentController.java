@@ -95,11 +95,11 @@ public class PaymentController {
         
         // フィルタパラメータに基づいて会計履歴を取得
         if ("cancelled".equals(filter)) {
-            // キャンセルされた履歴のみ表示（visit_cancel = 1）
-            payments = paymentRepository.findByStoreStoreIdAndVisitCancelOrderByPaymentTimeDesc(storeId, true);
+            // キャンセルされた履歴のみ表示（visit_cancel = 1 または cancel = 1）
+            payments = paymentRepository.findByStoreStoreIdAndCancelledStatus(storeId, true);
         } else {
-            // デフォルト: 有効な会計履歴のみ表示（visit_cancel = 0）
-            payments = paymentRepository.findByStoreStoreIdAndVisitCancelOrderByPaymentTimeDesc(storeId, false);
+            // デフォルト: 有効な会計履歴のみ表示（visit_cancel = 0 かつ cancel = 0）
+            payments = paymentRepository.findByStoreStoreIdAndCancelledStatus(storeId, false);
         }
         
         Map<Integer, Double> subtotalMap = new HashMap<>();

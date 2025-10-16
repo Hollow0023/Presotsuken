@@ -41,8 +41,8 @@
     <tbody>
     <tr th:each="payment : ${payments}"
         th:attr="data-payment-id=${payment.paymentId}"
-        th:classappend="${payment.visitCancel} ? ' cancelled-row' : ''">
-        <td class="status-cell" th:text="${payment.visitCancel} ? '削除済' : ''"></td>
+        th:classappend="${payment.visitCancel or payment.cancel} ? ' cancelled-row' : ''">
+        <td class="status-cell" th:text="${payment.visitCancel or payment.cancel} ? '削除済' : ''"></td>
         <td th:text="${#temporals.format(payment.paymentTime, 'yyyy-MM-dd HH:mm')}"></td>
         <td th:text="${payment.visit.seat.seatName}"></td>
         <td><span th:text="${#numbers.formatDecimal(subtotalMap[payment.paymentId],0,0)}"></span>円</td>
