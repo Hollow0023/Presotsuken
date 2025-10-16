@@ -18,6 +18,8 @@ public interface PaymentRepository extends JpaRepository<Payment, Integer> {
 
     List<Payment> findByStoreStoreIdOrderByPaymentTimeDesc(Integer storeId);
 
+    List<Payment> findByStoreStoreIdAndCancelOrderByPaymentTimeDesc(Integer storeId, Boolean cancel);
+
     List<Payment> findByStoreStoreIdAndPaymentTimeBetween(Integer storeId, LocalDateTime start, LocalDateTime end);
 
 
