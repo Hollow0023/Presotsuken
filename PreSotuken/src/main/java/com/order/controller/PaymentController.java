@@ -111,10 +111,14 @@ public class PaymentController {
 
     @GetMapping("/payments/history/detail")
     public String showPaymentDetail(
-            @RequestParam("paymentId") Integer paymentId,
+            @RequestParam(value = "paymentId", required = false) Integer paymentId,
             @CookieValue(name = "storeId", required = false) Integer storeId,
             @CookieValue(name = "userId", required = false) Integer userId,
             Model model) {
+        // paymentIdが指定されていない場合は会計履歴一覧へリダイレクト
+        if (paymentId == null) {
+            return "redirect:/payments/history";
+        }
         model.addAttribute("paymentId", paymentId);
         model.addAttribute("userId", userId);
         return "payment-detail";
