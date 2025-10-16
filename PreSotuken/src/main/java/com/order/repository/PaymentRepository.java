@@ -21,7 +21,12 @@ public interface PaymentRepository extends JpaRepository<Payment, Integer> {
     @Query("""
         SELECT p FROM Payment p
         WHERE p.store.storeId = :storeId
-          AND (p.visitCancel = :isCancelled OR p.cancel = :isCancelled)
+          AND (
+            CASE 
+              WHEN :isCancelled = true THEN (p.visitCancel = true OR p.cancel = true)
+              ELSE (p.visitCancel = false AND p.cancel = false)
+            END
+          )
         ORDER BY p.paymentTime DESC
     """)
     List<Payment> findByStoreStoreIdAndCancelledStatus(
