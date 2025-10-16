@@ -16,6 +16,16 @@
     
 <h1>会計履歴</h1>
 <a href="/">← トップに戻る</a>
+
+<!-- フィルタ選択プルダウン -->
+<div style="margin: 20px 0;">
+    <label for="filterSelect">表示する履歴: </label>
+    <select id="filterSelect" onchange="changeFilter()">
+        <option value="active" th:selected="${currentFilter == 'active' or currentFilter == null}">会計履歴</option>
+        <option value="cancelled" th:selected="${currentFilter == 'cancelled'}">キャンセル</option>
+    </select>
+</div>
+
 <table id="historyTable">
     <thead>
     <tr>
@@ -31,8 +41,8 @@
     <tbody>
     <tr th:each="payment : ${payments}"
         th:attr="data-payment-id=${payment.paymentId}"
-        th:classappend="${payment.cancel} ? ' cancelled-row' : ''">
-        <td class="status-cell" th:text="${payment.cancel} ? '削除済' : ''"></td>
+        th:classappend="${payment.visitCancel or payment.cancel} ? ' cancelled-row' : ''">
+        <td class="status-cell" th:text="${payment.visitCancel or payment.cancel} ? '削除済' : ''"></td>
         <td th:text="${#temporals.format(payment.paymentTime, 'yyyy-MM-dd HH:mm')}"></td>
         <td th:text="${payment.visit.seat.seatName}"></td>
         <td><span th:text="${#numbers.formatDecimal(subtotalMap[payment.paymentId],0,0)}"></span>円</td>
@@ -58,6 +68,12 @@ const modal = document.getElementById('detailModal');
 const modalBody = document.getElementById('modalBody');
 const closeBtn = modal.querySelector('.close');
 let deletedDetailIds = [];
+
+// フィルタ変更時にページをリロード
+function changeFilter() {
+    const filterValue = document.getElementById('filterSelect').value;
+    window.location.href = '/payments/history?filter=' + filterValue;
+}
 
 function updateRowSubtotal(tr) {
     if (!tr) return;

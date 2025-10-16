@@ -89,8 +89,19 @@ public class PaymentController {
 
     @GetMapping("/payments/history")
     public String showPaymentHistory(@CookieValue(name = "storeId", required = false) Integer storeId,
+                                     @RequestParam(name = "filter", required = false, defaultValue = "active") String filter,
                                      Model model) {
-        List<Payment> payments = paymentRepository.findByStoreStoreIdOrderByPaymentTimeDesc(storeId);
+        List<Payment> payments;
+        
+        // フィルタパラメータに基づいて会計履歴を取得
+        if ("cancelled".equals(filter)) {
+            // キャンセルされた履歴のみ表示（visit_cancel = 1 または cancel = 1）
+            payments = paymentRepository.findByStoreStoreIdAndCancelledStatus(storeId, true);
+        } else {
+            // デフォルト: 有効な会計履歴のみ表示（visit_cancel = 0 かつ cancel = 0）
+            payments = paymentRepository.findByStoreStoreIdAndCancelledStatus(storeId, false);
+        }
+        
         Map<Integer, Double> subtotalMap = new HashMap<>();
         for (Payment p : payments) {
             double subtotal = paymentDetailRepository.findByPaymentPaymentId(p.getPaymentId())
@@ -106,6 +117,7 @@ public class PaymentController {
         }
         model.addAttribute("payments", payments);
         model.addAttribute("subtotalMap", subtotalMap);
+        model.addAttribute("currentFilter", filter);
         return "paymentHistory";
     }
 
