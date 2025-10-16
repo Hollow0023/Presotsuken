@@ -4,10 +4,13 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 
 import org.springframework.dao.DataAccessException;
+import org.springframework.http.ResponseEntity;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
@@ -62,7 +65,13 @@ public class GlobalExceptionHandler {
 	 * （例: paymentId=undefinedなど無効な値が送信された場合）
 	 */
 	@ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    public String handleTypeMismatch(MethodArgumentTypeMismatchException ex, Model model) {
+    public Object handleTypeMismatch(MethodArgumentTypeMismatchException ex, Model model, HttpServletRequest request) {
+        // APIリクエストの場合はJSONレスポンスを返す
+        if (request.getRequestURI().startsWith("/api/")) {
+            return ResponseEntity.badRequest().body("Invalid parameter: " + ex.getName());
+        }
+        
+        // 通常のページリクエストの場合はエラーページを表示
         model.addAttribute("message", "パラメータの形式が正しくありません。");
         
         // スタックトレース表示（デバッグ用）

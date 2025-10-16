@@ -245,6 +245,12 @@
 		const paymentId = document.getElementById('currentPaymentId').value;
 		const userId = document.getElementById('currentUserId').value;
 
+		// paymentIdが無効な場合は会計履歴にリダイレクト
+		if (!paymentId || paymentId === '' || paymentId === 'undefined' || paymentId === 'null') {
+			alert('無効な会計IDです。会計履歴画面に戻ります。');
+			window.location.href = '/payments/history';
+		}
+
 		// 初期表示時にデータを読み込む
 		window.addEventListener('DOMContentLoaded', function() {
 			loadPaymentSummary();
