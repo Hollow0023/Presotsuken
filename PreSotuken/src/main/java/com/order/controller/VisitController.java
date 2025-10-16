@@ -46,6 +46,8 @@ public class VisitController {
 	public String createVisit(@RequestParam("seat.seatId") Integer seatId,
 			@RequestParam("store.storeId") Integer storeId,
 			@RequestParam("numberOfPeople") Integer numberOfPeople,
+			HttpServletRequest request,
+			HttpServletResponse response,
 			RedirectAttributes redirectAttributes) {
 
 		// 店舗・座席を取得
@@ -65,6 +67,24 @@ public class VisitController {
 		payment.setStore(store);
 		payment.setVisit(visit);
 		Payment savedPayment = paymentRepository.save(payment);
+
+		// userIdクッキーを維持（リクエストから取得してレスポンスに設定し直す）
+		if (request.getCookies() != null) {
+			for (Cookie cookie : request.getCookies()) {
+				if ("userId".equals(cookie.getName())) {
+					String userIdValue = cookie.getValue();
+					// 有効なuserIdの場合のみクッキーを再設定
+					if (userIdValue != null && !userIdValue.isEmpty() && 
+						!"null".equals(userIdValue) && !"undefined".equals(userIdValue)) {
+						Cookie userIdCookie = new Cookie("userId", userIdValue);
+						userIdCookie.setPath("/");
+						userIdCookie.setMaxAge(60 * 60 * 24 * 30); // 30日間有効
+						response.addCookie(userIdCookie);
+					}
+					break;
+				}
+			}
+		}
 
 		// WebSocket 通知
 		if (savedVisit.getVisitId() != null && savedPayment.getPaymentId() != null) {
