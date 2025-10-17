@@ -285,7 +285,7 @@ public class PrintService {
             while (!remainingItemName.isEmpty()) {
                 int currentLineByteLength = 0;
                 int cutIndex = 0;
-                // RECEIPT_ITEM_NAME_MAX_WIDTH_HALF を超えないギリギリの文字数を探す
+                // 品名エリアの最大幅を超えないギリギリの文字数を探す
                 for (int i = 0; i < remainingItemName.length(); i++) {
                     char c = remainingItemName.charAt(i);
                     int charBytes = 1;
