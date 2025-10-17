@@ -103,9 +103,11 @@ class PaymentSplitServiceTest {
         request.setNumberOfSplits(3);
         request.setCurrentSplit(1);
         request.setPaymentTime(LocalDateTime.now());
+        request.setDeposit(1100.0);
         
         when(paymentRepository.findById(1)).thenReturn(Optional.of(originalPayment));
         when(paymentDetailRepository.findByPaymentPaymentId(1)).thenReturn(paymentDetails);
+        when(paymentRepository.findAll()).thenReturn(Arrays.asList(originalPayment)); // 子会計なし
         when(paymentRepository.save(any(Payment.class))).thenAnswer(i -> {
             Payment p = (Payment) i.getArguments()[0];
             if (p.getPaymentId() == null) {
@@ -135,14 +137,29 @@ class PaymentSplitServiceTest {
         originalPayment.setPaymentStatus("PARTIAL");
         originalPayment.setTotalSplits(3);
         
+        // 既に2人分支払い済みの子会計を作成
+        Payment child1 = new Payment();
+        child1.setPaymentId(101);
+        child1.setParentPayment(originalPayment);
+        child1.setTotal(1100.0);
+        child1.setSplitNumber(1);
+        
+        Payment child2 = new Payment();
+        child2.setPaymentId(102);
+        child2.setParentPayment(originalPayment);
+        child2.setTotal(1100.0);
+        child2.setSplitNumber(2);
+        
         SplitPaymentRequest request = new SplitPaymentRequest();
         request.setPaymentId(1);
         request.setNumberOfSplits(3);
         request.setCurrentSplit(3); // 最後
         request.setPaymentTime(LocalDateTime.now());
+        request.setDeposit(1100.0);
         
         when(paymentRepository.findById(1)).thenReturn(Optional.of(originalPayment));
         when(paymentDetailRepository.findByPaymentPaymentId(1)).thenReturn(paymentDetails);
+        when(paymentRepository.findAll()).thenReturn(Arrays.asList(originalPayment, child1, child2));
         when(paymentRepository.save(any(Payment.class))).thenAnswer(i -> i.getArguments()[0]);
         when(visitRepository.save(any(Visit.class))).thenAnswer(i -> i.getArguments()[0]);
         
@@ -167,18 +184,35 @@ class PaymentSplitServiceTest {
     void 割り勘会計_余りが出る場合_最後に含める() {
         // Given
         originalPayment.setTotal(1000.0); // 1000円を3人で割る
+        originalPayment.setPaymentStatus("PARTIAL");
+        originalPayment.setTotalSplits(3);
         
         PaymentDetail detail = paymentDetails.get(0);
         detail.setSubtotal(909.09); // 税抜き 909.09円 → 税込み 1000円
+        
+        // 既に2人分支払い済みの子会計を作成
+        Payment child1 = new Payment();
+        child1.setPaymentId(101);
+        child1.setParentPayment(originalPayment);
+        child1.setTotal(333.0);
+        child1.setSplitNumber(1);
+        
+        Payment child2 = new Payment();
+        child2.setPaymentId(102);
+        child2.setParentPayment(originalPayment);
+        child2.setTotal(333.0);
+        child2.setSplitNumber(2);
         
         SplitPaymentRequest request = new SplitPaymentRequest();
         request.setPaymentId(1);
         request.setNumberOfSplits(3);
         request.setCurrentSplit(3); // 最後
         request.setPaymentTime(LocalDateTime.now());
+        request.setDeposit(334.0);
         
         when(paymentRepository.findById(1)).thenReturn(Optional.of(originalPayment));
         when(paymentDetailRepository.findByPaymentPaymentId(1)).thenReturn(paymentDetails);
+        when(paymentRepository.findAll()).thenReturn(Arrays.asList(originalPayment, child1, child2));
         when(paymentRepository.save(any(Payment.class))).thenAnswer(i -> i.getArguments()[0]);
         when(visitRepository.save(any(Visit.class))).thenAnswer(i -> i.getArguments()[0]);
         
@@ -215,13 +249,24 @@ class PaymentSplitServiceTest {
         
         IndividualPaymentRequest request = new IndividualPaymentRequest();
         request.setPaymentId(1);
-        request.setPaymentDetailIds(Arrays.asList(2)); // 餃子のみ支払い
+        
+        IndividualPaymentRequest.ItemSelection item = new IndividualPaymentRequest.ItemSelection();
+        item.setPaymentDetailId(2);
+        item.setQuantity(1);
+        request.setItems(Arrays.asList(item));
         request.setPaymentTime(LocalDateTime.now());
+        request.setDeposit(600.0);
         
         when(paymentRepository.findById(1)).thenReturn(Optional.of(originalPayment));
         when(paymentDetailRepository.findById(2)).thenReturn(Optional.of(detail2));
-        when(paymentDetailRepository.findByPaymentPaymentId(1)).thenReturn(allDetails);
-        when(paymentRepository.save(any(Payment.class))).thenAnswer(i -> i.getArguments()[0]);
+        when(paymentDetailRepository.findByPaymentPaymentId(1)).thenReturn(Arrays.asList(paymentDetails.get(0)));
+        when(paymentRepository.save(any(Payment.class))).thenAnswer(i -> {
+            Payment p = (Payment) i.getArguments()[0];
+            if (p.getPaymentId() == null) {
+                p.setPaymentId(100);
+            }
+            return p;
+        });
         when(paymentDetailRepository.save(any(PaymentDetail.class))).thenAnswer(i -> i.getArguments()[0]);
         
         // When
@@ -232,29 +277,36 @@ class PaymentSplitServiceTest {
         assertEquals(550.0, result.getTotal(), 0.01); // 500 * 1.1 = 550
         assertEquals("PARTIAL", result.getPaymentStatus()); // まだラーメンが未払い
         
-        // 餃子が支払い済みとしてマークされているか確認
-        assertNotNull(detail2.getPaidInPayment());
+        // 元のdetail2の数量が0になっているか確認
+        verify(paymentDetailRepository).delete(detail2);
     }
     
     @Test
     void 個別会計_全商品支払い後に完了状態になる() {
         // Given
-        paymentDetails.get(0).setPaidInPayment(null); // 未払い
-        
         IndividualPaymentRequest request = new IndividualPaymentRequest();
         request.setPaymentId(1);
-        request.setPaymentDetailIds(Arrays.asList(1)); // 全商品を支払い
+        
+        IndividualPaymentRequest.ItemSelection item = new IndividualPaymentRequest.ItemSelection();
+        item.setPaymentDetailId(1);
+        item.setQuantity(3); // 全数量
+        request.setItems(Arrays.asList(item));
         request.setPaymentTime(LocalDateTime.now());
+        request.setDeposit(3500.0);
         
         when(paymentRepository.findById(1)).thenReturn(Optional.of(originalPayment));
         when(paymentDetailRepository.findById(1)).thenReturn(Optional.of(paymentDetails.get(0)));
-        when(paymentDetailRepository.findByPaymentPaymentId(1)).thenReturn(paymentDetails);
-        when(paymentRepository.save(any(Payment.class))).thenAnswer(i -> i.getArguments()[0]);
-        when(paymentDetailRepository.save(any(PaymentDetail.class))).thenAnswer(i -> {
-            PaymentDetail saved = (PaymentDetail) i.getArguments()[0];
-            saved.setPaidInPayment(new Payment()); // 支払い済みとしてマーク
-            return saved;
+        when(paymentDetailRepository.findByPaymentPaymentId(1))
+            .thenReturn(Arrays.asList(paymentDetails.get(0)))
+            .thenReturn(Arrays.asList()); // 2回目の呼び出しでは空リストを返す（全て削除済み）
+        when(paymentRepository.save(any(Payment.class))).thenAnswer(i -> {
+            Payment p = (Payment) i.getArguments()[0];
+            if (p.getPaymentId() == null) {
+                p.setPaymentId(100);
+            }
+            return p;
         });
+        when(paymentDetailRepository.save(any(PaymentDetail.class))).thenAnswer(i -> i.getArguments()[0]);
         when(visitRepository.save(any(Visit.class))).thenAnswer(i -> i.getArguments()[0]);
         
         // When
@@ -286,20 +338,25 @@ class PaymentSplitServiceTest {
         detail2.setQuantity(1);
         detail2.setSubtotal(500.0);
         detail2.setTaxRate(taxRate);
-        detail2.setPaidInPayment(new Payment()); // すでに支払い済み
         
-        List<PaymentDetail> allDetails = Arrays.asList(paymentDetails.get(0), detail2);
+        // 子会計を作成（餃子分）
+        Payment childPayment = new Payment();
+        childPayment.setPaymentId(100);
+        childPayment.setParentPayment(originalPayment);
+        childPayment.setTotal(550.0);
+        
+        List<PaymentDetail> remainingDetails = Arrays.asList(paymentDetails.get(0)); // ラーメンのみ残っている
         
         when(paymentRepository.findById(1)).thenReturn(Optional.of(originalPayment));
-        when(paymentDetailRepository.findByPaymentPaymentId(1)).thenReturn(allDetails);
-        when(paymentRepository.findAll()).thenReturn(Arrays.asList());
+        when(paymentDetailRepository.findByPaymentPaymentId(1)).thenReturn(remainingDetails);
+        when(paymentRepository.findAll()).thenReturn(Arrays.asList(originalPayment, childPayment));
         
         // When
         RemainingPaymentDto result = paymentSplitService.getRemainingPayment(1);
         
         // Then
         assertNotNull(result);
-        assertEquals(3850.0, result.getTotalAmount(), 0.01); // (3000 + 500) * 1.1
+        assertEquals(3850.0, result.getTotalAmount(), 0.01); // (3000) * 1.1 + 550 = 3300 + 550
         assertEquals(550.0, result.getPaidAmount(), 0.01); // 餃子分
         assertEquals(3300.0, result.getRemainingAmount(), 0.01); // ラーメン分
         assertFalse(result.getIsFullyPaid());
@@ -308,15 +365,17 @@ class PaymentSplitServiceTest {
     }
     
     @Test
-    void 既に支払い済みの商品を再度支払おうとするとエラー() {
+    void 数量不足の商品を支払おうとするとエラー() {
         // Given
-        Payment paidPayment = new Payment();
-        paidPayment.setPaymentId(999);
-        paymentDetails.get(0).setPaidInPayment(paidPayment); // すでに支払い済み
+        paymentDetails.get(0).setQuantity(2); // 残り2個
         
         IndividualPaymentRequest request = new IndividualPaymentRequest();
         request.setPaymentId(1);
-        request.setPaymentDetailIds(Arrays.asList(1));
+        
+        IndividualPaymentRequest.ItemSelection item = new IndividualPaymentRequest.ItemSelection();
+        item.setPaymentDetailId(1);
+        item.setQuantity(5); // 5個支払おうとする（不足）
+        request.setItems(Arrays.asList(item));
         request.setPaymentTime(LocalDateTime.now());
         
         when(paymentRepository.findById(1)).thenReturn(Optional.of(originalPayment));

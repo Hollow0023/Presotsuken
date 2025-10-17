@@ -47,14 +47,6 @@ public class PaymentSplitService {
         Payment originalPayment = paymentRepository.findById(request.getPaymentId())
             .orElseThrow(() -> new IllegalArgumentException("元の会計が見つかりません: " + request.getPaymentId()));
         
-        // 元の会計を部分完了状態に更新 (初回のみ)
-        if (!"PARTIAL".equals(originalPayment.getPaymentStatus()) && 
-            !"COMPLETED".equals(originalPayment.getPaymentStatus())) {
-            originalPayment.setPaymentStatus("PARTIAL");
-            originalPayment.setTotalSplits(request.getNumberOfSplits());
-            paymentRepository.save(originalPayment);
-        }
-        
         // 合計金額を計算
         List<PaymentDetail> details = paymentDetailRepository.findByPaymentPaymentId(request.getPaymentId());
         double totalAmount = calculateTotalWithTax(details, originalPayment.getDiscount());
@@ -70,6 +62,42 @@ public class PaymentSplitService {
             currentAmount = totalAmount - alreadyPaid;
         } else {
             currentAmount = amountPerPerson;
+        }
+        
+        // 預かり金額の検証
+        if (request.getDeposit() != null && request.getDeposit() < currentAmount) {
+            throw new IllegalArgumentException("預かり金額が不足しています。必要額: " + currentAmount + "円、預かり: " + request.getDeposit() + "円");
+        }
+        
+        // 既に支払い済みの分割回数を確認
+        List<Payment> existingChildPayments = paymentRepository.findAll().stream()
+            .filter(p -> p.getParentPayment() != null && 
+                        p.getParentPayment().getPaymentId().equals(originalPayment.getPaymentId()) &&
+                        p.getSplitNumber() != null)
+            .collect(Collectors.toList());
+        
+        long paidCount = existingChildPayments.size();
+        
+        // 期待される分割番号と一致するか確認（厳密な順序チェック）
+        if (paidCount + 1 != request.getCurrentSplit()) {
+            throw new IllegalArgumentException("会計の順序が正しくありません。次の会計は " + (paidCount + 1) + " 人目です（現在" + paidCount + "人分支払い済み）");
+        }
+        
+        // 既に合計額以上支払われていないか確認
+        double alreadyPaidTotal = existingChildPayments.stream()
+            .mapToDouble(p -> p.getTotal() != null ? p.getTotal() : 0.0)
+            .sum();
+        
+        if (alreadyPaidTotal + currentAmount > totalAmount + 0.01) { // 浮動小数点の誤差を考慮
+            throw new IllegalArgumentException("合計支払額が元の会計額を超えています");
+        }
+        
+        // 元の会計を部分完了状態に更新 (初回のみ)
+        if (!"PARTIAL".equals(originalPayment.getPaymentStatus()) && 
+            !"COMPLETED".equals(originalPayment.getPaymentStatus())) {
+            originalPayment.setPaymentStatus("PARTIAL");
+            originalPayment.setTotalSplits(request.getNumberOfSplits());
+            paymentRepository.save(originalPayment);
         }
         
         // 新しい会計レコードを作成
@@ -101,7 +129,8 @@ public class PaymentSplitService {
     
     /**
      * 個別会計処理
-     * 選択された商品のみを支払う
+     * 選択された商品と数量を指定して支払う
+     * 元の PaymentDetail から数量を減らし、新しい Payment に新しい PaymentDetail を作成する
      */
     @Transactional
     public Payment processIndividualPayment(IndividualPaymentRequest request) {
@@ -116,34 +145,105 @@ public class PaymentSplitService {
             paymentRepository.save(originalPayment);
         }
         
-        // 選択された商品の金額を計算
-        List<PaymentDetail> selectedDetails = request.getPaymentDetailIds().stream()
-            .map(id -> paymentDetailRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("商品が見つかりません: " + id)))
-            .collect(Collectors.toList());
+        // 選択された商品と数量を処理
+        List<PaymentDetail> newDetails = new ArrayList<>();
+        double totalAmount = 0.0;
         
-        // 選択商品がすでに支払い済みでないか確認
-        for (PaymentDetail detail : selectedDetails) {
-            if (detail.getPaidInPayment() != null) {
-                throw new IllegalArgumentException("商品 " + detail.getMenu().getMenuName() + " は既に支払い済みです");
+        for (IndividualPaymentRequest.ItemSelection item : request.getItems()) {
+            PaymentDetail originalDetail = paymentDetailRepository.findById(item.getPaymentDetailId())
+                .orElseThrow(() -> new IllegalArgumentException("商品が見つかりません: " + item.getPaymentDetailId()));
+            
+            // 数量の検証
+            if (item.getQuantity() == null || item.getQuantity() <= 0) {
+                throw new IllegalArgumentException("数量は1以上を指定してください");
             }
+            
+            if (item.getQuantity() > originalDetail.getQuantity()) {
+                throw new IllegalArgumentException("商品 " + originalDetail.getMenu().getMenuName() + 
+                    " の数量が不足しています。残り: " + originalDetail.getQuantity() + "個");
+            }
+            
+            // 単価を計算（元の小計 / 元の数量）
+            double unitPrice = originalDetail.getSubtotal() / originalDetail.getQuantity();
+            double itemSubtotal = unitPrice * item.getQuantity();
+            
+            // 税率を取得
+            double taxRate = originalDetail.getTaxRate() != null ? originalDetail.getTaxRate().getRate() : 0;
+            
+            // 税込み金額を計算
+            double itemTotalWithTax = itemSubtotal * (1 + taxRate);
+            totalAmount += itemTotalWithTax;
+            
+            // 元の PaymentDetail の数量を減らす
+            originalDetail.setQuantity(originalDetail.getQuantity() - item.getQuantity());
+            originalDetail.setSubtotal(unitPrice * originalDetail.getQuantity());
+            
+            if (originalDetail.getQuantity() == 0) {
+                // 数量が0になった場合は削除
+                paymentDetailRepository.delete(originalDetail);
+            } else {
+                paymentDetailRepository.save(originalDetail);
+            }
+            
+            // 新しい PaymentDetail を作成（後で新しい Payment に紐付ける）
+            PaymentDetail newDetail = new PaymentDetail();
+            newDetail.setStore(originalDetail.getStore());
+            newDetail.setMenu(originalDetail.getMenu());
+            newDetail.setQuantity(item.getQuantity());
+            newDetail.setSubtotal(itemSubtotal);
+            newDetail.setUser(originalDetail.getUser());
+            newDetail.setTaxRate(originalDetail.getTaxRate());
+            newDetail.setOrderTime(originalDetail.getOrderTime());
+            newDetail.setDiscount(0.0); // 個別商品の割引は0
+            
+            newDetails.add(newDetail);
         }
         
-        double totalAmount = calculateTotalWithTax(selectedDetails, request.getDiscount());
+        // 割引を適用
+        if (request.getDiscount() != null && request.getDiscount() > 0) {
+            totalAmount -= request.getDiscount();
+        }
+        
+        totalAmount = Math.max(0, totalAmount); // 負にならないようにする
+        
+        // 預かり金額の検証
+        if (request.getDeposit() != null && request.getDeposit() < totalAmount) {
+            throw new IllegalArgumentException("預かり金額が不足しています。必要額: " + totalAmount + "円、預かり: " + request.getDeposit() + "円");
+        }
         
         // 新しい会計レコードを作成
-        Payment childPayment = createChildPayment(originalPayment, request, totalAmount);
-        childPayment = paymentRepository.save(childPayment);
+        Payment childPayment = new Payment();
+        childPayment.setStore(originalPayment.getStore());
+        childPayment.setVisit(originalPayment.getVisit());
+        childPayment.setParentPayment(originalPayment);
+        childPayment.setPaymentTime(request.getPaymentTime());
+        childPayment.setTotal(totalAmount);
+        childPayment.setSubtotal(totalAmount); // 簡略化
+        childPayment.setDiscount(request.getDiscount());
+        childPayment.setDeposit(request.getDeposit());
         
-        // 選択された商品を支払い済みとしてマーク
-        for (PaymentDetail detail : selectedDetails) {
-            detail.setPaidInPayment(childPayment);
-            paymentDetailRepository.save(detail);
+        if (request.getPaymentTypeId() != null) {
+            PaymentType type = paymentTypeRepository.findById(request.getPaymentTypeId()).orElse(null);
+            childPayment.setPaymentType(type);
         }
         
-        // 全ての商品が支払い済みか確認
-        List<PaymentDetail> allDetails = paymentDetailRepository.findByPaymentPaymentId(request.getPaymentId());
-        boolean allPaid = allDetails.stream().allMatch(d -> d.getPaidInPayment() != null);
+        if (request.getCashierId() != null) {
+            User cashier = userRepository.findById(request.getCashierId()).orElse(null);
+            childPayment.setCashier(cashier);
+        }
+        
+        childPayment = paymentRepository.save(childPayment);
+        
+        // 新しい PaymentDetail を新しい Payment に紐付けて保存
+        for (PaymentDetail newDetail : newDetails) {
+            newDetail.setPayment(childPayment);
+            paymentDetailRepository.save(newDetail);
+        }
+        
+        // 全ての商品が支払い済みか確認（元の Payment の PaymentDetail が全て削除または数量0）
+        List<PaymentDetail> remainingDetails = paymentDetailRepository.findByPaymentPaymentId(request.getPaymentId());
+        boolean allPaid = remainingDetails.isEmpty() || 
+            remainingDetails.stream().allMatch(d -> d.getQuantity() == 0);
         
         if (allPaid) {
             // 全て支払い済みの場合、元の会計を完了状態にする
@@ -177,33 +277,38 @@ public class PaymentSplitService {
         RemainingPaymentDto result = new RemainingPaymentDto();
         result.setPaymentId(paymentId);
         
-        // 全商品と未払い商品を取得
-        List<PaymentDetail> allDetails = paymentDetailRepository.findByPaymentPaymentId(paymentId);
-        List<PaymentDetail> unpaidDetails = allDetails.stream()
-            .filter(d -> d.getPaidInPayment() == null)
+        // 元の会計に残っている商品を取得（個別会計で数量が減った後の状態）
+        List<PaymentDetail> remainingDetails = paymentDetailRepository.findByPaymentPaymentId(paymentId);
+        
+        // 子会計の合計金額を計算
+        List<Payment> childPayments = paymentRepository.findAll().stream()
+            .filter(p -> p.getParentPayment() != null && p.getParentPayment().getPaymentId().equals(paymentId))
             .collect(Collectors.toList());
         
-        // 合計金額を計算
-        double totalAmount = calculateTotalWithTax(allDetails, payment.getDiscount());
-        double unpaidAmount = calculateTotalWithTax(unpaidDetails, 0.0);
-        double paidAmount = totalAmount - unpaidAmount;
+        double paidAmount = childPayments.stream()
+            .mapToDouble(p -> p.getTotal() != null ? p.getTotal() : 0.0)
+            .sum();
+        
+        // 残りの商品の金額を計算
+        double unpaidAmount = calculateTotalWithTax(remainingDetails, 0.0);
+        
+        // 元の会計の合計金額（支払い済み + 未払い）
+        double totalAmount = paidAmount + unpaidAmount;
         
         result.setTotalAmount(totalAmount);
         result.setPaidAmount(paidAmount);
         result.setRemainingAmount(unpaidAmount);
-        result.setIsFullyPaid(unpaidDetails.isEmpty());
+        result.setIsFullyPaid(remainingDetails.isEmpty() || 
+            remainingDetails.stream().allMatch(d -> d.getQuantity() == 0));
         
         // 未払い商品リスト
-        List<RemainingPaymentDto.PaymentDetailDto> unpaidDtoList = unpaidDetails.stream()
+        List<RemainingPaymentDto.PaymentDetailDto> unpaidDtoList = remainingDetails.stream()
+            .filter(d -> d.getQuantity() > 0)
             .map(this::convertToPaymentDetailDto)
             .collect(Collectors.toList());
         result.setUnpaidDetails(unpaidDtoList);
         
         // 子会計リスト
-        List<Payment> childPayments = paymentRepository.findAll().stream()
-            .filter(p -> p.getParentPayment() != null && p.getParentPayment().getPaymentId().equals(paymentId))
-            .collect(Collectors.toList());
-        
         List<RemainingPaymentDto.ChildPaymentDto> childDtoList = childPayments.stream()
             .map(this::convertToChildPaymentDto)
             .collect(Collectors.toList());

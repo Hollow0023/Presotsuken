@@ -317,15 +317,16 @@
 
 	<!-- 個別会計モーダル -->
 	<div id="individualPaymentModal" class="modal">
-		<div class="modal-content" style="width: 500px; max-height: 80vh; overflow-y: auto;">
+		<div class="modal-content" style="width: 600px; max-height: 80vh; overflow-y: auto;">
 			<h3>個別会計</h3>
-			<p>支払う商品を選択してください:</p>
+			<p>支払う商品と数量を選択してください:</p>
 			<table border="1" style="width:100%; margin-bottom: 15px;">
 				<thead>
 					<tr>
 						<th style="width: 40px;">選択</th>
 						<th>商品</th>
-						<th>数量</th>
+						<th>残り数量</th>
+						<th>支払数量</th>
 						<th>金額(税込)</th>
 					</tr>
 				</thead>
@@ -795,20 +796,32 @@
 			tbody.innerHTML = '';
 			
 			detailsWithDiscount.forEach((item, index) => {
-				const totalWithTax = item.originalSubtotal - item.discountAmount;
+				const unitPrice = (item.originalSubtotal - item.discountAmount) / item.quantity;
 				const row = document.createElement('tr');
 				row.innerHTML = `
-					<td><input type="checkbox" class="individual-item-checkbox" data-detail-id="${item.paymentDetailId}" data-amount="${totalWithTax}"></td>
+					<td><input type="checkbox" class="individual-item-checkbox" data-detail-id="${item.paymentDetailId}" data-unit-price="${unitPrice}" data-max-qty="${item.quantity}"></td>
 					<td>${item.menuName}</td>
 					<td>${item.quantity}</td>
-					<td>${totalWithTax}円</td>
+					<td><input type="number" class="individual-qty-input" min="1" max="${item.quantity}" value="1" style="width: 60px;" disabled></td>
+					<td class="individual-item-total">0円</td>
 				`;
 				tbody.appendChild(row);
 			});
 			
 			// チェックボックスの変更イベントを設定
-			document.querySelectorAll('.individual-item-checkbox').forEach(checkbox => {
-				checkbox.addEventListener('change', updateIndividualTotal);
+			document.querySelectorAll('.individual-item-checkbox').forEach((checkbox, index) => {
+				const row = checkbox.closest('tr');
+				const qtyInput = row.querySelector('.individual-qty-input');
+				
+				checkbox.addEventListener('change', function() {
+					qtyInput.disabled = !this.checked;
+					if (this.checked) {
+						qtyInput.value = 1;
+					}
+					updateIndividualTotal();
+				});
+				
+				qtyInput.addEventListener('input', updateIndividualTotal);
 			});
 			
 			updateIndividualTotal();
@@ -818,13 +831,27 @@
 		function updateIndividualTotal() {
 			let total = 0;
 			document.querySelectorAll('.individual-item-checkbox:checked').forEach(checkbox => {
-				total += parseFloat(checkbox.dataset.amount);
+				const row = checkbox.closest('tr');
+				const qtyInput = row.querySelector('.individual-qty-input');
+				const totalCell = row.querySelector('.individual-item-total');
+				const unitPrice = parseFloat(checkbox.dataset.unitPrice);
+				const maxQty = parseInt(checkbox.dataset.maxQty);
+				let qty = parseInt(qtyInput.value) || 1;
+				
+				// 数量のバリデーション
+				if (qty < 1) qty = 1;
+				if (qty > maxQty) qty = maxQty;
+				qtyInput.value = qty;
+				
+				const itemTotal = unitPrice * qty;
+				totalCell.textContent = Math.round(itemTotal) + '円';
+				total += itemTotal;
 			});
 			
 			const discount = parseFloat(document.getElementById("individualDiscount").value) || 0;
 			total = Math.max(0, total - discount);
 			
-			document.getElementById("individualTotalAmount").innerText = total;
+			document.getElementById("individualTotalAmount").innerText = Math.round(total);
 		}
 		
 		function processIndividualPayment() {
@@ -836,7 +863,12 @@
 			
 			const selectedItems = [];
 			document.querySelectorAll('.individual-item-checkbox:checked').forEach(checkbox => {
-				selectedItems.push(parseInt(checkbox.dataset.detailId));
+				const row = checkbox.closest('tr');
+				const qtyInput = row.querySelector('.individual-qty-input');
+				selectedItems.push({
+					paymentDetailId: parseInt(checkbox.dataset.detailId),
+					quantity: parseInt(qtyInput.value) || 1
+				});
 			});
 			
 			if (selectedItems.length === 0) {
@@ -856,7 +888,7 @@
 			
 			const requestData = {
 				paymentId: parseInt(paymentId),
-				paymentDetailIds: selectedItems,
+				items: selectedItems,
 				paymentTypeId: parseInt(paymentTypeId),
 				cashierId: parseInt(cashierId),
 				discount: discount,
