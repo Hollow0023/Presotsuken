@@ -422,7 +422,6 @@ public class PaymentController {
     /**
      * 割り勘会計処理
      */
-    @Transactional
     @PostMapping("/payments/split")
     public ResponseEntity<Map<String, Object>> processSplitPayment(@RequestBody SplitPaymentRequest request) {
         try {
@@ -446,7 +445,6 @@ public class PaymentController {
     /**
      * 個別会計処理
      */
-    @Transactional
     @PostMapping("/payments/individual")
     public ResponseEntity<Map<String, Object>> processIndividualPayment(@RequestBody IndividualPaymentRequest request) {
         try {
