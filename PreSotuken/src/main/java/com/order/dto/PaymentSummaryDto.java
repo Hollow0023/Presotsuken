@@ -27,4 +27,8 @@ public class PaymentSummaryDto {
     private Double remainingAmount10; // 10%残額
     private Double remainingAmount8; // 8%残額
     private Double remainingTotal; // 合計残額
+    
+    // 分割会計情報
+    private Integer splitNumber; // 分割番号
+    private Integer totalSplits; // 総分割数
 }

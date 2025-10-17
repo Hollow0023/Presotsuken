@@ -153,6 +153,8 @@ public class ReceiptService {
         summary.setRemainingAmount10(remaining10.doubleValue());
         summary.setRemainingAmount8(remaining8.doubleValue());
         summary.setRemainingTotal(remaining10.add(remaining8).doubleValue());
+        summary.setSplitNumber(payment.getSplitNumber());
+        summary.setTotalSplits(payment.getTotalSplits());
 
         return summary;
     }
