@@ -717,6 +717,9 @@
 			const splitCount = parseInt(document.getElementById("splitCount").value) || 2;
 			const select = document.getElementById("splitCurrentNumber");
 			
+			// 現在選択されている値を保存
+			const currentValue = select.value;
+			
 			select.innerHTML = '';
 			for (let i = 1; i <= splitCount; i++) {
 				const option = document.createElement('option');
@@ -726,6 +729,11 @@
 					option.text += ' (余り含む)';
 				}
 				select.appendChild(option);
+			}
+			
+			// 保存していた値を復元（存在する場合）
+			if (currentValue && currentValue <= splitCount) {
+				select.value = currentValue;
 			}
 		}
 		
@@ -828,11 +836,12 @@
 				const nextNumber = window.splitPaymentCurrentNumber + 1;
 				
 				if (nextNumber <= window.splitPaymentTotalCount) {
-					// 次の会計番号を設定
-					document.getElementById("splitCurrentNumber").value = nextNumber;
-					updateSplitPreview();
 					// フィールドをリセット
 					document.getElementById("splitDeposit").value = '';
+					// 次の会計番号を設定（updateSplitPreviewの前に設定）
+					document.getElementById("splitCurrentNumber").value = nextNumber;
+					// プレビューを更新（選択値が保持される）
+					updateSplitPreview();
 					// 状態をクリア
 					window.splitPaymentCompleted = undefined;
 					window.splitPaymentCurrentNumber = undefined;
