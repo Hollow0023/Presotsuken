@@ -1,6 +1,10 @@
 -- 個別会計機能用のデータベース変更スクリプト
 -- Payment テーブルに個別会計機能用のカラムを追加
 
+-- 重要: 個別会計機能により、1つのvisitに対して複数のpaymentレコードが存在する可能性があります
+-- 元の会計（parent_payment_id = NULL）と子会計（parent_payment_id != NULL）を区別するため、
+-- visitIdで検索する際は parent_payment_id IS NULL の条件を追加してください
+
 -- 親会計ID: 元の会計を分割した場合、元の会計のIDを保持
 ALTER TABLE payment ADD COLUMN parent_payment_id INT NULL;
 ALTER TABLE payment ADD CONSTRAINT fk_payment_parent 

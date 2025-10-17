@@ -120,7 +120,8 @@ public class OrderService {
             user = userRepository.findById(userId).orElse(null);
         }
 
-        Payment payment = paymentRepository.findByVisitVisitId(visitId);
+        // 個別会計機能対応: 親会計（元の会計）のみを取得
+        Payment payment = paymentRepository.findByVisitVisitIdAndParentPaymentIsNull(visitId);
         if (payment == null) {
             throw new IllegalArgumentException("無効なvisitId: " + visitId);
         }
@@ -185,7 +186,8 @@ public class OrderService {
             return List.of();
         }
 
-        Payment payment = paymentRepository.findByVisitVisitId(currentVisit.getVisitId());
+        // 個別会計機能対応: 親会計（元の会計）のみを取得
+        Payment payment = paymentRepository.findByVisitVisitIdAndParentPaymentIsNull(currentVisit.getVisitId());
         if (payment == null) {
             return List.of();
         }

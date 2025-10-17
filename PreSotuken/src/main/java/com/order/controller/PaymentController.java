@@ -61,8 +61,8 @@ public class PaymentController {
             return "redirect:/error";
         }
 
-        // Payment の取得
-        Payment payment = paymentRepository.findByVisitVisitId(visitId);
+        // Payment の取得 - 個別会計機能対応: 親会計（元の会計）のみを取得
+        Payment payment = paymentRepository.findByVisitVisitIdAndParentPaymentIsNull(visitId);
         if (payment == null) {
             return "redirect:/error";
         }

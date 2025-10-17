@@ -15,6 +15,10 @@ import com.order.entity.Payment;
 public interface PaymentRepository extends JpaRepository<Payment, Integer> {
 
     Payment findByVisitVisitId(int visitId);
+    
+    // 個別会計機能用: visitIdから親会計（元の会計）のみを取得
+    // parent_payment_id が NULL の Payment を返す
+    Payment findByVisitVisitIdAndParentPaymentIsNull(int visitId);
 
     List<Payment> findByStoreStoreIdOrderByPaymentTimeDesc(Integer storeId);
 

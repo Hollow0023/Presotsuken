@@ -37,6 +37,18 @@
 
 ## データベース設計
 
+### 重要: Visit と Payment の関係について
+
+個別会計機能により、**1つのvisitに対して複数のpaymentレコードが存在する可能性があります**。
+
+- **元の会計（親会計）**: `parent_payment_id` が NULL
+- **子会計**: `parent_payment_id` が親会計のIDを参照
+
+**visitIdでPaymentを検索する際の注意点:**
+- 必ず `parent_payment_id IS NULL` の条件を追加してください
+- 新しいリポジトリメソッド `findByVisitVisitIdAndParentPaymentIsNull()` を使用してください
+- 既存の `findByVisitVisitId()` を使うと `IncorrectResultSizeDataAccessException` が発生します
+
 ### Payment テーブルの拡張
 
 | カラム名 | データ型 | 説明 |

@@ -208,6 +208,10 @@ PreSotsuken 飲食店向け注文管理システムに、個別会計機能（�
 
 ## トラブルシューティング
 
+### 問題: IncorrectResultSizeDataAccessException が発生する
+**原因:** `findByVisitVisitId()` を使用している  
+**解決:** `findByVisitVisitIdAndParentPaymentIsNull()` に変更してください。個別会計機能により、1つのvisitに複数のpaymentが存在するため、親会計のみを取得する必要があります。
+
 ### 問題: 会計が完了しない
 **原因:** 全ての商品/人数分の会計が完了していない  
 **解決:** データベースで payment_status を確認
