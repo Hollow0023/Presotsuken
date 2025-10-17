@@ -108,8 +108,7 @@ public class PaymentSplitService {
         // 子会計を保存してIDを取得
         Payment savedChildPayment = paymentRepository.save(childPayment);
         
-        // 割り勘用の PaymentDetail を作成（元の PaymentDetail を人数分に分割）
-        createSplitPaymentDetails(details, savedChildPayment, request.getNumberOfSplits(), currentAmount);
+        // 割り勘会計では PaymentDetail を分割せず、子会計には PaymentDetail を作成しない
         
         // 最後の会計の場合、全体を完了状態にする
         if (request.getCurrentSplit().equals(request.getNumberOfSplits())) {
@@ -345,42 +344,42 @@ public class PaymentSplitService {
     }
     
     /**
-     * 割り勘用の PaymentDetail を作成
-     * 元の商品リストを人数分に分割して、子会計に紐付ける
+     * 割り勘用の PaymentDetail を作成（削除済み機能）
+     * 割り勘会計では PaymentDetail を分割しない仕様に変更されたため、このメソッドは使用されていません
      */
-    private void createSplitPaymentDetails(List<PaymentDetail> originalDetails, Payment childPayment, 
-                                           Integer numberOfSplits, double childAmount) {
-        // 元の会計の税込み合計金額を計算
-        double originalTotal = calculateTotalWithTax(originalDetails, childPayment.getParentPayment().getDiscount());
-        
-        // 各商品について、人数分に分割した PaymentDetail を作成
-        for (PaymentDetail originalDetail : originalDetails) {
-            // 税率を取得
-            double taxRate = originalDetail.getTaxRate() != null ? originalDetail.getTaxRate().getRate() : 0;
-            
-            // 元の商品の税込み金額を計算
-            double originalSubtotal = originalDetail.getSubtotal() != null ? originalDetail.getSubtotal() : 0;
-            double originalTotalWithTax = originalSubtotal * (1 + taxRate);
-            
-            // 比率を使って子会計の商品金額を計算
-            double ratio = childAmount / originalTotal;
-            double splitSubtotal = originalSubtotal * ratio;
-            
-            // 新しい PaymentDetail を作成
-            PaymentDetail splitDetail = new PaymentDetail();
-            splitDetail.setPayment(childPayment);
-            splitDetail.setStore(originalDetail.getStore());
-            splitDetail.setMenu(originalDetail.getMenu());
-            splitDetail.setQuantity(originalDetail.getQuantity()); // 数量は元のまま表示
-            splitDetail.setSubtotal(splitSubtotal); // 金額は人数分に分割
-            splitDetail.setUser(originalDetail.getUser());
-            splitDetail.setTaxRate(originalDetail.getTaxRate());
-            splitDetail.setOrderTime(originalDetail.getOrderTime());
-            splitDetail.setDiscount(0.0); // 割引は親会計で既に考慮済み
-            
-            paymentDetailRepository.save(splitDetail);
-        }
-    }
+    // private void createSplitPaymentDetails(List<PaymentDetail> originalDetails, Payment childPayment, 
+    //                                        Integer numberOfSplits, double childAmount) {
+    //     // 元の会計の税込み合計金額を計算
+    //     double originalTotal = calculateTotalWithTax(originalDetails, childPayment.getParentPayment().getDiscount());
+    //     
+    //     // 各商品について、人数分に分割した PaymentDetail を作成
+    //     for (PaymentDetail originalDetail : originalDetails) {
+    //         // 税率を取得
+    //         double taxRate = originalDetail.getTaxRate() != null ? originalDetail.getTaxRate().getRate() : 0;
+    //         
+    //         // 元の商品の税込み金額を計算
+    //         double originalSubtotal = originalDetail.getSubtotal() != null ? originalDetail.getSubtotal() : 0;
+    //         double originalTotalWithTax = originalSubtotal * (1 + taxRate);
+    //         
+    //         // 比率を使って子会計の商品金額を計算
+    //         double ratio = childAmount / originalTotal;
+    //         double splitSubtotal = originalSubtotal * ratio;
+    //         
+    //         // 新しい PaymentDetail を作成
+    //         PaymentDetail splitDetail = new PaymentDetail();
+    //         splitDetail.setPayment(childPayment);
+    //         splitDetail.setStore(originalDetail.getStore());
+    //         splitDetail.setMenu(originalDetail.getMenu());
+    //         splitDetail.setQuantity(originalDetail.getQuantity()); // 数量は元のまま表示
+    //         splitDetail.setSubtotal(splitSubtotal); // 金額は人数分に分割
+    //         splitDetail.setUser(originalDetail.getUser());
+    //         splitDetail.setTaxRate(originalDetail.getTaxRate());
+    //         splitDetail.setOrderTime(originalDetail.getOrderTime());
+    //         splitDetail.setDiscount(0.0); // 割引は親会計で既に考慮済み
+    //         
+    //         paymentDetailRepository.save(splitDetail);
+    //     }
+    // }
     
     /**
      * 子会計を作成

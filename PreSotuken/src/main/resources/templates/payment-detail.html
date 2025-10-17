@@ -131,9 +131,56 @@
 		<a href="/payments/history">← 会計履歴一覧へ戻る</a>
 
 		<div class="section">
-			<h3>会計サマリ</h3>
+			<h3>会計基本情報</h3>
 			<p><strong>会計ID:</strong> <span id="paymentId"></span></p>
 			<p><strong>会計日時:</strong> <span id="paymentTime"></span></p>
+			<p><strong>状態:</strong> <span id="cancelStatus"></span></p>
+			<button id="toggleCancel" class="btn-danger" style="display: inline-block; margin-left: 10px;">削除する</button>
+			
+			<h4 style="margin-top: 20px;">編集可能項目</h4>
+			<p><strong>席:</strong> 
+				<select id="seatSelect">
+					<!-- 動的に追加される -->
+				</select>
+			</p>
+			<p><strong>支払い方法:</strong> 
+				<select id="paymentTypeSelect">
+					<!-- 動的に追加される -->
+				</select>
+			</p>
+			<p><strong>担当者:</strong> 
+				<select id="cashierSelect">
+					<!-- 動的に追加される -->
+				</select>
+			</p>
+			<p><strong>割引:</strong> 
+				<input type="number" id="discountInput" min="0" style="width: 100px;"> 円
+			</p>
+			<button id="saveBasicInfo" class="btn-primary">基本情報を保存</button>
+		</div>
+
+		<div class="section">
+			<h3>注文された商品</h3>
+			<table id="detailTable">
+				<thead>
+					<tr>
+						<th>商品</th>
+						<th>数量</th>
+						<th>割引額</th>
+						<th>税込小計</th>
+						<th>税抜小計</th>
+						<th>操作</th>
+					</tr>
+				</thead>
+				<tbody id="detailTableBody">
+					<!-- 動的に追加される -->
+				</tbody>
+			</table>
+			<button id="saveDetails" class="btn-primary" style="margin-top: 10px;">商品情報を保存</button>
+		</div>
+
+		<div class="section">
+			<h3>会計サマリ</h3>
 			<p><strong>合計金額:</strong> <span id="totalAmount"></span>円</p>
 			<p id="paymentMethodLabel" style="display: none;"><strong>支払い:</strong> <span id="paymentMethod"></span></p>
 			
@@ -245,19 +292,151 @@
 	<script>
 		const paymentId = document.getElementById('currentPaymentId').value;
 		const userId = document.getElementById('currentUserId').value;
+		let deletedDetailIds = [];
+		let paymentData = null;
 
 		// 初期表示時にデータを読み込む
 		window.addEventListener('DOMContentLoaded', function() {
+			loadPaymentDetails();
 			loadPaymentSummary();
 			loadReceipts();
 		});
+
+		// 会計詳細情報を読み込む
+		function loadPaymentDetails() {
+			fetch(`/payments/history/${paymentId}`)
+				.then(res => res.json())
+				.then(data => {
+					paymentData = data;
+					
+					// 基本情報の表示
+					document.getElementById('paymentId').innerText = paymentId;
+					document.getElementById('paymentTime').innerText = new Date(data.paymentTime).toLocaleString('ja-JP');
+					
+					// キャンセル状態の表示
+					const isCancelled = data.cancel === true;
+					const statusText = isCancelled ? '削除済み' : '有効';
+					document.getElementById('cancelStatus').innerText = statusText;
+					document.getElementById('cancelStatus').className = isCancelled ? 'status-cancelled' : 'status-active';
+					document.getElementById('toggleCancel').innerText = isCancelled ? '復元する' : '削除する';
+					
+					// 座席セレクトボックスの設定
+					const seatSelect = document.getElementById('seatSelect');
+					seatSelect.innerHTML = '';
+					data.seats.forEach(s => {
+						const option = document.createElement('option');
+						option.value = s.id;
+						option.text = s.name;
+						option.selected = s.id === data.seatId;
+						seatSelect.appendChild(option);
+					});
+					
+					// 支払い方法セレクトボックスの設定
+					const paymentTypeSelect = document.getElementById('paymentTypeSelect');
+					paymentTypeSelect.innerHTML = '';
+					data.paymentTypes.forEach(pt => {
+						const option = document.createElement('option');
+						option.value = pt.id;
+						option.text = pt.name;
+						option.selected = pt.id === data.paymentTypeId;
+						paymentTypeSelect.appendChild(option);
+					});
+					
+					// 担当者セレクトボックスの設定
+					const cashierSelect = document.getElementById('cashierSelect');
+					cashierSelect.innerHTML = '';
+					data.users.forEach(u => {
+						const option = document.createElement('option');
+						option.value = u.id;
+						option.text = u.name;
+						option.selected = u.id === data.cashierId;
+						cashierSelect.appendChild(option);
+					});
+					
+					// 割引の設定
+					document.getElementById('discountInput').value = data.discount || 0;
+					
+					// 商品テーブルの設定
+					const tbody = document.getElementById('detailTableBody');
+					tbody.innerHTML = '';
+					data.details.forEach(d => {
+						const discount = d.discount || 0;
+						const subIn = Math.round(d.subtotalWithTax);
+						const subEx = Math.round(d.subtotalWithoutTax);
+						const tr = document.createElement('tr');
+						tr.dataset.detailId = d.paymentDetailId;
+						tr.dataset.price = d.price;
+						tr.dataset.taxRate = d.taxRate;
+						tr.innerHTML = `
+							<td>${d.menuName}</td>
+							<td><input type="number" class="qty-input" min="1" value="${d.quantity}"></td>
+							<td><input type="number" class="discount-input" min="0" step="1" value="${discount}"></td>
+							<td class="subtotal">${subIn}円</td>
+							<td class="subtotal-ex">${subEx}円</td>
+							<td><button type="button" class="btn-danger delete-detail">削除</button></td>
+						`;
+						tbody.appendChild(tr);
+					});
+					
+					// 商品の数量・割引変更イベントを設定
+					document.querySelectorAll('.qty-input, .discount-input').forEach(input => {
+						input.addEventListener('input', e => {
+							const tr = e.target.closest('tr');
+							updateRowSubtotal(tr);
+						});
+					});
+					
+					// 削除ボタンのイベントを設定
+					document.querySelectorAll('.delete-detail').forEach(btn => {
+						btn.addEventListener('click', e => {
+							const tr = e.target.closest('tr');
+							deletedDetailIds.push(parseInt(tr.dataset.detailId));
+							tr.remove();
+						});
+					});
+					
+					// 初期表示時に小計を計算
+					document.querySelectorAll('#detailTableBody tr').forEach(tr => updateRowSubtotal(tr));
+				})
+				.catch(error => console.error('Error loading payment details:', error));
+		}
+		
+		// 商品行の小計を更新する
+		function updateRowSubtotal(tr) {
+			if (!tr) return;
+			const price = parseFloat(tr.dataset.price) || 0;
+			const taxRate = parseFloat(tr.dataset.taxRate) || 0;
+			const qtyInput = tr.querySelector('.qty-input');
+			const discountInput = tr.querySelector('.discount-input');
+			const qty = qtyInput ? (parseInt(qtyInput.value) || 0) : 0;
+			let discountValue = discountInput ? parseFloat(discountInput.value) : 0;
+			if (!isFinite(discountValue) || discountValue < 0) {
+				discountValue = 0;
+			}
+			const subtotalBeforeDiscount = price * qty;
+			if (discountValue > subtotalBeforeDiscount) {
+				discountValue = subtotalBeforeDiscount;
+			}
+			if (discountInput) {
+				discountInput.value = Math.round(discountValue);
+			}
+			const subtotalEx = Math.max(subtotalBeforeDiscount - discountValue, 0);
+			const subtotalIn = subtotalEx * (1 + taxRate);
+			const subtotalCell = tr.querySelector('.subtotal');
+			const subtotalExCell = tr.querySelector('.subtotal-ex');
+			if (subtotalCell) {
+				subtotalCell.textContent = `${Math.round(subtotalIn)}円`;
+			}
+			if (subtotalExCell) {
+				subtotalExCell.textContent = `${Math.round(subtotalEx)}円`;
+			}
+		}
 
 		// 会計サマリを読み込む
 		function loadPaymentSummary() {
 			fetch(`/api/payments/${paymentId}/summary`)
 				.then(res => res.json())
 				.then(data => {
-					document.getElementById('paymentId').innerText = data.paymentId;
 					document.getElementById('totalAmount').innerText = Math.round(data.totalAmount);
 					document.getElementById('netAmount10').innerText = Math.round(data.netAmount10);
 					document.getElementById('taxAmount10').innerText = Math.round(data.taxAmount10);
@@ -281,6 +460,93 @@
 				})
 				.catch(error => console.error('Error loading summary:', error));
 		}
+		
+		// 基本情報を保存する
+		document.getElementById('saveBasicInfo').addEventListener('click', function() {
+			const payload = {
+				seatId: parseInt(document.getElementById('seatSelect').value),
+				paymentTypeId: parseInt(document.getElementById('paymentTypeSelect').value),
+				cashierId: parseInt(document.getElementById('cashierSelect').value),
+				discount: parseFloat(document.getElementById('discountInput').value) || 0,
+				details: [] // 基本情報のみ更新
+			};
+			
+			fetch(`/payments/history/${paymentId}/edit`, {
+				method: 'POST',
+				headers: {'Content-Type': 'application/json'},
+				body: JSON.stringify(payload)
+			}).then(res => {
+				if (res.ok) {
+					alert('基本情報を保存しました');
+					loadPaymentDetails();
+					loadPaymentSummary();
+				} else {
+					alert('保存に失敗しました');
+				}
+			}).catch(error => {
+				console.error('Error:', error);
+				alert('保存中にエラーが発生しました');
+			});
+		});
+		
+		// 商品情報を保存する
+		document.getElementById('saveDetails').addEventListener('click', function() {
+			const payload = {
+				details: []
+			};
+			
+			// 現在表示されている商品情報を収集
+			document.querySelectorAll('#detailTableBody tr').forEach(tr => {
+				payload.details.push({
+					paymentDetailId: parseInt(tr.dataset.detailId),
+					quantity: parseInt(tr.querySelector('.qty-input').value),
+					discount: parseFloat(tr.querySelector('.discount-input').value) || 0
+				});
+			});
+			
+			// 削除された商品を追加
+			deletedDetailIds.forEach(id => {
+				payload.details.push({paymentDetailId: id, delete: true});
+			});
+			
+			fetch(`/payments/history/${paymentId}/edit`, {
+				method: 'POST',
+				headers: {'Content-Type': 'application/json'},
+				body: JSON.stringify(payload)
+			}).then(res => {
+				if (res.ok) {
+					alert('商品情報を保存しました');
+					deletedDetailIds = [];
+					loadPaymentDetails();
+					loadPaymentSummary();
+				} else {
+					alert('保存に失敗しました');
+				}
+			}).catch(error => {
+				console.error('Error:', error);
+				alert('保存中にエラーが発生しました');
+			});
+		});
+		
+		// キャンセル状態を切り替える
+		document.getElementById('toggleCancel').addEventListener('click', function() {
+			const isCancelled = document.getElementById('cancelStatus').innerText === '削除済み';
+			
+			fetch(`/payments/history/${paymentId}/cancel`, {
+				method: 'POST',
+				headers: {'Content-Type': 'application/json'},
+				body: JSON.stringify({cancel: !isCancelled})
+			}).then(res => {
+				if (res.ok) {
+					loadPaymentDetails();
+				} else {
+					alert('状態の変更に失敗しました');
+				}
+			}).catch(error => {
+				console.error('Error:', error);
+				alert('状態の変更中にエラーが発生しました');
+			});
+		});
 
 		// 領収書一覧を読み込む
 		function loadReceipts() {
