@@ -135,6 +135,7 @@
 			<p><strong>会計ID:</strong> <span id="paymentId"></span></p>
 			<p><strong>会計日時:</strong> <span id="paymentTime"></span></p>
 			<p><strong>合計金額:</strong> <span id="totalAmount"></span>円</p>
+			<p id="paymentMethodLabel" style="display: none;"><strong>支払い:</strong> <span id="paymentMethod"></span></p>
 			
 			<h4>税率別内訳</h4>
 			<table>
@@ -267,6 +268,12 @@
 					document.getElementById('remaining10').innerText = Math.round(data.remainingAmount10);
 					document.getElementById('remaining8').innerText = Math.round(data.remainingAmount8);
 					document.getElementById('remainingTotal').innerText = Math.round(data.remainingTotal);
+					
+					// 割り勘情報を表示
+					if (data.totalSplits != null && data.totalSplits > 0) {
+						document.getElementById('paymentMethod').innerText = '割り勘';
+						document.getElementById('paymentMethodLabel').style.display = 'block';
+					}
 					
 					// モーダル用にも設定
 					document.getElementById('fullAmount').innerText = Math.round(data.remainingTotal);
