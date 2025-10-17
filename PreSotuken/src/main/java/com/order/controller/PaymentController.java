@@ -431,6 +431,8 @@ public class PaymentController {
             response.put("success", true);
             response.put("paymentId", childPayment.getPaymentId());
             response.put("amount", childPayment.getTotal());
+            response.put("deposit", childPayment.getDeposit());
+            response.put("change", childPayment.getDeposit() != null ? childPayment.getDeposit() - childPayment.getTotal() : 0);
             response.put("completed", "COMPLETED".equals(childPayment.getPaymentStatus()));
             
             return ResponseEntity.ok(response);
@@ -454,6 +456,8 @@ public class PaymentController {
             response.put("success", true);
             response.put("paymentId", childPayment.getPaymentId());
             response.put("amount", childPayment.getTotal());
+            response.put("deposit", childPayment.getDeposit());
+            response.put("change", childPayment.getDeposit() != null ? childPayment.getDeposit() - childPayment.getTotal() : 0);
             response.put("completed", "COMPLETED".equals(childPayment.getPaymentStatus()));
             
             return ResponseEntity.ok(response);
