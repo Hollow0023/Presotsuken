@@ -269,6 +269,20 @@
 		</div>
 	</div>
 
+	<!-- 会計完了モーダル（割り勘・個別会計用） -->
+	<div id="paymentCompleteModal" class="modal">
+		<div class="modal-content" style="width: 400px;">
+			<h3>会計完了</h3>
+			<div style="margin: 20px 0; font-size: 1.2em;">
+				<p>お会計金額: <strong><span id="completeAmount">0</span>円</strong></p>
+				<p>お預かり: <strong><span id="completeDeposit">0</span>円</strong></p>
+				<p>お釣り: <strong><span id="completeChange">0</span>円</strong></p>
+			</div>
+			<p id="completeMessage" style="margin: 10px 0; color: #666;"></p>
+			<button class="btn-primary" onclick="closePaymentCompleteModal()">閉じる</button>
+		</div>
+	</div>
+
 	<div id="detailDiscountModal" class="modal">
 		<div class="modal-content">
 			<h3>商品割引の編集</h3>
@@ -767,19 +781,18 @@
 				body: JSON.stringify(requestData)
 			}).then(res => res.json()).then(data => {
 				if (data.success) {
+					// 会計完了モーダルを表示
+					document.getElementById('completeAmount').innerText = Math.round(data.amount);
+					document.getElementById('completeDeposit').innerText = Math.round(data.deposit || 0);
+					document.getElementById('completeChange').innerText = Math.round(data.change || 0);
+					
 					if (data.completed) {
-						alert(`会計完了しました (${data.amount}円)\n全ての支払いが完了しました`);
-						window.location.href = '/seats';
+						document.getElementById('completeMessage').innerText = '全ての支払いが完了しました';
 					} else {
-						alert(`${currentNumber}人目の会計が完了しました (${data.amount}円)\n残り ${splitCount - currentNumber} 人の会計が必要です`);
-						// 次の会計のために選択を更新
-						if (currentNumber < splitCount) {
-							document.getElementById("splitCurrentNumber").value = currentNumber + 1;
-							updateSplitPreview();
-							// フィールドをリセット
-							document.getElementById("splitDeposit").value = '';
-						}
+						document.getElementById('completeMessage').innerText = `${currentNumber}人目の会計が完了しました。残り ${splitCount - currentNumber} 人の会計が必要です。`;
 					}
+					
+					openModal('paymentCompleteModal');
 				} else {
 					alert('会計処理に失敗しました: ' + (data.error || '不明なエラー'));
 				}
@@ -787,6 +800,28 @@
 				console.error('Error:', error);
 				alert('会計処理中にエラーが発生しました');
 			});
+		}
+
+		// 会計完了モーダルを閉じる
+		function closePaymentCompleteModal() {
+			closeModal('paymentCompleteModal');
+			
+			// 全て完了していれば座席画面へ、そうでなければ次の会計へ
+			const message = document.getElementById('completeMessage').innerText;
+			if (message.includes('全ての支払いが完了しました')) {
+				window.location.href = '/seats';
+			} else {
+				// 次の会計へ進む準備
+				const splitCount = parseInt(document.getElementById("splitCount").value);
+				const currentNumber = parseInt(document.getElementById("splitCurrentNumber").value);
+				
+				if (currentNumber < splitCount) {
+					document.getElementById("splitCurrentNumber").value = currentNumber + 1;
+					updateSplitPreview();
+					// フィールドをリセット
+					document.getElementById("splitDeposit").value = '';
+				}
+			}
 		}
 
 		// ===== 個別会計関連の関数 =====
@@ -902,15 +937,19 @@
 				body: JSON.stringify(requestData)
 			}).then(res => res.json()).then(data => {
 				if (data.success) {
+					// 会計完了モーダルを表示
+					document.getElementById('completeAmount').innerText = Math.round(data.amount);
+					document.getElementById('completeDeposit').innerText = Math.round(data.deposit || 0);
+					document.getElementById('completeChange').innerText = Math.round(data.change || 0);
+					
 					if (data.completed) {
-						alert(`会計完了しました (${data.amount}円)\n全ての商品の支払いが完了しました`);
-						window.location.href = '/seats';
+						document.getElementById('completeMessage').innerText = '全ての商品の支払いが完了しました';
 					} else {
-						alert(`選択した商品の会計が完了しました (${data.amount}円)\nまだ未払いの商品があります`);
-						closeModal('individualPaymentModal');
-						// ページをリロードして最新状態を反映
-						location.reload();
+						document.getElementById('completeMessage').innerText = '選択した商品の会計が完了しました。まだ未払いの商品があります。';
 					}
+					
+					openModal('paymentCompleteModal');
+					closeModal('individualPaymentModal');
 				} else {
 					alert('会計処理に失敗しました: ' + (data.error || '不明なエラー'));
 				}
@@ -918,6 +957,22 @@
 				console.error('Error:', error);
 				alert('会計処理中にエラーが発生しました');
 			});
+		}
+		
+		// 会計完了モーダルを閉じる（個別会計用も共通）
+		if (typeof closePaymentCompleteModal === 'undefined') {
+			function closePaymentCompleteModal() {
+				closeModal('paymentCompleteModal');
+				
+				// 全て完了していれば座席画面へ、そうでなければページをリロード
+				const message = document.getElementById('completeMessage').innerText;
+				if (message.includes('全ての')) {
+					window.location.href = '/seats';
+				} else {
+					// ページをリロードして最新状態を反映
+					location.reload();
+				}
+			}
 		}
 	</script>
 </body>
