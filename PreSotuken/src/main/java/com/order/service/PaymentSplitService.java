@@ -64,9 +64,9 @@ public class PaymentSplitService {
             currentAmount = amountPerPerson;
         }
         
-        // 預かり金額の検証
-        if (request.getDeposit() != null && request.getDeposit() < currentAmount) {
-            throw new IllegalArgumentException("預かり金額が不足しています。必要額: " + currentAmount + "円、預かり: " + request.getDeposit() + "円");
+        // 預かり金額の検証 (浮動小数点の誤差を考慮して0.01円の許容範囲を設ける)
+        if (request.getDeposit() != null && request.getDeposit() < currentAmount - 0.01) {
+            throw new IllegalArgumentException("預かり金額が不足しています。必要額: " + Math.round(currentAmount) + "円、預かり: " + request.getDeposit() + "円");
         }
         
         // 既に支払い済みの分割回数を確認
@@ -105,10 +105,16 @@ public class PaymentSplitService {
         childPayment.setSplitNumber(request.getCurrentSplit());
         childPayment.setTotalSplits(request.getNumberOfSplits());
         
+        // 子会計を保存してIDを取得
+        Payment savedChildPayment = paymentRepository.save(childPayment);
+        
+        // 割り勘用の PaymentDetail を作成（元の PaymentDetail を人数分に分割）
+        createSplitPaymentDetails(details, savedChildPayment, request.getNumberOfSplits(), currentAmount);
+        
         // 最後の会計の場合、全体を完了状態にする
         if (request.getCurrentSplit().equals(request.getNumberOfSplits())) {
-            childPayment.setPaymentStatus("COMPLETED");
-            Payment saved = paymentRepository.save(childPayment);
+            savedChildPayment.setPaymentStatus("COMPLETED");
+            Payment saved = paymentRepository.save(savedChildPayment);
             
             originalPayment.setPaymentStatus("COMPLETED");
             paymentRepository.save(originalPayment);
@@ -122,8 +128,8 @@ public class PaymentSplitService {
             
             return saved;
         } else {
-            childPayment.setPaymentStatus("PARTIAL");
-            return paymentRepository.save(childPayment);
+            savedChildPayment.setPaymentStatus("PARTIAL");
+            return paymentRepository.save(savedChildPayment);
         }
     }
     
@@ -336,6 +342,44 @@ public class PaymentSplitService {
         }
         
         return Math.max(total, 0);
+    }
+    
+    /**
+     * 割り勘用の PaymentDetail を作成
+     * 元の商品リストを人数分に分割して、子会計に紐付ける
+     */
+    private void createSplitPaymentDetails(List<PaymentDetail> originalDetails, Payment childPayment, 
+                                           Integer numberOfSplits, double childAmount) {
+        // 元の会計の税込み合計金額を計算
+        double originalTotal = calculateTotalWithTax(originalDetails, childPayment.getParentPayment().getDiscount());
+        
+        // 各商品について、人数分に分割した PaymentDetail を作成
+        for (PaymentDetail originalDetail : originalDetails) {
+            // 税率を取得
+            double taxRate = originalDetail.getTaxRate() != null ? originalDetail.getTaxRate().getRate() : 0;
+            
+            // 元の商品の税込み金額を計算
+            double originalSubtotal = originalDetail.getSubtotal() != null ? originalDetail.getSubtotal() : 0;
+            double originalTotalWithTax = originalSubtotal * (1 + taxRate);
+            
+            // 比率を使って子会計の商品金額を計算
+            double ratio = childAmount / originalTotal;
+            double splitSubtotal = originalSubtotal * ratio;
+            
+            // 新しい PaymentDetail を作成
+            PaymentDetail splitDetail = new PaymentDetail();
+            splitDetail.setPayment(childPayment);
+            splitDetail.setStore(originalDetail.getStore());
+            splitDetail.setMenu(originalDetail.getMenu());
+            splitDetail.setQuantity(originalDetail.getQuantity()); // 数量は元のまま表示
+            splitDetail.setSubtotal(splitSubtotal); // 金額は人数分に分割
+            splitDetail.setUser(originalDetail.getUser());
+            splitDetail.setTaxRate(originalDetail.getTaxRate());
+            splitDetail.setOrderTime(originalDetail.getOrderTime());
+            splitDetail.setDiscount(0.0); // 割引は親会計で既に考慮済み
+            
+            paymentDetailRepository.save(splitDetail);
+        }
     }
     
     /**
