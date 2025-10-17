@@ -42,16 +42,20 @@
     <tr th:each="payment : ${payments}"
         th:attr="data-payment-id=${payment.paymentId}"
         th:classappend="${payment.visitCancel or payment.cancel} ? ' cancelled-row' : ''">
-        <td class="status-cell" th:text="${payment.visitCancel or payment.cancel} ? '削除済' : ''"></td>
-        <td th:text="${#temporals.format(payment.paymentTime, 'yyyy-MM-dd HH:mm')}"></td>
+        <td class="status-cell">
+            <span th:if="${payment.visitCancel or payment.cancel}">削除済</span>
+            <span th:if="${!(payment.visitCancel or payment.cancel) and payment.parentPayment == null and payment.totalSplits != null}">割り勘元</span>
+            <span th:if="${!(payment.visitCancel or payment.cancel) and payment.parentPayment != null}">割り勘先</span>
+        </td>
+        <td th:text="${payment.paymentTime != null ? #temporals.format(payment.paymentTime, 'yyyy-MM-dd HH:mm') : ''}"></td>
         <td th:text="${payment.visit.seat.seatName}"></td>
         <td><span th:text="${#numbers.formatDecimal(subtotalMap[payment.paymentId],0,0)}"></span>円</td>
-        <td><span th:text="${#numbers.formatDecimal(payment.total,0,0)}"></span>円</td>
+        <td><span th:text="${payment.total != null ? #numbers.formatDecimal(payment.total,0,0) : '0'}"></span>円</td>
         <td th:text="${payment.cashier != null ? payment.cashier.userName : ''}"></td>
         <td>
             <a th:href="@{/payments/history/detail(paymentId=${payment.paymentId})}" 
                style="color: #4caf50; text-decoration: none; font-weight: bold;">
-                領収書管理
+                会計詳細
             </a>
         </td>
     </tr>

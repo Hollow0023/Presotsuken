@@ -97,6 +97,13 @@ public class PaymentSplitService {
             !"COMPLETED".equals(originalPayment.getPaymentStatus())) {
             originalPayment.setPaymentStatus("PARTIAL");
             originalPayment.setTotalSplits(request.getNumberOfSplits());
+            // 親会計に初回の支払い情報を設定（日時、合計金額、担当者）
+            originalPayment.setPaymentTime(request.getPaymentTime());
+            originalPayment.setTotal(totalAmount);
+            if (request.getCashierId() != null) {
+                User cashier = userRepository.findById(request.getCashierId()).orElse(null);
+                originalPayment.setCashier(cashier);
+            }
             paymentRepository.save(originalPayment);
         }
         
@@ -148,6 +155,12 @@ public class PaymentSplitService {
         if (!"PARTIAL".equals(originalPayment.getPaymentStatus()) && 
             !"COMPLETED".equals(originalPayment.getPaymentStatus())) {
             originalPayment.setPaymentStatus("PARTIAL");
+            // 親会計に初回の支払い情報を設定（日時、担当者）
+            originalPayment.setPaymentTime(request.getPaymentTime());
+            if (request.getCashierId() != null) {
+                User cashier = userRepository.findById(request.getCashierId()).orElse(null);
+                originalPayment.setCashier(cashier);
+            }
             paymentRepository.save(originalPayment);
         }
         
@@ -255,6 +268,15 @@ public class PaymentSplitService {
             // 全て支払い済みの場合、元の会計を完了状態にする
             childPayment.setPaymentStatus("COMPLETED");
             Payment saved = paymentRepository.save(childPayment);
+            
+            // 元の会計の合計金額を全ての子会計の合計から計算
+            List<Payment> allChildPayments = paymentRepository.findAll().stream()
+                .filter(p -> p.getParentPayment() != null && p.getParentPayment().getPaymentId().equals(originalPayment.getPaymentId()))
+                .collect(Collectors.toList());
+            double totalPaid = allChildPayments.stream()
+                .mapToDouble(p -> p.getTotal() != null ? p.getTotal() : 0.0)
+                .sum();
+            originalPayment.setTotal(totalPaid);
             
             originalPayment.setPaymentStatus("COMPLETED");
             paymentRepository.save(originalPayment);
