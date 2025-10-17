@@ -45,4 +45,9 @@ public class PaymentDetail {
     private Double subtotal;
     private LocalDateTime orderTime;
     private Double discount;
+    
+    // 個別会計機能用: この商品が支払い済みかどうか
+    @ManyToOne
+    @JoinColumn(name = "paid_in_payment_id")
+    private Payment paidInPayment;
 }

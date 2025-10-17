@@ -209,6 +209,8 @@
 
 		<button class="full-btn purple">会計前レシート</button>
 		<button class="full-btn green" onclick="finalizePayment()">会計完了</button>
+		<button class="full-btn" style="background-color: #FF9800; color: white;" onclick="openSplitPaymentModal()">割り勘会計</button>
+		<button class="full-btn" style="background-color: #2196F3; color: white;" onclick="openIndividualPaymentModal()">個別会計</button>
 		<button class="full-btn red" onclick="goBackToSeats()">取引中止</button>
 	</div>
 
@@ -277,6 +279,79 @@
 			<input type="number" id="detailDiscountInput" min="0" value="0"> 円
 			<input type="hidden" id="currentDetailIndex"> <button onclick="applyDetailDiscount()">保存</button>
 			<button onclick="closeModal('detailDiscountModal')">閉じる</button>
+		</div>
+	</div>
+
+	<!-- 割り勘会計モーダル -->
+	<div id="splitPaymentModal" class="modal">
+		<div class="modal-content" style="width: 400px;">
+			<h3>割り勘会計</h3>
+			<p>合計金額: <span id="splitTotalAmount">0</span>円</p>
+			<label>分割人数:</label>
+			<input type="number" id="splitCount" min="2" value="2" oninput="updateSplitPreview()"> 人<br>
+			<p>1人あたり: <span id="amountPerPerson">0</span>円</p>
+			<p style="font-size: 0.9em; color: #666;">※最後の会計に余りを含めます</p>
+			<hr>
+			<label>現在の会計:</label>
+			<select id="splitCurrentNumber" onchange="updateSplitPreview()">
+				<option value="1">1人目</option>
+			</select><br>
+			<p>今回の支払額: <span id="currentSplitAmount">0</span>円</p>
+			<hr>
+			<label>支払い種別:</label>
+			<select id="splitPaymentType">
+				<option value="">選択してください</option>
+				<option th:each="type : ${paymentTypeList}" th:value="${type.typeId}" th:text="${type.typeName}"></option>
+			</select><br>
+			<label>担当者:</label>
+			<select id="splitCashier">
+				<option value="">選択してください</option>
+				<option th:each="user : ${userList}" th:value="${user.userId}" th:text="${user.userName}"></option>
+			</select><br>
+			<label>預かり金額:</label>
+			<input type="number" id="splitDeposit" min="0" placeholder="預かり金額"> 円<br>
+			<button onclick="processSplitPayment()" style="margin-top: 10px;">会計実行</button>
+			<button onclick="closeModal('splitPaymentModal')">キャンセル</button>
+		</div>
+	</div>
+
+	<!-- 個別会計モーダル -->
+	<div id="individualPaymentModal" class="modal">
+		<div class="modal-content" style="width: 600px; max-height: 80vh; overflow-y: auto;">
+			<h3>個別会計</h3>
+			<p>支払う商品と数量を選択してください:</p>
+			<table border="1" style="width:100%; margin-bottom: 15px;">
+				<thead>
+					<tr>
+						<th style="width: 40px;">選択</th>
+						<th>商品</th>
+						<th>残り数量</th>
+						<th>支払数量</th>
+						<th>金額(税込)</th>
+					</tr>
+				</thead>
+				<tbody id="individualItemsList">
+					<!-- 動的に生成 -->
+				</tbody>
+			</table>
+			<p>選択した商品の合計: <span id="individualTotalAmount">0</span>円</p>
+			<hr>
+			<label>支払い種別:</label>
+			<select id="individualPaymentType">
+				<option value="">選択してください</option>
+				<option th:each="type : ${paymentTypeList}" th:value="${type.typeId}" th:text="${type.typeName}"></option>
+			</select><br>
+			<label>担当者:</label>
+			<select id="individualCashier">
+				<option value="">選択してください</option>
+				<option th:each="user : ${userList}" th:value="${user.userId}" th:text="${user.userName}"></option>
+			</select><br>
+			<label>割引額:</label>
+			<input type="number" id="individualDiscount" min="0" value="0" oninput="updateIndividualTotal()"> 円<br>
+			<label>預かり金額:</label>
+			<input type="number" id="individualDeposit" min="0" placeholder="預かり金額"> 円<br>
+			<button onclick="processIndividualPayment()" style="margin-top: 10px;">会計実行</button>
+			<button onclick="closeModal('individualPaymentModal')">キャンセル</button>
 		</div>
 	</div>
 
@@ -600,6 +675,248 @@
 			}).catch(error => {
 				console.error('Error:', error);
 				alert('領収書の発行中にエラーが発生しました');
+			});
+		}
+
+		// ===== 割り勘会計関連の関数 =====
+		
+		function openSplitPaymentModal() {
+			const totalElement = document.getElementById("total");
+			const total = parseFloat(totalElement.innerText.replace('円', '')) || 0;
+			
+			document.getElementById("splitTotalAmount").innerText = total;
+			document.getElementById("splitCount").value = numberOfPeople;
+			
+			// 分割番号の選択肢を生成
+			updateSplitOptions();
+			updateSplitPreview();
+			
+			openModal('splitPaymentModal');
+		}
+		
+		function updateSplitOptions() {
+			const splitCount = parseInt(document.getElementById("splitCount").value) || 2;
+			const select = document.getElementById("splitCurrentNumber");
+			
+			select.innerHTML = '';
+			for (let i = 1; i <= splitCount; i++) {
+				const option = document.createElement('option');
+				option.value = i;
+				option.text = i + '人目';
+				if (i === splitCount) {
+					option.text += ' (余り含む)';
+				}
+				select.appendChild(option);
+			}
+		}
+		
+		function updateSplitPreview() {
+			updateSplitOptions();
+			
+			const total = parseFloat(document.getElementById("splitTotalAmount").innerText) || 0;
+			const splitCount = parseInt(document.getElementById("splitCount").value) || 2;
+			const currentNumber = parseInt(document.getElementById("splitCurrentNumber").value) || 1;
+			
+			const amountPerPerson = Math.floor(total / splitCount);
+			document.getElementById("amountPerPerson").innerText = amountPerPerson;
+			
+			// 現在の会計金額を計算
+			let currentAmount;
+			if (currentNumber === splitCount) {
+				// 最後: 余りを含める
+				const alreadyPaid = amountPerPerson * (splitCount - 1);
+				currentAmount = total - alreadyPaid;
+			} else {
+				currentAmount = amountPerPerson;
+			}
+			
+			document.getElementById("currentSplitAmount").innerText = currentAmount;
+		}
+		
+		function processSplitPayment() {
+			const paymentId = document.getElementById("paymentId")?.value || 0;
+			const splitCount = parseInt(document.getElementById("splitCount").value);
+			const currentNumber = parseInt(document.getElementById("splitCurrentNumber").value);
+			const paymentTypeId = document.getElementById("splitPaymentType").value;
+			const cashierId = document.getElementById("splitCashier").value;
+			const deposit = parseFloat(document.getElementById("splitDeposit").value) || 0;
+			
+			if (!paymentTypeId) {
+				alert("支払い種別を選択してください");
+				return;
+			}
+			
+			if (!cashierId) {
+				alert("担当者を選択してください");
+				return;
+			}
+			
+			const requestData = {
+				paymentId: parseInt(paymentId),
+				numberOfSplits: splitCount,
+				currentSplit: currentNumber,
+				paymentTypeId: parseInt(paymentTypeId),
+				cashierId: parseInt(cashierId),
+				deposit: deposit,
+				paymentTime: localIso()
+			};
+			
+			fetch('/payments/split', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(requestData)
+			}).then(res => res.json()).then(data => {
+				if (data.success) {
+					if (data.completed) {
+						alert(`会計完了しました (${data.amount}円)\n全ての支払いが完了しました`);
+						window.location.href = '/seats';
+					} else {
+						alert(`${currentNumber}人目の会計が完了しました (${data.amount}円)\n残り ${splitCount - currentNumber} 人の会計が必要です`);
+						// 次の会計のために選択を更新
+						if (currentNumber < splitCount) {
+							document.getElementById("splitCurrentNumber").value = currentNumber + 1;
+							updateSplitPreview();
+							// フィールドをリセット
+							document.getElementById("splitDeposit").value = '';
+						}
+					}
+				} else {
+					alert('会計処理に失敗しました: ' + (data.error || '不明なエラー'));
+				}
+			}).catch(error => {
+				console.error('Error:', error);
+				alert('会計処理中にエラーが発生しました');
+			});
+		}
+
+		// ===== 個別会計関連の関数 =====
+		
+		function openIndividualPaymentModal() {
+			const tbody = document.getElementById("individualItemsList");
+			tbody.innerHTML = '';
+			
+			detailsWithDiscount.forEach((item, index) => {
+				const unitPrice = (item.originalSubtotal - item.discountAmount) / item.quantity;
+				const row = document.createElement('tr');
+				row.innerHTML = `
+					<td><input type="checkbox" class="individual-item-checkbox" data-detail-id="${item.paymentDetailId}" data-unit-price="${unitPrice}" data-max-qty="${item.quantity}"></td>
+					<td>${item.menuName}</td>
+					<td>${item.quantity}</td>
+					<td><input type="number" class="individual-qty-input" min="1" max="${item.quantity}" value="1" style="width: 60px;" disabled></td>
+					<td class="individual-item-total">0円</td>
+				`;
+				tbody.appendChild(row);
+			});
+			
+			// チェックボックスの変更イベントを設定
+			document.querySelectorAll('.individual-item-checkbox').forEach((checkbox, index) => {
+				const row = checkbox.closest('tr');
+				const qtyInput = row.querySelector('.individual-qty-input');
+				
+				checkbox.addEventListener('change', function() {
+					qtyInput.disabled = !this.checked;
+					if (this.checked) {
+						qtyInput.value = 1;
+					}
+					updateIndividualTotal();
+				});
+				
+				qtyInput.addEventListener('input', updateIndividualTotal);
+			});
+			
+			updateIndividualTotal();
+			openModal('individualPaymentModal');
+		}
+		
+		function updateIndividualTotal() {
+			let total = 0;
+			document.querySelectorAll('.individual-item-checkbox:checked').forEach(checkbox => {
+				const row = checkbox.closest('tr');
+				const qtyInput = row.querySelector('.individual-qty-input');
+				const totalCell = row.querySelector('.individual-item-total');
+				const unitPrice = parseFloat(checkbox.dataset.unitPrice);
+				const maxQty = parseInt(checkbox.dataset.maxQty);
+				let qty = parseInt(qtyInput.value) || 1;
+				
+				// 数量のバリデーション
+				if (qty < 1) qty = 1;
+				if (qty > maxQty) qty = maxQty;
+				qtyInput.value = qty;
+				
+				const itemTotal = unitPrice * qty;
+				totalCell.textContent = Math.round(itemTotal) + '円';
+				total += itemTotal;
+			});
+			
+			const discount = parseFloat(document.getElementById("individualDiscount").value) || 0;
+			total = Math.max(0, total - discount);
+			
+			document.getElementById("individualTotalAmount").innerText = Math.round(total);
+		}
+		
+		function processIndividualPayment() {
+			const paymentId = document.getElementById("paymentId")?.value || 0;
+			const paymentTypeId = document.getElementById("individualPaymentType").value;
+			const cashierId = document.getElementById("individualCashier").value;
+			const discount = parseFloat(document.getElementById("individualDiscount").value) || 0;
+			const deposit = parseFloat(document.getElementById("individualDeposit").value) || 0;
+			
+			const selectedItems = [];
+			document.querySelectorAll('.individual-item-checkbox:checked').forEach(checkbox => {
+				const row = checkbox.closest('tr');
+				const qtyInput = row.querySelector('.individual-qty-input');
+				selectedItems.push({
+					paymentDetailId: parseInt(checkbox.dataset.detailId),
+					quantity: parseInt(qtyInput.value) || 1
+				});
+			});
+			
+			if (selectedItems.length === 0) {
+				alert("支払う商品を選択してください");
+				return;
+			}
+			
+			if (!paymentTypeId) {
+				alert("支払い種別を選択してください");
+				return;
+			}
+			
+			if (!cashierId) {
+				alert("担当者を選択してください");
+				return;
+			}
+			
+			const requestData = {
+				paymentId: parseInt(paymentId),
+				items: selectedItems,
+				paymentTypeId: parseInt(paymentTypeId),
+				cashierId: parseInt(cashierId),
+				discount: discount,
+				deposit: deposit,
+				paymentTime: localIso()
+			};
+			
+			fetch('/payments/individual', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(requestData)
+			}).then(res => res.json()).then(data => {
+				if (data.success) {
+					if (data.completed) {
+						alert(`会計完了しました (${data.amount}円)\n全ての商品の支払いが完了しました`);
+						window.location.href = '/seats';
+					} else {
+						alert(`選択した商品の会計が完了しました (${data.amount}円)\nまだ未払いの商品があります`);
+						closeModal('individualPaymentModal');
+						// ページをリロードして最新状態を反映
+						location.reload();
+					}
+				} else {
+					alert('会計処理に失敗しました: ' + (data.error || '不明なエラー'));
+				}
+			}).catch(error => {
+				console.error('Error:', error);
+				alert('会計処理中にエラーが発生しました');
 			});
 		}
 	</script>

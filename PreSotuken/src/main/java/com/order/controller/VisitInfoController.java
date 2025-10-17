@@ -75,8 +75,8 @@ public class VisitInfoController {
             return ResponseEntity.notFound().build(); // Visitがない場合は終了
         }
 
-        // Visitに紐づくPaymentを取得
-        Payment payment = paymentRepository.findByVisitVisitId(visit.getVisitId()); 
+        // Visitに紐づくPaymentを取得 - 個別会計機能対応: 親会計（元の会計）のみを取得
+        Payment payment = paymentRepository.findByVisitVisitIdAndParentPaymentIsNull(visit.getVisitId()); 
         
         // もし、既に会計確定済み（payment.getVisitCancel() == true）の場合は、何もしない、あるいはエラーを返す
         if (payment != null && Boolean.TRUE.equals(payment.getVisitCancel())) {

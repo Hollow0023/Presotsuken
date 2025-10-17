@@ -22,6 +22,7 @@ public class PaymentLookupService {
         if (visit == null) {
             return null;
         }
-        return paymentRepository.findByVisitVisitId(visit.getVisitId());
+        // 個別会計機能対応: 親会計（元の会計）のみを取得
+        return paymentRepository.findByVisitVisitIdAndParentPaymentIsNull(visit.getVisitId());
     }
 } 
