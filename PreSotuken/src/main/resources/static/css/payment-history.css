@@ -18,10 +18,11 @@ th {
     background-color: #f2f2f2;
 }
 
-tbody tr:hover {
+/* 行クリック機能は削除されたため、ホバー効果を無効化 */
+/* tbody tr:hover {
     background-color: #eef;
     cursor: pointer;
-}
+} */
 
 .cancelled-row {
     background-color: #fbeaea;

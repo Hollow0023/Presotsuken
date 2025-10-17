@@ -129,6 +129,9 @@ class PaymentSplitServiceTest {
         
         // 元の会計がPARTIAL状態になっているか確認 (saveが呼ばれて更新される)
         verify(paymentRepository, atLeast(1)).save(any(Payment.class));
+        
+        // 割り勘会計では PaymentDetail を分割しないため、paymentDetailRepository.save は呼ばれない
+        verify(paymentDetailRepository, never()).save(any(PaymentDetail.class));
     }
     
     @Test
