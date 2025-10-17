@@ -270,7 +270,7 @@
 	</div>
 
 	<!-- 会計完了モーダル（割り勘・個別会計用） -->
-	<div id="paymentCompleteModal" class="modal">
+	<div id="paymentCompleteModal" class="modal" style="z-index: 30;">
 		<div class="modal-content" style="width: 400px;">
 			<h3>会計完了</h3>
 			<div style="margin: 20px 0; font-size: 1.2em;">
@@ -717,6 +717,9 @@
 			const splitCount = parseInt(document.getElementById("splitCount").value) || 2;
 			const select = document.getElementById("splitCurrentNumber");
 			
+			// 現在選択されている値を保存
+			const currentValue = select.value;
+			
 			select.innerHTML = '';
 			for (let i = 1; i <= splitCount; i++) {
 				const option = document.createElement('option');
@@ -726,6 +729,11 @@
 					option.text += ' (余り含む)';
 				}
 				select.appendChild(option);
+			}
+			
+			// 保存していた値を復元（存在する場合）
+			if (currentValue && currentValue <= splitCount) {
+				select.value = currentValue;
 			}
 		}
 		
@@ -786,10 +794,18 @@
 				body: JSON.stringify(requestData)
 			}).then(res => res.json()).then(data => {
 				if (data.success) {
+					// 割り勘モーダルを閉じる
+					closeModal('splitPaymentModal');
+					
 					// 会計完了モーダルを表示
 					document.getElementById('completeAmount').innerText = Math.round(data.amount);
 					document.getElementById('completeDeposit').innerText = Math.round(data.deposit || 0);
 					document.getElementById('completeChange').innerText = Math.round(data.change || 0);
+					
+					// 完了状態を保存（次の処理のため）
+					window.splitPaymentCompleted = data.completed;
+					window.splitPaymentCurrentNumber = currentNumber;
+					window.splitPaymentTotalCount = splitCount;
 					
 					if (data.completed) {
 						document.getElementById('completeMessage').innerText = '全ての支払いが完了しました';
@@ -812,21 +828,28 @@
 			closeModal('paymentCompleteModal');
 			
 			// 全て完了していれば座席画面へ、そうでなければ次の会計へ
-			const message = document.getElementById('completeMessage').innerText;
-			if (message.includes('全ての支払いが完了しました')) {
+			if (window.splitPaymentCompleted === true) {
+				// 全ての会計が完了
 				window.location.href = '/seats';
-			} else if (message.includes('残り') && message.includes('人の会計が必要です')) {
+			} else if (window.splitPaymentCompleted === false && window.splitPaymentCurrentNumber && window.splitPaymentTotalCount) {
 				// 割り勘会計: 次の会計へ自動進行
-				const splitCount = parseInt(document.getElementById("splitCount").value);
-				const currentNumber = parseInt(document.getElementById("splitCurrentNumber").value);
+				const nextNumber = window.splitPaymentCurrentNumber + 1;
 				
-				if (currentNumber < splitCount) {
-					document.getElementById("splitCurrentNumber").value = currentNumber + 1;
-					updateSplitPreview();
+				if (nextNumber <= window.splitPaymentTotalCount) {
 					// フィールドをリセット
 					document.getElementById("splitDeposit").value = '';
+					// 次の会計番号を設定（updateSplitPreviewの前に設定）
+					document.getElementById("splitCurrentNumber").value = nextNumber;
+					// プレビューを更新（選択値が保持される）
+					updateSplitPreview();
+					// 状態をクリア
+					window.splitPaymentCompleted = undefined;
+					window.splitPaymentCurrentNumber = undefined;
+					window.splitPaymentTotalCount = undefined;
 					// 割り勘モーダルを再度開く
-					openModal('splitPaymentModal');
+					setTimeout(() => openModal('splitPaymentModal'), 100);
+				} else {
+					window.location.href = '/seats';
 				}
 			} else {
 				// 個別会計: ページをリロード
@@ -947,6 +970,9 @@
 				body: JSON.stringify(requestData)
 			}).then(res => res.json()).then(data => {
 				if (data.success) {
+					// 個別会計モーダルを閉じる
+					closeModal('individualPaymentModal');
+					
 					// 会計完了モーダルを表示
 					document.getElementById('completeAmount').innerText = Math.round(data.amount);
 					document.getElementById('completeDeposit').innerText = Math.round(data.deposit || 0);
@@ -959,7 +985,6 @@
 					}
 					
 					openModal('paymentCompleteModal');
-					closeModal('individualPaymentModal');
 				} else {
 					alert('会計処理に失敗しました: ' + (data.error || '不明なエラー'));
 				}
