@@ -699,7 +699,12 @@
 			const total = parseFloat(totalElement.innerText.replace('円', '')) || 0;
 			
 			document.getElementById("splitTotalAmount").innerText = total;
-			document.getElementById("splitCount").value = numberOfPeople;
+			
+			// 既に分割数が設定されていなければ、人数で初期化
+			const currentSplitCount = document.getElementById("splitCount").value;
+			if (!currentSplitCount || currentSplitCount == 2) {
+				document.getElementById("splitCount").value = numberOfPeople;
+			}
 			
 			// 分割番号の選択肢を生成
 			updateSplitOptions();
@@ -810,8 +815,8 @@
 			const message = document.getElementById('completeMessage').innerText;
 			if (message.includes('全ての支払いが完了しました')) {
 				window.location.href = '/seats';
-			} else {
-				// 次の会計へ進む準備
+			} else if (message.includes('残り') && message.includes('人の会計が必要です')) {
+				// 割り勘会計: 次の会計へ自動進行
 				const splitCount = parseInt(document.getElementById("splitCount").value);
 				const currentNumber = parseInt(document.getElementById("splitCurrentNumber").value);
 				
@@ -820,7 +825,12 @@
 					updateSplitPreview();
 					// フィールドをリセット
 					document.getElementById("splitDeposit").value = '';
+					// 割り勘モーダルを再度開く
+					openModal('splitPaymentModal');
 				}
+			} else {
+				// 個別会計: ページをリロード
+				location.reload();
 			}
 		}
 
