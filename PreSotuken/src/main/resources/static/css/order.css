@@ -234,12 +234,19 @@ main {
 }
 
 .menu-detail .quantity-input {
-    width: 40px;
-    padding: 8px;
+    width: 45px;
+    padding: 8px 0;
     border: 1px solid #ccc;
     border-radius: 4px;
     text-align: center;
+    margin: 0;
 }
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
 
 .menu-detail .add-cart-btn {
     padding: 8px 15px;
