@@ -45,6 +45,7 @@
         <td class="status-cell">
             <span th:if="${payment.visitCancel or payment.cancel}">削除済</span>
             <span th:if="${!payment.visitCancel and !payment.cancel and payment.totalSplits != null and payment.totalSplits > 0}">割</span>
+            <span th:if="${!payment.visitCancel and !payment.cancel and payment.parentPayment != null and (payment.totalSplits == null or payment.totalSplits == 0)}">個別</span>
         </td>
         <td th:text="${#temporals.format(payment.paymentTime, 'yyyy-MM-dd HH:mm')}"></td>
         <td th:text="${payment.visit.seat.seatName}"></td>
