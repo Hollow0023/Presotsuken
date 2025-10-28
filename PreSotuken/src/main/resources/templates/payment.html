@@ -829,14 +829,12 @@
 			
 			// 個別会計の場合
 			if (window.individualPaymentCompleted === true) {
-				// すべて完了した場合はトップページへ、そうでなければ座席画面へ
+				// すべて完了した場合のみトップページへ遷移
 				if (window.individualPaymentFullyCompleted === true) {
 					// 全ての商品が支払い完了: トップページへ遷移
 					window.location.href = '/';
-				} else {
-					// 一部のみ支払い完了: 座席画面へ遷移
-					window.location.href = '/seats';
 				}
+				// 一部完了の場合は何もせず、次の会計のためにページに留まる
 			}
 			// 全て完了していれば座席画面へ、そうでなければ次の会計へ
 			else if (window.splitPaymentCompleted === true) {
