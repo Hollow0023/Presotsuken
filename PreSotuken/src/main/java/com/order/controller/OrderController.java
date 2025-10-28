@@ -82,8 +82,10 @@ public class OrderController {
 
 		// 座席情報を取得してモデルに追加
 		Seat seat = seatService.findSeatById(seatId);
+		String seatName = (seat != null) ? seat.getSeatName() : String.valueOf(seatId);
+		
 		model.addAttribute("seatId", seatId);
-		model.addAttribute("seatName", seat != null ? seat.getSeatName() : String.valueOf(seatId));
+		model.addAttribute("seatName", seatName);
 		model.addAttribute("storeId", storeId);
 
 		List<MenuWithOptionsDTO> menusWithOptions;

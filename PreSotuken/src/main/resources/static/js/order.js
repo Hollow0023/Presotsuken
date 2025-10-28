@@ -23,13 +23,21 @@ let seatName = window.seatNameFromModel || seatId;
 // 初期化処理
 // =============================================================================
 
-// 座席情報の初期化と表示
+// 座席情報の初期化
 if (!seatId || seatId === "null" || seatId === "undefined") {
     seatId = window.seatIdFromModel;
     seatName = window.seatNameFromModel || seatId;
 }
-// 座席番号を表示
-document.getElementById("seatInfo").innerText = `座席: ${seatName}`;
+
+/**
+ * 座席情報を画面に表示する
+ */
+function displaySeatInfo() {
+    const seatInfoElement = document.getElementById("seatInfo");
+    if (seatInfoElement) {
+        seatInfoElement.innerText = `座席: ${seatName}`;
+    }
+}
 
 // =============================================================================
 // ユーティリティ関数
@@ -618,6 +626,9 @@ function switchTab(tabElement) {
 
 // DOMコンテンツが完全にロードされた後に実行される処理
 window.addEventListener('DOMContentLoaded', () => {
+	// 座席情報を表示
+	displaySeatInfo();
+	
 	document.querySelectorAll('.menu-item').forEach(menuItem => {
         const quantityInput = menuItem.querySelector('.quantity-input');
         const minusBtn = menuItem.querySelector('.minus-btn');
