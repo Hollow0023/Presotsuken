@@ -135,7 +135,7 @@ class PaymentControllerChildPaymentsTest {
         when(seatRepository.findByStore_StoreIdOrderBySeatNameAsc(1)).thenReturn(Arrays.asList(seat));
         when(userRepository.findByStore_StoreId(1)).thenReturn(Arrays.asList(cashier));
         when(paymentTypeRepository.findByStoreId(1)).thenReturn(Arrays.asList(paymentType));
-        when(paymentRepository.findAll()).thenReturn(Arrays.asList(parentPayment, childPayment1, childPayment2));
+        when(paymentRepository.findByParentPaymentPaymentId(1)).thenReturn(Arrays.asList(childPayment1, childPayment2));
         
         // When
         ResponseEntity<Map<String, Object>> response = paymentController.getPaymentHistoryDetail(1, 1);
@@ -178,7 +178,7 @@ class PaymentControllerChildPaymentsTest {
         when(seatRepository.findByStore_StoreIdOrderBySeatNameAsc(1)).thenReturn(Arrays.asList(seat));
         when(userRepository.findByStore_StoreId(1)).thenReturn(Arrays.asList(cashier));
         when(paymentTypeRepository.findByStoreId(1)).thenReturn(Arrays.asList(paymentType));
-        when(paymentRepository.findAll()).thenReturn(Arrays.asList(parentPayment)); // 子会計なし
+        when(paymentRepository.findByParentPaymentPaymentId(1)).thenReturn(Arrays.asList()); // 子会計なし
         
         // When
         ResponseEntity<Map<String, Object>> response = paymentController.getPaymentHistoryDetail(1, 1);

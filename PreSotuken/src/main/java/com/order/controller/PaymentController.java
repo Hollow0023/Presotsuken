@@ -187,10 +187,7 @@ public class PaymentController {
         }).collect(Collectors.toList());
 
         // 子会計情報を取得（割り勘・個別会計の場合）
-        List<Payment> childPayments = paymentRepository.findAll().stream()
-            .filter(p -> p.getParentPayment() != null && 
-                        p.getParentPayment().getPaymentId().equals(paymentId))
-            .collect(Collectors.toList());
+        List<Payment> childPayments = paymentRepository.findByParentPaymentPaymentId(paymentId);
         
         List<Map<String, Object>> childPaymentList = childPayments.stream().map(child -> {
             Map<String, Object> childMap = new HashMap<>();

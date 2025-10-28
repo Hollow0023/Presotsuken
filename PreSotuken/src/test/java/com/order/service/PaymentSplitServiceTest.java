@@ -107,7 +107,7 @@ class PaymentSplitServiceTest {
         
         when(paymentRepository.findById(1)).thenReturn(Optional.of(originalPayment));
         when(paymentDetailRepository.findByPaymentPaymentId(1)).thenReturn(paymentDetails);
-        when(paymentRepository.findAll()).thenReturn(Arrays.asList(originalPayment)); // 子会計なし
+        when(paymentRepository.findByParentPaymentPaymentId(1)).thenReturn(Arrays.asList()); // 子会計なし
         when(paymentRepository.save(any(Payment.class))).thenAnswer(i -> {
             Payment p = (Payment) i.getArguments()[0];
             if (p.getPaymentId() == null) {
@@ -162,7 +162,7 @@ class PaymentSplitServiceTest {
         
         when(paymentRepository.findById(1)).thenReturn(Optional.of(originalPayment));
         when(paymentDetailRepository.findByPaymentPaymentId(1)).thenReturn(paymentDetails);
-        when(paymentRepository.findAll()).thenReturn(Arrays.asList(originalPayment, child1, child2));
+        when(paymentRepository.findByParentPaymentPaymentId(1)).thenReturn(Arrays.asList(child1, child2));
         when(paymentRepository.save(any(Payment.class))).thenAnswer(i -> i.getArguments()[0]);
         when(visitRepository.save(any(Visit.class))).thenAnswer(i -> i.getArguments()[0]);
         
@@ -215,7 +215,7 @@ class PaymentSplitServiceTest {
         
         when(paymentRepository.findById(1)).thenReturn(Optional.of(originalPayment));
         when(paymentDetailRepository.findByPaymentPaymentId(1)).thenReturn(paymentDetails);
-        when(paymentRepository.findAll()).thenReturn(Arrays.asList(originalPayment, child1, child2));
+        when(paymentRepository.findByParentPaymentPaymentId(1)).thenReturn(Arrays.asList(child1, child2));
         when(paymentRepository.save(any(Payment.class))).thenAnswer(i -> i.getArguments()[0]);
         when(visitRepository.save(any(Visit.class))).thenAnswer(i -> i.getArguments()[0]);
         
@@ -352,7 +352,7 @@ class PaymentSplitServiceTest {
         
         when(paymentRepository.findById(1)).thenReturn(Optional.of(originalPayment));
         when(paymentDetailRepository.findByPaymentPaymentId(1)).thenReturn(remainingDetails);
-        when(paymentRepository.findAll()).thenReturn(Arrays.asList(originalPayment, childPayment));
+        when(paymentRepository.findByParentPaymentPaymentId(1)).thenReturn(Arrays.asList(childPayment));
         
         // When
         RemainingPaymentDto result = paymentSplitService.getRemainingPayment(1);

@@ -69,10 +69,9 @@ public class PaymentSplitService {
         }
         
         // 既に支払い済みの分割回数を確認
-        List<Payment> existingChildPayments = paymentRepository.findAll().stream()
-            .filter(p -> p.getParentPayment() != null && 
-                        p.getParentPayment().getPaymentId().equals(originalPayment.getPaymentId()) &&
-                        p.getSplitNumber() != null)
+        List<Payment> existingChildPayments = paymentRepository.findByParentPaymentPaymentId(originalPayment.getPaymentId())
+            .stream()
+            .filter(p -> p.getSplitNumber() != null)
             .collect(Collectors.toList());
         
         long paidCount = existingChildPayments.size();
@@ -281,9 +280,7 @@ public class PaymentSplitService {
         List<PaymentDetail> remainingDetails = paymentDetailRepository.findByPaymentPaymentId(paymentId);
         
         // 子会計の合計金額を計算
-        List<Payment> childPayments = paymentRepository.findAll().stream()
-            .filter(p -> p.getParentPayment() != null && p.getParentPayment().getPaymentId().equals(paymentId))
-            .collect(Collectors.toList());
+        List<Payment> childPayments = paymentRepository.findByParentPaymentPaymentId(paymentId);
         
         double paidAmount = childPayments.stream()
             .mapToDouble(p -> p.getTotal() != null ? p.getTotal() : 0.0)
