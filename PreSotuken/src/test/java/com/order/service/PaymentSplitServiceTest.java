@@ -175,6 +175,7 @@ class PaymentSplitServiceTest {
         request.setCurrentSplit(3); // 最後
         request.setPaymentTime(LocalDateTime.now());
         request.setDeposit(1101.0); // 浮動小数点誤差を考慮して少し多めに設定
+        request.setCashierId(1); // 担当者を設定
         
         when(paymentRepository.findById(1)).thenReturn(Optional.of(originalPayment));
         when(paymentDetailRepository.findByPaymentPaymentId(1)).thenReturn(paymentDetails);
@@ -191,6 +192,7 @@ class PaymentSplitServiceTest {
             return p;
         });
         when(visitRepository.save(any(Visit.class))).thenAnswer(i -> i.getArguments()[0]);
+        when(userRepository.findById(1)).thenReturn(Optional.of(new User())); // 担当者を返す
         
         // When
         Payment result = paymentSplitService.processSplitPayment(request);
@@ -211,6 +213,7 @@ class PaymentSplitServiceTest {
         assertEquals(3400.0, originalPayment.getDeposit(), 0.01); // 1200 + 1100 + 1100
         assertEquals(0.0, originalPayment.getDiscount(), 0.01);
         assertNotNull(originalPayment.getPaymentTime()); // 会計時刻が設定されている
+        assertNotNull(originalPayment.getCashier()); // 担当者が設定されている
         
         // Visitの退店時刻が記録されているか確認
         verify(visitRepository).save(any(Visit.class));

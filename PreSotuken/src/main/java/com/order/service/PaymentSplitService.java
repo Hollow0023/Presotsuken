@@ -133,6 +133,11 @@ public class PaymentSplitService {
             originalPayment.setTotal(aggregatedTotal);
             originalPayment.setDeposit(aggregatedDeposit);
             originalPayment.setDiscount(aggregatedDiscount);
+            // 最後の子会計の担当者を親会計の担当者として設定
+            if (request.getCashierId() != null) {
+                User cashier = userRepository.findById(request.getCashierId()).orElse(null);
+                originalPayment.setCashier(cashier);
+            }
             paymentRepository.save(originalPayment);
             
             // Visit の退店時刻を記録

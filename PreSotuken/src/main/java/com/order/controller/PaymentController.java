@@ -107,6 +107,11 @@ public class PaymentController {
             payments = paymentRepository.findByStoreStoreIdAndCancelledStatus(storeId, false);
         }
         
+        // 子会計（割り勘の個別支払い）を除外し、親会計のみを表示
+        payments = payments.stream()
+            .filter(p -> p.getParentPayment() == null)
+            .collect(Collectors.toList());
+        
         Map<Integer, Double> subtotalMap = new HashMap<>();
         for (Payment p : payments) {
             double subtotal = paymentDetailRepository.findByPaymentPaymentId(p.getPaymentId())
