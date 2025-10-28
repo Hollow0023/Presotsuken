@@ -107,9 +107,33 @@ public class PaymentController {
             payments = paymentRepository.findByStoreStoreIdAndCancelledStatus(storeId, false);
         }
         
-        // 子会計（割り勘の個別支払い）を除外し、親会計のみを表示
+        // 会計履歴の表示ルール:
+        // - 割り勘(totalSplits > 0): 親会計のみ表示、子会計は非表示
+        // - 個別会計(totalSplits = null or 0): 子会計のみ表示、親会計は非表示
         payments = payments.stream()
-            .filter(p -> p.getParentPayment() == null)
+            .filter(p -> {
+                // 親会計が存在しない場合
+                if (p.getParentPayment() == null) {
+                    // 子会計を持つ個別会計の親会計は除外
+                    List<Payment> children = paymentRepository.findByParentPaymentPaymentId(p.getPaymentId());
+                    if (!children.isEmpty()) {
+                        // 子会計が存在する場合、割り勘かどうかをチェック
+                        // 割り勘(totalSplits > 0)の場合は親会計を表示
+                        // 個別会計(totalSplits = null or 0)の場合は親会計を非表示
+                        return p.getTotalSplits() != null && p.getTotalSplits() > 0;
+                    }
+                    // 子会計が存在しない通常の会計は表示
+                    return true;
+                }
+                
+                // 親会計が存在する場合（子会計）
+                // 親が割り勘(totalSplits > 0)の場合は非表示
+                if (p.getParentPayment().getTotalSplits() != null && p.getParentPayment().getTotalSplits() > 0) {
+                    return false;
+                }
+                // 親が個別会計の場合は表示
+                return true;
+            })
             .collect(Collectors.toList());
         
         Map<Integer, Double> subtotalMap = new HashMap<>();
