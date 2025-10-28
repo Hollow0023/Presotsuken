@@ -33,6 +33,7 @@ import com.order.repository.PaymentDetailOptionRepository;
 import com.order.repository.PrinterConfigRepository;
 import com.order.repository.SeatRepository;
 import com.order.repository.UserRepository;
+import com.order.service.print.PrintFormatService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -50,6 +51,7 @@ public class PrintService {
     private final LogoService logoService;
     private final MenuPrinterMapRepository menuPrinterMapRepository;
     private final PrinterConfigRepository printerConfigRepository;
+    private final PrintFormatService printFormatService;
 
     private final ObjectMapper objectMapper = new ObjectMapper(); // JSON生成用
 
@@ -62,78 +64,7 @@ public class PrintService {
     private static final int SUB_TOTAL_AMOUNT_WIDTH = 14;
     private static final int TAX_DETAIL_LABEL_WIDTH = 18;
     private static final int TAX_AMOUNT_WIDTH = 10;
-    // ★★★ 新しい定数: 小計伝票のレイアウト用 (半角換算) ★★★
-    /** レシート全体の幅 (全角17文字) */
-    private static final int RECEIPT_TOTAL_WIDTH_HALF = 34;
-    /** 品名エリアの最大幅 (全角9文字分)。この幅で数量の開始位置が決まる */
-    private static final int RECEIPT_ITEM_NAME_MAX_WIDTH_HALF = 18;
-    /** 数量エリアの幅 (品名エリアの右隣) */
-    private static final int RECEIPT_QUANTITY_WIDTH_HALF = 6;
-    /** 単価エリアの幅 (数量エリアの右隣) */
-    private static final int RECEIPT_PRICE_WIDTH_HALF = 10;
-    // ★★★ ここまで新しい定数 ★★★
     // --- ここまで定数定義 ---
-
-    // ヘルパー関数: 全角文字を2バイト、半角文字を1バイトとして計算
-    // これはフロントエンドでも同じロジックが必要になる場合がある (padRightHalfWidthなど使う場合)
-    private int calculateEpsonPrintByteLength(String s) {
-        int length = 0;
-        if (s == null) return 0;
-        for (char c : s.toCharArray()) {
-            try {
-                if (String.valueOf(c).getBytes("Shift_JIS").length == 2) {
-                    length += 2;
-                } else {
-                    length += 1;
-                }
-            } catch (UnsupportedEncodingException e) {
-                length += 1;
-            }
-        }
-        return length;
-    }
-
-    // 指定された半角幅になるように文字列の右側を空白で埋める（全角文字を考慮）
-    private String padRightHalfWidth(String s, int targetHalfWidth) {
-        String safeS = (s != null) ? s : "";
-        int currentByteLength = calculateEpsonPrintByteLength(safeS);
-        if (currentByteLength >= targetHalfWidth) {
-            return safeS;
-        }
-        int paddingLength = targetHalfWidth - currentByteLength;
-        return safeS + " ".repeat(Math.max(0, paddingLength));
-    }
-
-    // 指定された半角幅になるように文字列の左側を空白で埋める（全角文字を考慮）
-    private String padLeftHalfWidth(String s, int targetHalfWidth) {
-        String safeS = (s != null) ? s : "";
-        int currentByteLength = calculateEpsonPrintByteLength(safeS);
-        if (currentByteLength >= targetHalfWidth) {
-            return safeS;
-        }
-        int paddingLength = targetHalfWidth - currentByteLength;
-        return " ".repeat(Math.max(0, paddingLength)) + safeS;
-    }
-    
-    /**
-     * ★★★ 新しいヘルパー関数 ★★★
-     * 指定した全体幅の中で、文字列を左寄せと右寄せに配置して返す
-     * @param leftText 左側に配置する文字列
-     * @param rightText 右側に配置する文字列
-     * @param totalWidth 全体の半角幅
-     * @return フォーマットされた文字列
-     */
-    private String formatToLeftAndRight(String leftText, String rightText, int totalWidth) {
-        int leftBytes = calculateEpsonPrintByteLength(leftText);
-        int rightBytes = calculateEpsonPrintByteLength(rightText);
-        int paddingBytes = totalWidth - leftBytes - rightBytes;
-
-        if (paddingBytes < 0) {
-            // 幅が足りない場合は、とりあえず連結して返す（あるいは別の方法も検討可）
-            return leftText + rightText;
-        }
-        return leftText + " ".repeat(paddingBytes) + rightText;
-    }
 
     // 単品伝票印刷 (変更後)
     // このメソッドは、JSONコマンドを生成してWebSocketでフロントエンドに通知する
@@ -315,16 +246,16 @@ public class PrintService {
         // テーブルと日時
         commands.add(createTextAlignCommand("left"));
         String tableLine = "テーブル: " + seatName;
-        commands.add(createTextCommand(formatToLeftAndRight(tableLine, timeStr, RECEIPT_TOTAL_WIDTH_HALF)));
+        commands.add(createTextCommand(printFormatService.formatToLeftAndRight(tableLine, timeStr, printFormatService.getReceiptTotalWidthHalf())));
         commands.add(createFeedUnitCommand(5));
         commands.add(createFeedCommand());
         
         // --- ★★★ ヘッダーのレイアウトを修正 ★★★ ---
-        String itemHeaderLine = padRightHalfWidth("品名", RECEIPT_ITEM_NAME_MAX_WIDTH_HALF)
-                            + padRightHalfWidth("数量", RECEIPT_QUANTITY_WIDTH_HALF)
-                            + padLeftHalfWidth("単価", RECEIPT_PRICE_WIDTH_HALF);
+        String itemHeaderLine = printFormatService.padRightHalfWidth("品名", printFormatService.getReceiptItemNameMaxWidthHalf())
+                            + printFormatService.padRightHalfWidth("数量", printFormatService.getReceiptQuantityWidthHalf())
+                            + printFormatService.padLeftHalfWidth("単価", printFormatService.getReceiptPriceWidthHalf());
         commands.add(createTextCommand(itemHeaderLine));
-        commands.add(createTextCommand("-".repeat(RECEIPT_TOTAL_WIDTH_HALF))); // 罫線
+        commands.add(createTextCommand("-".repeat(printFormatService.getReceiptTotalWidthHalf()))); // 罫線
 
         // --- ★★★ 商品詳細のループ (改行処理を追加) ★★★ ---
         for (PaymentDetail detail : detailsForReceipt) {
@@ -354,7 +285,7 @@ public class PrintService {
             while (!remainingItemName.isEmpty()) {
                 int currentLineByteLength = 0;
                 int cutIndex = 0;
-                // RECEIPT_ITEM_NAME_MAX_WIDTH_HALF を超えないギリギリの文字数を探す
+                // 品名エリアの最大幅を超えないギリギリの文字数を探す
                 for (int i = 0; i < remainingItemName.length(); i++) {
                     char c = remainingItemName.charAt(i);
                     int charBytes = 1;
@@ -362,7 +293,7 @@ public class PrintService {
                         charBytes = String.valueOf(c).getBytes("Shift_JIS").length > 1 ? 2 : 1;
                     } catch (UnsupportedEncodingException e) { /* ignore */ }
 
-                    if (currentLineByteLength + charBytes > RECEIPT_ITEM_NAME_MAX_WIDTH_HALF) {
+                    if (currentLineByteLength + charBytes > printFormatService.getReceiptItemNameMaxWidthHalf()) {
                         break; // 幅を超えるのでここでカット
                     }
                     currentLineByteLength += charBytes;
@@ -373,12 +304,12 @@ public class PrintService {
                 remainingItemName = remainingItemName.substring(cutIndex);
 
                 // 品名部分を作成 (右側を空白で埋める)
-                String paddedItemName = padRightHalfWidth(itemNameForThisLine, RECEIPT_ITEM_NAME_MAX_WIDTH_HALF);
+                String paddedItemName = printFormatService.padRightHalfWidth(itemNameForThisLine, printFormatService.getReceiptItemNameMaxWidthHalf());
 
                 if (isFirstLine) {
                     // 1行目: 品名 + 数量 + 単価
-                    String paddedQuantity = padRightHalfWidth(quantityStr, RECEIPT_QUANTITY_WIDTH_HALF);
-                    String paddedPrice = padLeftHalfWidth(unitPriceStr, RECEIPT_PRICE_WIDTH_HALF);
+                    String paddedQuantity = printFormatService.padRightHalfWidth(quantityStr, printFormatService.getReceiptQuantityWidthHalf());
+                    String paddedPrice = printFormatService.padLeftHalfWidth(unitPriceStr, printFormatService.getReceiptPriceWidthHalf());
                     commands.add(createTextCommand(paddedItemName + paddedQuantity + paddedPrice));
                     isFirstLine = false;
                 } else {
@@ -387,13 +318,13 @@ public class PrintService {
                 }
             }
         }
-        commands.add(createTextCommand("-".repeat(RECEIPT_TOTAL_WIDTH_HALF))); // 罫線
+        commands.add(createTextCommand("-".repeat(printFormatService.getReceiptTotalWidthHalf()))); // 罫線
         commands.add(createFeedUnitCommand(10));
 
         // --- ★★★ 小計・税額表示のレイアウトを修正 ★★★ ---
         // 小計 (税込)
         String subtotalAmount = "\\" + String.format("%,d", subtotalIncludingTax.longValue());
-        commands.add(createTextCommand(formatToLeftAndRight("小計", subtotalAmount, RECEIPT_TOTAL_WIDTH_HALF)));
+        commands.add(createTextCommand(printFormatService.formatToLeftAndRight("小計", subtotalAmount, printFormatService.getReceiptTotalWidthHalf())));
 
         // 税率ごとの対象額
         List<BigDecimal> sortedTaxRates = new ArrayList<>(taxRateToAmountMap.keySet());
@@ -403,7 +334,7 @@ public class PrintService {
             BigDecimal amountForRate = taxRateToAmountMap.get(rate);
             String taxRateLabel = "(" + rate.multiply(BigDecimal.valueOf(100)).stripTrailingZeros().toPlainString() + "%対象";
             String taxRateAmount = "\\" + String.format("%,d", amountForRate.longValue()) + ")";
-            commands.add(createTextCommand(formatToLeftAndRight(taxRateLabel, taxRateAmount, RECEIPT_TOTAL_WIDTH_HALF)));
+            commands.add(createTextCommand(printFormatService.formatToLeftAndRight(taxRateLabel, taxRateAmount, printFormatService.getReceiptTotalWidthHalf())));
         }
 
         // 「内税」テキスト
@@ -414,7 +345,7 @@ public class PrintService {
             BigDecimal taxAmountForRate = taxRateToTaxAmountMap.get(rate);
             String taxRateTaxLabel = "(" + rate.multiply(BigDecimal.valueOf(100)).stripTrailingZeros().toPlainString() + "%税";
             String taxRateTaxAmount = "\\" + String.format("%,d", taxAmountForRate.longValue()) + ")";
-            commands.add(createTextCommand(formatToLeftAndRight(taxRateTaxLabel, taxRateTaxAmount, RECEIPT_TOTAL_WIDTH_HALF)));
+            commands.add(createTextCommand(printFormatService.formatToLeftAndRight(taxRateTaxLabel, taxRateTaxAmount, printFormatService.getReceiptTotalWidthHalf())));
         }
         
         commands.add(createFeedUnitCommand(15));
@@ -464,7 +395,7 @@ public class PrintService {
         commands.add(createTextCommand("発行日時: " + dateStr));
         commands.add(createTextCommand("発行者: " + receipt.getIssuer().getUserName()));
         commands.add(createFeedUnitCommand(5));
-        commands.add(createTextCommand("-".repeat(RECEIPT_TOTAL_WIDTH_HALF)));
+        commands.add(createTextCommand("-".repeat(printFormatService.getReceiptTotalWidthHalf())));
 
         // 合計金額（税込）
         BigDecimal totalAmount = BigDecimal.ZERO;
@@ -482,7 +413,7 @@ public class PrintService {
         }
 
         String totalAmountStr = "\\" + String.format("%,d", totalAmount.longValue());
-        commands.add(createTextCommand(formatToLeftAndRight("合計金額", totalAmountStr, RECEIPT_TOTAL_WIDTH_HALF)));
+        commands.add(createTextCommand(printFormatService.formatToLeftAndRight("合計金額", totalAmountStr, printFormatService.getReceiptTotalWidthHalf())));
         commands.add(createFeedUnitCommand(5));
 
         // 税率別内訳
@@ -491,31 +422,31 @@ public class PrintService {
         // 10%対象
         if (receipt.getNetAmount10() != null && receipt.getNetAmount10() > 0) {
             String net10Str = "\\" + String.format("%,d", receipt.getNetAmount10().longValue());
-            commands.add(createTextCommand(formatToLeftAndRight("10%対象(税抜)", net10Str, RECEIPT_TOTAL_WIDTH_HALF)));
+            commands.add(createTextCommand(printFormatService.formatToLeftAndRight("10%対象(税抜)", net10Str, printFormatService.getReceiptTotalWidthHalf())));
             
             String tax10Str = "\\" + String.format("%,d", receipt.getTaxAmount10().longValue());
-            commands.add(createTextCommand(formatToLeftAndRight("10%税額", tax10Str, RECEIPT_TOTAL_WIDTH_HALF)));
+            commands.add(createTextCommand(printFormatService.formatToLeftAndRight("10%税額", tax10Str, printFormatService.getReceiptTotalWidthHalf())));
             
             BigDecimal gross10 = BigDecimal.valueOf(receipt.getNetAmount10()).add(BigDecimal.valueOf(receipt.getTaxAmount10()));
             String gross10Str = "\\" + String.format("%,d", gross10.longValue());
-            commands.add(createTextCommand(formatToLeftAndRight("10%税込", gross10Str, RECEIPT_TOTAL_WIDTH_HALF)));
+            commands.add(createTextCommand(printFormatService.formatToLeftAndRight("10%税込", gross10Str, printFormatService.getReceiptTotalWidthHalf())));
         }
 
         // 8%対象
         if (receipt.getNetAmount8() != null && receipt.getNetAmount8() > 0) {
             String net8Str = "\\" + String.format("%,d", receipt.getNetAmount8().longValue());
-            commands.add(createTextCommand(formatToLeftAndRight("8%対象(税抜)", net8Str, RECEIPT_TOTAL_WIDTH_HALF)));
+            commands.add(createTextCommand(printFormatService.formatToLeftAndRight("8%対象(税抜)", net8Str, printFormatService.getReceiptTotalWidthHalf())));
             
             String tax8Str = "\\" + String.format("%,d", receipt.getTaxAmount8().longValue());
-            commands.add(createTextCommand(formatToLeftAndRight("8%税額", tax8Str, RECEIPT_TOTAL_WIDTH_HALF)));
+            commands.add(createTextCommand(printFormatService.formatToLeftAndRight("8%税額", tax8Str, printFormatService.getReceiptTotalWidthHalf())));
             
             BigDecimal gross8 = BigDecimal.valueOf(receipt.getNetAmount8()).add(BigDecimal.valueOf(receipt.getTaxAmount8()));
             String gross8Str = "\\" + String.format("%,d", gross8.longValue());
-            commands.add(createTextCommand(formatToLeftAndRight("8%税込", gross8Str, RECEIPT_TOTAL_WIDTH_HALF)));
+            commands.add(createTextCommand(printFormatService.formatToLeftAndRight("8%税込", gross8Str, printFormatService.getReceiptTotalWidthHalf())));
         }
 
         commands.add(createFeedUnitCommand(5));
-        commands.add(createTextCommand("-".repeat(RECEIPT_TOTAL_WIDTH_HALF)));
+        commands.add(createTextCommand("-".repeat(printFormatService.getReceiptTotalWidthHalf())));
 
         // フッター：会計ID、領収書ID、発行者ID
         commands.add(createFeedUnitCommand(5));
