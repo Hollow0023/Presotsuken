@@ -827,10 +827,16 @@
 		function closePaymentCompleteModal() {
 			closeModal('paymentCompleteModal');
 			
-			// 個別会計の場合は常に座席画面へ
+			// 個別会計の場合
 			if (window.individualPaymentCompleted === true) {
-				// 個別会計完了: 座席画面へ遷移
-				window.location.href = '/seats';
+				// すべて完了した場合はトップページへ、そうでなければ座席画面へ
+				if (window.individualPaymentFullyCompleted === true) {
+					// 全ての商品が支払い完了: トップページへ遷移
+					window.location.href = '/';
+				} else {
+					// 一部のみ支払い完了: 座席画面へ遷移
+					window.location.href = '/seats';
+				}
 			}
 			// 全て完了していれば座席画面へ、そうでなければ次の会計へ
 			else if (window.splitPaymentCompleted === true) {
@@ -983,8 +989,9 @@
 					document.getElementById('completeDeposit').innerText = Math.round(data.deposit || 0);
 					document.getElementById('completeChange').innerText = Math.round(data.change || 0);
 					
-					// 個別会計完了フラグを設定
+					// 個別会計完了フラグと完全完了状態を設定
 					window.individualPaymentCompleted = true;
+					window.individualPaymentFullyCompleted = data.completed;
 					
 					if (data.completed) {
 						document.getElementById('completeMessage').innerText = '全ての商品の支払いが完了しました';
