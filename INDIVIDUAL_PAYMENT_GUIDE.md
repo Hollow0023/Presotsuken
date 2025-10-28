@@ -243,13 +243,62 @@ GET /payments/{paymentId}/remaining
 ./gradlew test --tests PaymentSplitServiceTest
 ```
 
+## 会計履歴の表示ルール
+
+会計履歴ページでは、割り勘会計と個別会計で異なる表示ルールを適用しています。
+
+### 表示ロジック
+
+#### 1. 割り勘会計 (totalSplits > 0)
+- **親会計のみ表示**: 合計金額と分割情報が親会計に集約されるため
+- **子会計は非表示**: 各人の支払い詳細は親会計の詳細ページで確認可能
+
+#### 2. 個別会計 (totalSplits = null)
+- **親会計は非表示**: 商品が分割されているため合計が意味を持たない
+- **子会計のみ表示**: 実際に支払われた会計レコードを個別に表示
+
+#### 3. 通常会計
+- **そのまま表示**: 分割されていない通常の会計
+
+### 実装詳細
+
+フィルタリングロジックは `PaymentController.showPaymentHistory()` で実装されています:
+
+```java
+// 親会計が存在しない場合（親会計または通常の会計）
+if (p.getParentPayment() == null) {
+    List<Payment> children = paymentRepository.findByParentPaymentPaymentId(p.getPaymentId());
+    if (!children.isEmpty()) {
+        // 割り勘(totalSplits > 0)の場合は親会計を表示
+        // 個別会計(totalSplits = null)の場合は親会計を非表示
+        Integer totalSplits = p.getTotalSplits();
+        return totalSplits != null && totalSplits > 0;
+    }
+    // 子会計が存在しない通常の会計は表示
+    return true;
+}
+
+// 親会計が存在する場合（子会計）
+// 割り勘(totalSplits > 0)の場合は子会計を非表示
+// 個別会計(totalSplits = null)の場合は子会計を表示
+Integer totalSplits = p.getTotalSplits();
+return totalSplits == null || totalSplits == 0;
+```
+
+### テスト
+
+`PaymentHistoryFilterTest.java` で以下のシナリオをテスト:
+- 通常会計の表示確認
+- 割り勘会計での親会計のみ表示、子会計非表示の確認
+- 個別会計での子会計のみ表示、親会計非表示の確認
+- 複数の会計タイプが混在する場合の正しいフィルタリング確認
+
 ## 今後の拡張案
 
-1. **会計履歴の表示改善**: 分割会計を親子関係で表示
-2. **支払い済み商品の視覚化**: 個別会計モーダルで既に支払った商品をグレーアウト
-3. **会計の取り消し**: 部分会計の取り消し機能
-4. **レシート印刷**: 各分割会計ごとのレシート発行
-5. **統計レポート**: 割り勘・個別会計の利用状況分析
+1. **支払い済み商品の視覚化**: 個別会計モーダルで既に支払った商品をグレーアウト
+2. **会計の取り消し**: 部分会計の取り消し機能
+3. **レシート印刷**: 各分割会計ごとのレシート発行
+4. **統計レポート**: 割り勘・個別会計の利用状況分析
 
 ## トラブルシューティング
 
