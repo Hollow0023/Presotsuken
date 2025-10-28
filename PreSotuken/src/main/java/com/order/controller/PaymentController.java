@@ -127,11 +127,12 @@ public class PaymentController {
                 }
                 
                 // 親会計が存在する場合（子会計）
-                // 親が割り勘(totalSplits > 0)の場合は非表示
-                if (p.getParentPayment().getTotalSplits() != null && p.getParentPayment().getTotalSplits() > 0) {
+                // 子会計自身のtotalSplitsをチェック（親から継承される）
+                // 割り勘(totalSplits > 0)の場合は子会計を非表示
+                if (p.getTotalSplits() != null && p.getTotalSplits() > 0) {
                     return false;
                 }
-                // 親が個別会計の場合は表示
+                // 個別会計の場合は子会計を表示
                 return true;
             })
             .collect(Collectors.toList());
