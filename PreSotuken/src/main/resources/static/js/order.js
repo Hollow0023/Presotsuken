@@ -17,7 +17,7 @@ let taxRateMap = {};
 let seatId = getCookie("seatId");
 
 /** @type {string} 座席名 */
-let seatName = window.seatNameFromModel || seatId;
+let seatName = getCookie("seatName") || window.seatNameFromModel || seatId;
 
 // =============================================================================
 // 初期化処理
@@ -26,7 +26,7 @@ let seatName = window.seatNameFromModel || seatId;
 // 座席情報の初期化
 if (!seatId || seatId === "null" || seatId === "undefined") {
     seatId = window.seatIdFromModel;
-    seatName = window.seatNameFromModel || seatId;
+    seatName = getCookie("seatName") || window.seatNameFromModel || seatId;
 }
 
 /**
@@ -35,7 +35,7 @@ if (!seatId || seatId === "null" || seatId === "undefined") {
 function displaySeatInfo() {
     const seatInfoElement = document.getElementById("seatInfo");
     if (seatInfoElement) {
-        seatInfoElement.innerText = `座席: ${seatName}`;
+        seatInfoElement.innerText = seatName;
     }
 }
 
