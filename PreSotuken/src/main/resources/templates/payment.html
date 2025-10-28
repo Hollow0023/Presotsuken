@@ -829,7 +829,7 @@
 			
 			// 全て完了していれば座席画面へ、そうでなければ次の会計へ
 			if (window.splitPaymentCompleted === true) {
-				// 全ての会計が完了
+				// 割り勘会計: 全ての会計が完了
 				window.location.href = '/seats';
 			} else if (window.splitPaymentCompleted === false && window.splitPaymentCurrentNumber && window.splitPaymentTotalCount) {
 				// 割り勘会計: 次の会計へ自動進行
@@ -851,8 +851,11 @@
 				} else {
 					window.location.href = '/seats';
 				}
+			} else if (window.individualPaymentCompleted === true) {
+				// 個別会計: 全ての商品が完了した場合はトップページへ
+				window.location.href = '/';
 			} else {
-				// 個別会計: ページをリロード
+				// 個別会計: まだ未払いの商品がある場合はページをリロード
 				location.reload();
 			}
 		}
@@ -978,6 +981,9 @@
 					document.getElementById('completeDeposit').innerText = Math.round(data.deposit || 0);
 					document.getElementById('completeChange').innerText = Math.round(data.change || 0);
 					
+					// 完了状態を保存（個別会計用）
+					window.individualPaymentCompleted = data.completed;
+					
 					if (data.completed) {
 						document.getElementById('completeMessage').innerText = '全ての商品の支払いが完了しました';
 					} else {
@@ -992,22 +998,6 @@
 				console.error('Error:', error);
 				alert('会計処理中にエラーが発生しました');
 			});
-		}
-		
-		// 会計完了モーダルを閉じる（個別会計用も共通）
-		if (typeof closePaymentCompleteModal === 'undefined') {
-			function closePaymentCompleteModal() {
-				closeModal('paymentCompleteModal');
-				
-				// 全て完了していれば座席画面へ、そうでなければページをリロード
-				const message = document.getElementById('completeMessage').innerText;
-				if (message.includes('全ての')) {
-					window.location.href = '/seats';
-				} else {
-					// ページをリロードして最新状態を反映
-					location.reload();
-				}
-			}
 		}
 	</script>
 </body>
