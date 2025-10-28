@@ -107,6 +107,11 @@ public class PaymentController {
             payments = paymentRepository.findByStoreStoreIdAndCancelledStatus(storeId, false);
         }
         
+        // 子会計（割り勘の個別支払い）を除外し、親会計のみを表示
+        payments = payments.stream()
+            .filter(p -> p.getParentPayment() == null)
+            .collect(Collectors.toList());
+        
         Map<Integer, Double> subtotalMap = new HashMap<>();
         for (Payment p : payments) {
             double subtotal = paymentDetailRepository.findByPaymentPaymentId(p.getPaymentId())
@@ -186,6 +191,22 @@ public class PaymentController {
             return m;
         }).collect(Collectors.toList());
 
+        // 子会計情報を取得（割り勘・個別会計の場合）
+        List<Payment> childPayments = paymentRepository.findByParentPaymentPaymentId(paymentId);
+        
+        List<Map<String, Object>> childPaymentList = childPayments.stream().map(child -> {
+            Map<String, Object> childMap = new HashMap<>();
+            childMap.put("paymentId", child.getPaymentId());
+            childMap.put("splitNumber", child.getSplitNumber());
+            childMap.put("amount", child.getTotal());
+            childMap.put("paymentTime", child.getPaymentTime());
+            childMap.put("paymentTypeName", child.getPaymentType() != null ? child.getPaymentType().getTypeName() : null);
+            childMap.put("cashierName", child.getCashier() != null ? child.getCashier().getUserName() : null);
+            childMap.put("deposit", child.getDeposit());
+            childMap.put("paymentStatus", child.getPaymentStatus());
+            return childMap;
+        }).collect(Collectors.toList());
+
         Map<String, Object> result = new HashMap<>();
         double subtotal = details.stream()
                 .mapToDouble(d -> {
@@ -209,6 +230,9 @@ public class PaymentController {
         result.put("seats", seatList);
         result.put("users", userList);
         result.put("paymentTypes", paymentTypeList);
+        result.put("childPayments", childPaymentList);
+        result.put("totalSplits", payment.getTotalSplits());
+        result.put("paymentStatus", payment.getPaymentStatus());
         return ResponseEntity.ok(result);
     }
 

@@ -235,6 +235,28 @@
 			</table>
 		</div>
 
+		<!-- 割り勘詳細セクション -->
+		<div class="section" id="splitPaymentSection" style="display: none;">
+			<h3>割り勘会計詳細</h3>
+			<p><strong>会計状態:</strong> <span id="splitPaymentStatus"></span></p>
+			<table id="splitPaymentTable">
+				<thead>
+					<tr>
+						<th>番号</th>
+						<th>支払い金額</th>
+						<th>預かり金額</th>
+						<th>お釣り</th>
+						<th>支払い方法</th>
+						<th>担当者</th>
+						<th>支払い時刻</th>
+					</tr>
+				</thead>
+				<tbody id="splitPaymentTableBody">
+					<!-- 動的に追加される -->
+				</tbody>
+			</table>
+		</div>
+
 		<div class="section">
 			<h3>発行済み領収書一覧</h3>
 			<button class="btn-primary" onclick="openIssueModal()">新規領収書発行</button>
@@ -397,8 +419,51 @@
 					
 					// 初期表示時に小計を計算
 					document.querySelectorAll('#detailTableBody tr').forEach(tr => updateRowSubtotal(tr));
+					
+					// 割り勘情報を表示
+					if (data.childPayments && data.childPayments.length > 0) {
+						displaySplitPayments(data.childPayments, data.totalSplits, data.paymentStatus);
+					}
 				})
 				.catch(error => console.error('Error loading payment details:', error));
+		}
+		
+		// 割り勘詳細を表示する
+		function displaySplitPayments(childPayments, totalSplits, paymentStatus) {
+			const section = document.getElementById('splitPaymentSection');
+			section.style.display = 'block';
+			
+			// 会計状態を表示
+			const statusText = paymentStatus === 'COMPLETED' ? '完了' : 
+			                   paymentStatus === 'PARTIAL' ? '部分完了' : '未完了';
+			document.getElementById('splitPaymentStatus').innerText = 
+				`${statusText}（${childPayments.length}/${totalSplits || childPayments.length}人分支払い済み）`;
+			
+			// テーブルに子会計情報を追加
+			const tbody = document.getElementById('splitPaymentTableBody');
+			tbody.innerHTML = '';
+			
+			childPayments.sort((a, b) => (a.splitNumber || 0) - (b.splitNumber || 0));
+			
+			childPayments.forEach(child => {
+				const tr = document.createElement('tr');
+				const amount = Math.round(child.amount || 0);
+				const deposit = Math.round(child.deposit || 0);
+				const change = deposit - amount;
+				const paymentTime = child.paymentTime ? 
+					new Date(child.paymentTime).toLocaleString('ja-JP') : '-';
+				
+				tr.innerHTML = `
+					<td>${child.splitNumber || '-'}人目</td>
+					<td>${amount}円</td>
+					<td>${deposit}円</td>
+					<td>${change}円</td>
+					<td>${child.paymentTypeName || '-'}</td>
+					<td>${child.cashierName || '-'}</td>
+					<td>${paymentTime}</td>
+				`;
+				tbody.appendChild(tr);
+			});
 		}
 		
 		// 商品行の小計を更新する

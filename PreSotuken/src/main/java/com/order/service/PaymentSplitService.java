@@ -69,10 +69,9 @@ public class PaymentSplitService {
         }
         
         // 既に支払い済みの分割回数を確認
-        List<Payment> existingChildPayments = paymentRepository.findAll().stream()
-            .filter(p -> p.getParentPayment() != null && 
-                        p.getParentPayment().getPaymentId().equals(originalPayment.getPaymentId()) &&
-                        p.getSplitNumber() != null)
+        List<Payment> existingChildPayments = paymentRepository.findByParentPaymentPaymentId(originalPayment.getPaymentId())
+            .stream()
+            .filter(p -> p.getSplitNumber() != null)
             .collect(Collectors.toList());
         
         long paidCount = existingChildPayments.size();
@@ -110,7 +109,35 @@ public class PaymentSplitService {
             childPayment.setPaymentStatus("COMPLETED");
             Payment saved = paymentRepository.save(childPayment);
             
+            // 全ての子会計を取得して親会計の情報を集計
+            List<Payment> allChildPayments = paymentRepository.findByParentPaymentPaymentId(originalPayment.getPaymentId());
+            
+            // 各フィールドを集計
+            double aggregatedSubtotal = allChildPayments.stream()
+                .mapToDouble(p -> p.getSubtotal() != null ? p.getSubtotal() : 0.0)
+                .sum();
+            double aggregatedTotal = allChildPayments.stream()
+                .mapToDouble(p -> p.getTotal() != null ? p.getTotal() : 0.0)
+                .sum();
+            double aggregatedDeposit = allChildPayments.stream()
+                .mapToDouble(p -> p.getDeposit() != null ? p.getDeposit() : 0.0)
+                .sum();
+            double aggregatedDiscount = allChildPayments.stream()
+                .mapToDouble(p -> p.getDiscount() != null ? p.getDiscount() : 0.0)
+                .sum();
+            
+            // 親会計の情報を更新
             originalPayment.setPaymentStatus("COMPLETED");
+            originalPayment.setPaymentTime(request.getPaymentTime()); // 最後の会計時刻を設定
+            originalPayment.setSubtotal(aggregatedSubtotal);
+            originalPayment.setTotal(aggregatedTotal);
+            originalPayment.setDeposit(aggregatedDeposit);
+            originalPayment.setDiscount(aggregatedDiscount);
+            // 最後の子会計の担当者を親会計の担当者として設定
+            if (request.getCashierId() != null) {
+                User cashier = userRepository.findById(request.getCashierId()).orElse(null);
+                originalPayment.setCashier(cashier);
+            }
             paymentRepository.save(originalPayment);
             
             // Visit の退店時刻を記録
@@ -281,9 +308,7 @@ public class PaymentSplitService {
         List<PaymentDetail> remainingDetails = paymentDetailRepository.findByPaymentPaymentId(paymentId);
         
         // 子会計の合計金額を計算
-        List<Payment> childPayments = paymentRepository.findAll().stream()
-            .filter(p -> p.getParentPayment() != null && p.getParentPayment().getPaymentId().equals(paymentId))
-            .collect(Collectors.toList());
+        List<Payment> childPayments = paymentRepository.findByParentPaymentPaymentId(paymentId);
         
         double paidAmount = childPayments.stream()
             .mapToDouble(p -> p.getTotal() != null ? p.getTotal() : 0.0)
@@ -339,47 +364,6 @@ public class PaymentSplitService {
     }
     
     /**
-<<<<<<< HEAD
-=======
-     * 割り勘用の PaymentDetail を作成（削除済み機能）
-     * 割り勘会計では PaymentDetail を分割しない仕様に変更されたため、このメソッドは使用されていません
-     */
-    // private void createSplitPaymentDetails(List<PaymentDetail> originalDetails, Payment childPayment, 
-    //                                        Integer numberOfSplits, double childAmount) {
-    //     // 元の会計の税込み合計金額を計算
-    //     double originalTotal = calculateTotalWithTax(originalDetails, childPayment.getParentPayment().getDiscount());
-    //     
-    //     // 各商品について、人数分に分割した PaymentDetail を作成
-    //     for (PaymentDetail originalDetail : originalDetails) {
-    //         // 税率を取得
-    //         double taxRate = originalDetail.getTaxRate() != null ? originalDetail.getTaxRate().getRate() : 0;
-    //         
-    //         // 元の商品の税込み金額を計算
-    //         double originalSubtotal = originalDetail.getSubtotal() != null ? originalDetail.getSubtotal() : 0;
-    //         double originalTotalWithTax = originalSubtotal * (1 + taxRate);
-    //         
-    //         // 比率を使って子会計の商品金額を計算
-    //         double ratio = childAmount / originalTotal;
-    //         double splitSubtotal = originalSubtotal * ratio;
-    //         
-    //         // 新しい PaymentDetail を作成
-    //         PaymentDetail splitDetail = new PaymentDetail();
-    //         splitDetail.setPayment(childPayment);
-    //         splitDetail.setStore(originalDetail.getStore());
-    //         splitDetail.setMenu(originalDetail.getMenu());
-    //         splitDetail.setQuantity(originalDetail.getQuantity()); // 数量は元のまま表示
-    //         splitDetail.setSubtotal(splitSubtotal); // 金額は人数分に分割
-    //         splitDetail.setUser(originalDetail.getUser());
-    //         splitDetail.setTaxRate(originalDetail.getTaxRate());
-    //         splitDetail.setOrderTime(originalDetail.getOrderTime());
-    //         splitDetail.setDiscount(0.0); // 割引は親会計で既に考慮済み
-    //         
-    //         paymentDetailRepository.save(splitDetail);
-    //     }
-    // }
-    
-    /**
->>>>>>> refs/remotes/origin/copilot/remove-payment-detail-split
      * 子会計を作成
      */
     private Payment createChildPayment(Payment originalPayment, Object request, double amount) {
