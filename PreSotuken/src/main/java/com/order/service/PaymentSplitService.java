@@ -133,6 +133,7 @@ public class PaymentSplitService {
             originalPayment.setTotal(aggregatedTotal);
             originalPayment.setDeposit(aggregatedDeposit);
             originalPayment.setDiscount(aggregatedDiscount);
+            originalPayment.setTotalSplits(request.getNumberOfSplits()); // 割り勘の総分割数を確実に設定
             // 最後の子会計の担当者を親会計の担当者として設定
             if (request.getCashierId() != null) {
                 User cashier = userRepository.findById(request.getCashierId()).orElse(null);

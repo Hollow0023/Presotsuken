@@ -112,25 +112,27 @@ public class PaymentController {
         // - 個別会計(totalSplits = null or 0): 子会計のみ表示、親会計は非表示
         payments = payments.stream()
             .filter(p -> {
-                // 親会計が存在しない場合
+                // 親会計が存在しない場合（親会計または通常の会計）
                 if (p.getParentPayment() == null) {
-                    // 子会計を持つ個別会計の親会計は除外
+                    // 子会計を持つかチェック
                     List<Payment> children = paymentRepository.findByParentPaymentPaymentId(p.getPaymentId());
                     if (!children.isEmpty()) {
                         // 子会計が存在する場合、割り勘かどうかをチェック
                         // 割り勘(totalSplits > 0)の場合は親会計を表示
                         // 個別会計(totalSplits = null or 0)の場合は親会計を非表示
-                        return p.getTotalSplits() != null && p.getTotalSplits() > 0;
+                        Integer totalSplits = p.getTotalSplits();
+                        return totalSplits != null && totalSplits > 0;
                     }
                     // 子会計が存在しない通常の会計は表示
                     return true;
                 }
                 
                 // 親会計が存在する場合（子会計）
-                // 子会計自身のtotalSplitsをチェック（親から継承される）
+                // 子会計自身のtotalSplitsをチェック
                 // 割り勘(totalSplits > 0)の場合は子会計を非表示
-                if (p.getTotalSplits() != null && p.getTotalSplits() > 0) {
-                    return false;
+                Integer totalSplits = p.getTotalSplits();
+                if (totalSplits != null && totalSplits > 0) {
+                    return false; // 割り勘の子会計は非表示
                 }
                 // 個別会計の場合は子会計を表示
                 return true;
