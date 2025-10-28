@@ -16,15 +16,28 @@ let taxRateMap = {};
 /** @type {string|number} 現在の座席ID */
 let seatId = getCookie("seatId");
 
+/** @type {string} 座席名 */
+let seatName = getCookie("seatName") || window.seatNameFromModel || seatId;
+
 // =============================================================================
 // 初期化処理
 // =============================================================================
 
-// 座席情報の初期化と表示
+// 座席情報の初期化
 if (!seatId || seatId === "null" || seatId === "undefined") {
     seatId = window.seatIdFromModel;
+    seatName = getCookie("seatName") || window.seatNameFromModel || seatId;
 }
-document.getElementById("seatInfo").innerText = `${seatId}`;
+
+/**
+ * 座席情報を画面に表示する
+ */
+function displaySeatInfo() {
+    const seatInfoElement = document.getElementById("seatInfo");
+    if (seatInfoElement) {
+        seatInfoElement.innerText = seatName;
+    }
+}
 
 // =============================================================================
 // ユーティリティ関数
@@ -613,6 +626,9 @@ function switchTab(tabElement) {
 
 // DOMコンテンツが完全にロードされた後に実行される処理
 window.addEventListener('DOMContentLoaded', () => {
+	// 座席情報を表示
+	displaySeatInfo();
+	
 	document.querySelectorAll('.menu-item').forEach(menuItem => {
         const quantityInput = menuItem.querySelector('.quantity-input');
         const minusBtn = menuItem.querySelector('.minus-btn');

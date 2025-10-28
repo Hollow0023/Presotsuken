@@ -185,6 +185,7 @@ document.getElementById("orderBtn").addEventListener("click", () => {
     }
 
     const seatId = document.getElementById("activeModal").getAttribute("data-seat-id");
+    const seatName = document.getElementById("activeModalSeatName").innerText;
     const storeId = getCookie("storeId"); 
     
     fetch(`/api/visit-info?seatId=${seatId}&storeId=${storeId}`)
@@ -194,6 +195,9 @@ document.getElementById("orderBtn").addEventListener("click", () => {
             document.cookie = `visitId=${data.visitId}; path=/; max-age=3600`;
         }
 
+        // 座席名をCookieに保存
+        document.cookie = `seatName=${encodeURIComponent(seatName)}; path=/; max-age=3600`;
+        
         window.location.href = `/order?seatId=${seatId}&admin=true&from=seatlist`;
       })
       .catch(error => {

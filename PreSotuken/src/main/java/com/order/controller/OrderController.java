@@ -34,6 +34,7 @@ import com.order.entity.Visit;
 import com.order.service.MenuAddService;
 import com.order.service.MenuService;
 import com.order.service.OrderService;
+import com.order.service.SeatService;
 import com.order.util.CookieUtil;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -51,6 +52,7 @@ public class OrderController {
 	private final MenuService menuService;
 	private final MenuAddService menuAddService;
 	private final OrderService orderService;
+	private final SeatService seatService;
 	private final CookieUtil cookieUtil;
 
 	/**
@@ -78,7 +80,12 @@ public class OrderController {
 	        throw new IllegalArgumentException("seatIdが指定されていません（Cookieにもクエリにも存在しません）");
 	    }
 
+		// 座席情報を取得してモデルに追加
+		Seat seat = seatService.findSeatById(seatId);
+		String seatName = (seat != null) ? seat.getSeatName() : String.valueOf(seatId);
+		
 		model.addAttribute("seatId", seatId);
+		model.addAttribute("seatName", seatName);
 		model.addAttribute("storeId", storeId);
 
 		List<MenuWithOptionsDTO> menusWithOptions;
