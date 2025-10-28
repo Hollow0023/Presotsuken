@@ -109,7 +109,30 @@ public class PaymentSplitService {
             childPayment.setPaymentStatus("COMPLETED");
             Payment saved = paymentRepository.save(childPayment);
             
+            // 全ての子会計を取得して親会計の情報を集計
+            List<Payment> allChildPayments = paymentRepository.findByParentPaymentPaymentId(originalPayment.getPaymentId());
+            
+            // 各フィールドを集計
+            double aggregatedSubtotal = allChildPayments.stream()
+                .mapToDouble(p -> p.getSubtotal() != null ? p.getSubtotal() : 0.0)
+                .sum();
+            double aggregatedTotal = allChildPayments.stream()
+                .mapToDouble(p -> p.getTotal() != null ? p.getTotal() : 0.0)
+                .sum();
+            double aggregatedDeposit = allChildPayments.stream()
+                .mapToDouble(p -> p.getDeposit() != null ? p.getDeposit() : 0.0)
+                .sum();
+            double aggregatedDiscount = allChildPayments.stream()
+                .mapToDouble(p -> p.getDiscount() != null ? p.getDiscount() : 0.0)
+                .sum();
+            
+            // 親会計の情報を更新
             originalPayment.setPaymentStatus("COMPLETED");
+            originalPayment.setPaymentTime(request.getPaymentTime()); // 最後の会計時刻を設定
+            originalPayment.setSubtotal(aggregatedSubtotal);
+            originalPayment.setTotal(aggregatedTotal);
+            originalPayment.setDeposit(aggregatedDeposit);
+            originalPayment.setDiscount(aggregatedDiscount);
             paymentRepository.save(originalPayment);
             
             // Visit の退店時刻を記録
