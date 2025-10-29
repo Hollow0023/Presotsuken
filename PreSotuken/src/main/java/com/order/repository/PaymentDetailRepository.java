@@ -162,7 +162,7 @@ public interface PaymentDetailRepository extends JpaRepository<PaymentDetail, In
      */
     @Query(value = """
         SELECT childPt.type_name, tr.tax_rate_id, 
-               SUM(pd.subtotal * (childP.total / parentP.total))
+               SUM(pd.subtotal * (childP.total / NULLIF(parentP.total, 0)))
         FROM payment childP
         JOIN payment parentP ON childP.parent_payment_id = parentP.payment_id
         JOIN payment_type childPt ON childP.payment_type_id = childPt.type_id
@@ -173,6 +173,7 @@ public interface PaymentDetailRepository extends JpaRepository<PaymentDetail, In
           AND childP.payment_time < :end
           AND childP.visit_cancel = false
           AND childP.cancel = false
+          AND parentP.total != 0
         GROUP BY childPt.type_name, tr.tax_rate_id
         
         UNION ALL
