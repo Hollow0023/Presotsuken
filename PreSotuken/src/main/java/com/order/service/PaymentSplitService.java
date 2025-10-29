@@ -47,10 +47,13 @@ public class PaymentSplitService {
             .orElseThrow(() -> new IllegalArgumentException("元の会計が見つかりません: " + request.getPaymentId()));
         
         // 既に個別会計が開始されていないかチェック
-        if ("PARTIAL".equals(originalPayment.getPaymentStatus()) && 
-            (originalPayment.getTotalSplits() == null || originalPayment.getTotalSplits() == 0)) {
-            // PARTIALでtotalSplitsがnullまたは0の場合、個別会計が進行中
-            throw new IllegalArgumentException("個別会計が進行中のため、割り勘会計を開始できません。");
+        // 個別会計の場合: paymentStatusがPARTIALで、totalSplitsがnull（または未設定）
+        if ("PARTIAL".equals(originalPayment.getPaymentStatus())) {
+            Integer totalSplits = originalPayment.getTotalSplits();
+            if (totalSplits == null || totalSplits <= 0) {
+                // totalSplitsが設定されていない場合は個別会計が進行中
+                throw new IllegalArgumentException("個別会計が進行中のため、割り勘会計を開始できません。");
+            }
         }
         
         // 合計金額を計算
