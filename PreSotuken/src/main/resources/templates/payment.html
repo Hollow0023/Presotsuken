@@ -374,6 +374,9 @@
 		// 右パネルの小計は、テーブルの合計の合算になるので、ここでは初期化しない
 		let discount = 0, discountReason = "", received = 0, numberOfPeople = 1; 
 		let detailsWithDiscount = []; // 各商品の割引額を保持する新しい配列
+		
+		// 会計ステータスを取得（Thymeleafから渡される）
+		const paymentStatus = /*[[${payment.paymentStatus}]]*/ 'COMPLETED';
 
 		window.onload = () => {
 			const detailRows = document.querySelectorAll('#detailBody tr');
@@ -411,6 +414,7 @@
 				document.getElementById("peopleInput").value = numberOfPeople;
 			}
 			calculateTotals(); // 初回ロード時に合計値を計算
+			updatePaymentButtonStates(); // 会計ボタンの状態を更新
 		};
 
 		// 小計・合計を計算する関数を修正
@@ -452,6 +456,81 @@
 			document.getElementById("total").innerText = total + '円';
 			document.getElementById("change").innerText = change + '円';
 			document.getElementById("receivedDisplay").innerText = received + '円';
+		}
+
+		/**
+		 * 会計ステータスに基づいて会計ボタンの有効/無効を制御
+		 * PARTIAL状態の場合、他の会計方法を無効化する
+		 */
+		function updatePaymentButtonStates() {
+			// 会計完了ボタン
+			const finalizeButton = document.querySelector('button.full-btn.green[onclick="finalizePayment()"]');
+			// 割り勘会計ボタン
+			const splitButton = document.querySelector('button.full-btn[onclick="openSplitPaymentModal()"]');
+			// 個別会計ボタン
+			const individualButton = document.querySelector('button.full-btn[onclick="openIndividualPaymentModal()"]');
+			
+			// PARTIAL状態（部分完了）の場合、会計方法を制限
+			if (paymentStatus === 'PARTIAL') {
+				// 子会計が存在するかを確認して、割り勘か個別会計かを判定
+				fetch('/payments/' + document.getElementById("paymentId")?.value + '/remaining')
+					.then(res => res.json())
+					.then(data => {
+						// 子会計があり、totalSplitsが設定されている場合は割り勘会計が実行中
+						const isSplitPaymentInProgress = data.childPayments && data.childPayments.length > 0 && 
+							data.childPayments.some(cp => cp.splitNumber != null);
+						
+						if (isSplitPaymentInProgress) {
+							// 割り勘会計が進行中 → 個別会計と通常会計を無効化
+							disableButton(finalizeButton, '割り勘会計が進行中です');
+							disableButton(individualButton, '割り勘会計が進行中です');
+							// 割り勘会計ボタンは有効のまま
+						} else {
+							// 個別会計が進行中 → 割り勘会計と通常会計を無効化
+							disableButton(finalizeButton, '個別会計が進行中です');
+							disableButton(splitButton, '個別会計が進行中です');
+							// 個別会計ボタンは有効のまま
+						}
+					})
+					.catch(error => {
+						console.error('Error fetching payment status:', error);
+					});
+			}
+			// COMPLETED状態の場合は何もしない（通常は座席画面に遷移するため、このページには来ない）
+		}
+		
+		/**
+		 * ボタンを無効化する
+		 */
+		function disableButton(button, message) {
+			if (button) {
+				button.disabled = true;
+				button.style.opacity = '0.5';
+				button.style.cursor = 'not-allowed';
+				button.title = message;
+				// onclick属性を一時的に保存して削除
+				if (!button.dataset.originalOnclick) {
+					button.dataset.originalOnclick = button.getAttribute('onclick');
+				}
+				button.removeAttribute('onclick');
+				button.addEventListener('click', function(e) {
+					e.preventDefault();
+					alert(message);
+				});
+			}
+		}
+		
+		/**
+		 * ボタンを有効化する（使用しないが、将来的な拡張のため残す）
+		 */
+		function enableButton(button) {
+			if (button && button.dataset.originalOnclick) {
+				button.disabled = false;
+				button.style.opacity = '1';
+				button.style.cursor = 'pointer';
+				button.title = '';
+				button.setAttribute('onclick', button.dataset.originalOnclick);
+			}
 		}
 
 
