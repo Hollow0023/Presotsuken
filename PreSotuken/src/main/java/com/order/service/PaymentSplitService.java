@@ -46,6 +46,13 @@ public class PaymentSplitService {
         Payment originalPayment = paymentRepository.findById(request.getPaymentId())
             .orElseThrow(() -> new IllegalArgumentException("元の会計が見つかりません: " + request.getPaymentId()));
         
+        // 既に個別会計が開始されていないかチェック
+        if ("PARTIAL".equals(originalPayment.getPaymentStatus()) && 
+            (originalPayment.getTotalSplits() == null || originalPayment.getTotalSplits() == 0)) {
+            // PARTIALでtotalSplitsがnullまたは0の場合、個別会計が進行中
+            throw new IllegalArgumentException("個別会計が進行中のため、割り勘会計を開始できません。");
+        }
+        
         // 合計金額を計算
         List<PaymentDetail> details = paymentDetailRepository.findByPaymentPaymentId(request.getPaymentId());
         double totalAmount = calculateTotalWithTax(details, originalPayment.getDiscount());
@@ -165,6 +172,13 @@ public class PaymentSplitService {
         // 元の会計を取得
         Payment originalPayment = paymentRepository.findById(request.getPaymentId())
             .orElseThrow(() -> new IllegalArgumentException("元の会計が見つかりません: " + request.getPaymentId()));
+        
+        // 既に割り勘会計が開始されていないかチェック
+        if ("PARTIAL".equals(originalPayment.getPaymentStatus()) && 
+            originalPayment.getTotalSplits() != null && originalPayment.getTotalSplits() > 0) {
+            // PARTIALでtotalSplitsが設定されている場合、割り勘会計が進行中
+            throw new IllegalArgumentException("割り勘会計が進行中のため、個別会計を開始できません。");
+        }
         
         // 元の会計を部分完了状態に更新 (初回のみ)
         if (!"PARTIAL".equals(originalPayment.getPaymentStatus()) && 
