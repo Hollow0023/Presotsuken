@@ -46,13 +46,15 @@ public interface PaymentRepository extends JpaRepository<Payment, Integer> {
 
 
     @Query("""
-        SELECT COUNT(DISTINCT p.visit.visitId)
+        SELECT COALESCE(SUM(v.numberOfPeople), 0)
         FROM Payment p
+        JOIN p.visit v
         WHERE p.store.storeId = :storeId
           AND p.paymentTime >= :start
           AND p.paymentTime < :end
           AND p.visitCancel = false
           AND COALESCE(p.cancel, false) = false
+          AND p.parentPayment IS NULL
     """)
     Long countCustomerVisits(
         @Param("storeId") Integer storeId,
