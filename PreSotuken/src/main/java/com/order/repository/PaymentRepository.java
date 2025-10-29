@@ -67,6 +67,10 @@ public interface PaymentRepository extends JpaRepository<Payment, Integer> {
               AND p.visitCancel = false
               AND COALESCE(p.cancel, false) = false
               AND p.paymentType.isInspectionTarget = true
+              AND NOT EXISTS (
+                  SELECT 1 FROM Payment child
+                  WHERE child.parentPayment.paymentId = p.paymentId
+              )
     	""")
     	BigDecimal sumCashSales(
     	    @Param("storeId") Integer storeId,
