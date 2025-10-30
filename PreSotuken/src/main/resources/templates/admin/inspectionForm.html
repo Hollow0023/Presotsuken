@@ -72,13 +72,13 @@ th, td {
 	<!-- ▼ 売上サマリー -->
 	<div class="summary-box">
 		<div>
-			総売上（合計）: <span th:text="${total ?: 0}">0</span> 円
+			総売上（合計）: <span th:text="${#numbers.formatDecimal(total ?: 0, 0, 0)}">0</span> 円
 		</div>
 		<div>
-			10%対象: <span th:text="${tax10 ?: 0}">0</span> 円
+			10%対象: <span th:text="${#numbers.formatDecimal(tax10 ?: 0, 0, 0)}">0</span> 円
 		</div>
 		<div>
-			8%対象: <span th:text="${tax8 ?: 0}">0</span> 円
+			8%対象: <span th:text="${#numbers.formatDecimal(tax8 ?: 0, 0, 0)}">0</span> 円
 		</div>
 		<div>
 			現金売上: <span id="cashSales" th:text="${#numbers.formatDecimal(cashSalesPure ?: 0, 0, 0)}">0</span> 円
@@ -90,31 +90,31 @@ th, td {
 			</div>
 			<div>
 				合計: <span
-					th:text="${(T(java.util.Optional).ofNullable(#vars['salesByPaymentType_' + paymentType.typeName + '_10%']).orElse(0)) + (T(java.util.Optional).ofNullable(#vars['salesByPaymentType_' + paymentType.typeName + '_8%']).orElse(0))}">0</span>
+					th:text="${#numbers.formatDecimal((T(java.util.Optional).ofNullable(#vars['salesByPaymentType_' + paymentType.typeName + '_10%']).orElse(0)) + (T(java.util.Optional).ofNullable(#vars['salesByPaymentType_' + paymentType.typeName + '_8%']).orElse(0)), 0, 0)}">0</span>
 				円
 			</div>
 			<div>
 				10%対象: <span
-					th:text="${T(java.util.Optional).ofNullable(#vars['salesByPaymentType_' + paymentType.typeName + '_10%']).orElse(0)}">0</span>
+					th:text="${#numbers.formatDecimal(T(java.util.Optional).ofNullable(#vars['salesByPaymentType_' + paymentType.typeName + '_10%']).orElse(0), 0, 0)}">0</span>
 				円
 			</div>
 			<div>
 				8%対象: <span
-					th:text="${T(java.util.Optional).ofNullable(#vars['salesByPaymentType_' + paymentType.typeName + '_8%']).orElse(0)}">0</span>
+					th:text="${#numbers.formatDecimal(T(java.util.Optional).ofNullable(#vars['salesByPaymentType_' + paymentType.typeName + '_8%']).orElse(0), 0, 0)}">0</span>
 				円
 			</div>
 		</th:block>
 		<div>
-			消費税 10%: <span th:text="${taxAmount10 ?: 0}">0</span> 円
+			消費税 10%: <span th:text="${#numbers.formatDecimal(taxAmount10 ?: 0, 0, 0)}">0</span> 円
 		</div>
 		<div>
-			消費税 8%: <span th:text="${taxAmount8 ?: 0}">0</span> 円
+			消費税 8%: <span th:text="${#numbers.formatDecimal(taxAmount8 ?: 0, 0, 0)}">0</span> 円
 		</div>
 		<div>
-			割引（現金）: <span th:text="${discountCash ?: 0}">0</span> 円
+			割引（現金）: <span th:text="${#numbers.formatDecimal(discountCash ?: 0, 0, 0)}">0</span> 円
 		</div>
 		<div>
-			割引（カード）: <span th:text="${discountCard ?: 0}">0</span> 円
+			割引（カード）: <span th:text="${#numbers.formatDecimal(discountCard ?: 0, 0, 0)}">0</span> 円
 		</div>
 		<div>
 			客数: <span th:text="${guestCount ?: 0}">0</span> 人

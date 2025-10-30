@@ -146,32 +146,27 @@ public class InspectionLogService {
         BigDecimal totalSales = safe.apply(paymentDetailRepository.sumTotalSales(storeId, start, end));
         result.put("total", totalSales);
 
-        // 税率別売上 (既存のコード、これは画面上部の総合計用として残しておく)
-        BigDecimal tax10Sales = BigDecimal.ZERO;
-        BigDecimal tax8Sales = BigDecimal.ZERO;
-        for (Object[] row : paymentDetailRepository.sumSalesByTaxRate(storeId, start, end)) {
-            Integer taxRateId = (Integer) row[0];
-            BigDecimal sum = safe.apply(BigDecimal.valueOf((Double) row[1]));
-            if (taxRateId == 1) tax10Sales = sum;
-            if (taxRateId == 2) tax8Sales = sum;
-        }
-        result.put("tax10", tax10Sales);
-        result.put("tax8", tax8Sales);
-
-        // ★★★ ここから新しい会計種別ごとの税率別売上を追加 ★★★
+        // ★★★ 会計種別ごとの税率別売上を取得（割り勘子会計を含む） ★★★
         Map<String, BigDecimal> salesByPaymentTypeAndTax = new HashMap<>();
         List<Object[]> salesData = paymentDetailRepository.sumSalesByPaymentTypeAndTaxRate(storeId, start, end);
+        
+        // 全支払い方法の税率別売上を集計（画面上部の総合計用）
+        BigDecimal tax10Sales = BigDecimal.ZERO;
+        BigDecimal tax8Sales = BigDecimal.ZERO;
         
         for (Object[] row : salesData) {
             String typeName = (String) row[0]; // 例: "現金", "カード"
             Integer taxRateId = (Integer) row[1]; // 例: 1 (10%), 2 (8%)
             BigDecimal sum = safe.apply(BigDecimal.valueOf((Double) row[2])); // 合計金額
 
+            // 支払い方法別の税率別売上をMapに格納
             String key = "salesByPaymentType_" + typeName;
             if (taxRateId == 1) { // 10%税率の場合
                 key += "_10%";
+                tax10Sales = tax10Sales.add(sum); // 全支払い方法の10%対象を合算
             } else if (taxRateId == 2) { // 8%税率の場合
                 key += "_8%";
+                tax8Sales = tax8Sales.add(sum); // 全支払い方法の8%対象を合算
             } else {
                 // その他の税率IDの場合の処理（必要であれば）
                 key += "_その他"; // もし他の税率があるなら対応を検討
@@ -179,8 +174,12 @@ public class InspectionLogService {
             salesByPaymentTypeAndTax.put(key, sum);
         }
         result.putAll(salesByPaymentTypeAndTax); // Mapごとresultに追加
+        
+        // 全支払い方法の税率別合計を設定
+        result.put("tax10", tax10Sales);
+        result.put("tax8", tax8Sales);
 
-        // ★★★ ここまで新しい会計種別ごとの税率別売上を追加 ★★★
+        // ★★★ ここまで会計種別ごとの税率別売上を追加 ★★★
 
         // 消費税額 (既存のコード)
         BigDecimal taxAmount10 = safe.apply(paymentDetailRepository.sumTaxAmount(storeId, start, end, new BigDecimal("0.10")));
