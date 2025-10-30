@@ -518,15 +518,6 @@
 			}
 			// COMPLETED状態の場合は何もしない（通常は座席画面に遷移するため、このページには来ない）
 		}
-					disableButton(finalizeButton, '個別会計が進行中です');
-					disableButton(splitButton, '個別会計が進行中です');
-					// 個別会計ボタンは有効のまま
-				}
-			} else {
-				console.log('Payment status is not PARTIAL, no buttons disabled');
-			}
-			// COMPLETED状態の場合は何もしない（通常は座席画面に遷移するため、このページには来ない）
-		}
 		
 		/**
 		 * ボタンを無効化する
