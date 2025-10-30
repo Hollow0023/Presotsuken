@@ -876,6 +876,12 @@
 					// 割り勘モーダルを閉じる
 					closeModal('splitPaymentModal');
 					
+					// 割り勘会計が開始されたので、個別会計と通常会計ボタンを無効化
+					const finalizeButton = document.querySelector('button.full-btn.green[onclick="finalizePayment()"]');
+					const individualButton = document.querySelector('button.full-btn[onclick="openIndividualPaymentModal()"]');
+					disableButton(finalizeButton, '割り勘会計が進行中です');
+					disableButton(individualButton, '割り勘会計が進行中です');
+					
 					// 会計完了モーダルを表示
 					document.getElementById('completeAmount').innerText = Math.round(data.amount);
 					document.getElementById('completeDeposit').innerText = Math.round(data.deposit || 0);
@@ -1054,6 +1060,12 @@
 				if (data.success) {
 					// 個別会計モーダルを閉じる
 					closeModal('individualPaymentModal');
+					
+					// 個別会計が開始されたので、割り勘会計と通常会計ボタンを無効化
+					const finalizeButton = document.querySelector('button.full-btn.green[onclick="finalizePayment()"]');
+					const splitButton = document.querySelector('button.full-btn[onclick="openSplitPaymentModal()"]');
+					disableButton(finalizeButton, '個別会計が進行中です');
+					disableButton(splitButton, '個別会計が進行中です');
 					
 					// 会計完了モーダルを表示
 					document.getElementById('completeAmount').innerText = Math.round(data.amount);
