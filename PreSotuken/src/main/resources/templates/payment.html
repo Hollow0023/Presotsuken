@@ -283,6 +283,16 @@
 			background-color: #45a049;
 		}
 
+		/* キャンセル・閉じるボタンの背景色をグレーに */
+		.modal-content button.cancel-btn {
+			background-color: #757575;
+			color: white;
+		}
+
+		.modal-content button.cancel-btn:hover {
+			background-color: #616161;
+		}
+
 		/* 割り勘会計・個別会計モーダル内のセレクトボックスのサイズを拡大 */
 		#splitPaymentModal select,
 		#individualPaymentModal select {
@@ -387,7 +397,7 @@
 				<input type="number" id="peopleInput" min="1" value="1"><span class="unit">名</span>
 			</div>
 			<button onclick="applyPeopleCount()">保存</button> 
-			<button onclick="closeModal('peopleModal')">閉じる</button>
+			<button class="cancel-btn" onclick="closeModal('peopleModal')">閉じる</button>
 		</div>
 	</div>
 
@@ -417,7 +427,7 @@
 			</div>
 			
 			<button onclick="issueReceipt()" style="margin-top: 10px;">発行</button>
-			<button onclick="closeModal('receiptModal')">キャンセル</button>
+			<button class="cancel-btn" onclick="closeModal('receiptModal')">キャンセル</button>
 		</div>
 	</div>
 
@@ -466,7 +476,7 @@
 				<input type="number" id="detailDiscountInput" min="0" value="0"><span class="unit">円</span>
 			</div>
 			<input type="hidden" id="currentDetailIndex"> <button onclick="applyDetailDiscount()">保存</button>
-			<button onclick="closeModal('detailDiscountModal')">閉じる</button>
+			<button class="cancel-btn" onclick="closeModal('detailDiscountModal')">閉じる</button>
 		</div>
 	</div>
 
