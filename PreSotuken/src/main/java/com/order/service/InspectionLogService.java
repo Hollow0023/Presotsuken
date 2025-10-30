@@ -23,6 +23,7 @@ import com.order.repository.PaymentRepository;
 import com.order.repository.PaymentTypeRepository;
 import com.order.repository.StoreRepository;
 import com.order.repository.UserRepository;
+import com.order.repository.VisitRepository;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -43,6 +44,7 @@ public class InspectionLogService {
     private final StoreRepository storeRepository;
     private final CashTransactionRepository cashTransactionRepository;
     private final PaymentTypeRepository paymentTypeRepository;
+    private final VisitRepository visitRepository;
     
 //    private static final int[] DENOMINATIONS = {10000, 5000, 1000, 500, 100, 50, 10, 5, 1};
 
@@ -204,8 +206,8 @@ public class InspectionLogService {
 
 
 
-        // 客数
-        Long guestCount = paymentRepository.countCustomerVisits(storeId, start, end);
+        // 客数（visitテーブルのnumber_of_peopleの合計を利用）
+        Long guestCount = visitRepository.sumNumberOfPeopleByPaymentTime(storeId, start, end);
         result.put("guestCount", guestCount != null ? guestCount : 0L);
 
         // 入出金

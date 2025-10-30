@@ -72,16 +72,13 @@ th, td {
 	<!-- ▼ 売上サマリー -->
 	<div class="summary-box">
 		<div>
-			総売上（合計）: <span th:text="${total ?: 0}">0</span> 円
+			総売上（合計）: <span th:text="${#numbers.formatInteger(total ?: 0, 0)}">0</span> 円
 		</div>
 		<div>
-			10%対象: <span th:text="${tax10 ?: 0}">0</span> 円
+			総売上（10%対象＋消費税10%）: <span th:text="${#numbers.formatInteger((tax10 ?: 0) + (taxAmount10 ?: 0), 0)}">0</span> 円
 		</div>
 		<div>
-			8%対象: <span th:text="${tax8 ?: 0}">0</span> 円
-		</div>
-		<div>
-			現金売上: <span id="cashSales" th:text="${#numbers.formatDecimal(cashSalesPure ?: 0, 0, 0)}">0</span> 円
+			総売上（8%対象）: <span th:text="${#numbers.formatInteger(tax8 ?: 0, 0)}">0</span> 円
 		</div>
 
 		<th:block th:each="paymentType : ${allPaymentTypes}">
@@ -89,39 +86,39 @@ th, td {
 				<b><span th:text="${paymentType.typeName}">支払いタイプ名</span></b>
 			</div>
 			<div>
-				合計: <span
-					th:text="${(T(java.util.Optional).ofNullable(#vars['salesByPaymentType_' + paymentType.typeName + '_10%']).orElse(0)) + (T(java.util.Optional).ofNullable(#vars['salesByPaymentType_' + paymentType.typeName + '_8%']).orElse(0))}">0</span>
+				合計（10%対象＋消費税10%）: <span
+					th:text="${#numbers.formatInteger((T(java.util.Optional).ofNullable(#vars['salesByPaymentType_' + paymentType.typeName + '_10%']).orElse(0)) + (T(java.util.Optional).ofNullable(#vars['salesByPaymentType_' + paymentType.typeName + '_10%']).orElse(0) * 0.1), 0)}">0</span>
 				円
 			</div>
 			<div>
 				10%対象: <span
-					th:text="${T(java.util.Optional).ofNullable(#vars['salesByPaymentType_' + paymentType.typeName + '_10%']).orElse(0)}">0</span>
+					th:text="${#numbers.formatInteger(T(java.util.Optional).ofNullable(#vars['salesByPaymentType_' + paymentType.typeName + '_10%']).orElse(0), 0)}">0</span>
 				円
 			</div>
 			<div>
 				8%対象: <span
-					th:text="${T(java.util.Optional).ofNullable(#vars['salesByPaymentType_' + paymentType.typeName + '_8%']).orElse(0)}">0</span>
+					th:text="${#numbers.formatInteger(T(java.util.Optional).ofNullable(#vars['salesByPaymentType_' + paymentType.typeName + '_8%']).orElse(0), 0)}">0</span>
 				円
 			</div>
 		</th:block>
 		<div>
-			消費税 10%: <span th:text="${taxAmount10 ?: 0}">0</span> 円
+			消費税 10%: <span th:text="${#numbers.formatInteger(taxAmount10 ?: 0, 0)}">0</span> 円
 		</div>
 		<div>
-			消費税 8%: <span th:text="${taxAmount8 ?: 0}">0</span> 円
+			消費税 8%: <span th:text="${#numbers.formatInteger(taxAmount8 ?: 0, 0)}">0</span> 円
 		</div>
 		<div>
-			割引（現金）: <span th:text="${discountCash ?: 0}">0</span> 円
+			割引（現金）: <span th:text="${#numbers.formatInteger(discountCash ?: 0, 0)}">0</span> 円
 		</div>
 		<div>
-			割引（カード）: <span th:text="${discountCard ?: 0}">0</span> 円
+			割引（カード）: <span th:text="${#numbers.formatInteger(discountCard ?: 0, 0)}">0</span> 円
 		</div>
 		<div>
 			客数: <span th:text="${guestCount ?: 0}">0</span> 人
 		</div>
 	</div>
 
-	<span id="expectedCashCalculated" th:text="${#numbers.formatDecimal(expectedCash ?: 0, 0, 0)}"
+	<span id="expectedCashCalculated" th:text="${#numbers.formatInteger(expectedCash ?: 0, 0)}"
 		style="display: none;">0</span>
 
 	<!-- ▼ 入力フォーム -->
@@ -218,7 +215,7 @@ th, td {
 			</label>
 		</div>
                 <button id="submitBtn" type="submit">登録</button>
-		<span id="expectedCashCalculated" th:text="${#numbers.formatDecimal(expectedCash ?: 0, 0, 0)}"
+		<span id="expectedCashCalculated" th:text="${#numbers.formatInteger(expectedCash ?: 0, 0)}"
 			style="display: none;">0</span>
 
 	</form>
