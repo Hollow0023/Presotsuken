@@ -94,14 +94,19 @@
 			width: 100%;
 			height: 100%;
 			background: rgba(0, 0, 0, 0.5);
+			/* モーダルを画面中央に配置 */
+			align-items: center;
+			justify-content: center;
 		}
 
 		.modal-content {
 			background: white;
 			padding: 20px;
-			margin: 10% auto;
+			margin: 0 auto;
 			width: 400px;
 			border-radius: 8px;
+			max-height: 90vh;
+			overflow-y: auto;
 		}
 
 		.tab-container {
@@ -255,6 +260,19 @@
 
 		.modal-content button:not([class*="btn-"]):not([class*="tab-"]):hover {
 			background-color: #45a049;
+		}
+
+		/* 割り勘会計・個別会計モーダル内のセレクトボックスのサイズを拡大 */
+		#splitPaymentModal select,
+		#individualPaymentModal select {
+			padding: 12px 8px;
+			font-size: 18px;
+			border: 2px solid #ccc;
+			border-radius: 4px;
+			box-sizing: border-box;
+			min-height: 48px;
+			width: 100%;
+			margin: 8px 0;
 		}
 	</style>
 </head>
@@ -767,7 +785,7 @@
 			if (id === 'peopleModal') {
 				document.getElementById("peopleInput").value = numberOfPeople;
 			}
-			document.getElementById(id).style.display = 'block';
+			document.getElementById(id).style.display = 'flex';
 		}
 
 		function closeModal(id) {
