@@ -90,7 +90,9 @@ th, td {
 			</div>
 			<div>
 				合計: <span
-					th:text="${#numbers.formatDecimal((T(java.util.Optional).ofNullable(#vars['salesByPaymentType_' + paymentType.typeName + '_10%']).orElse(0)) + (T(java.util.Optional).ofNullable(#vars['salesByPaymentType_' + paymentType.typeName + '_8%']).orElse(0)), 0, 0)}">0</span>
+					th:text="${#numbers.formatDecimal(
+						(T(java.util.Optional).ofNullable(#vars['salesByPaymentType_' + paymentType.typeName + '_10%']).orElse(0) * 1.10) + 
+						(T(java.util.Optional).ofNullable(#vars['salesByPaymentType_' + paymentType.typeName + '_8%']).orElse(0) * 1.08), 0, 0)}">0</span>
 				円
 			</div>
 			<div>
@@ -101,6 +103,16 @@ th, td {
 			<div>
 				8%対象: <span
 					th:text="${#numbers.formatDecimal(T(java.util.Optional).ofNullable(#vars['salesByPaymentType_' + paymentType.typeName + '_8%']).orElse(0), 0, 0)}">0</span>
+				円
+			</div>
+			<div>
+				消費税 10%: <span
+					th:text="${#numbers.formatDecimal(T(java.util.Optional).ofNullable(#vars['taxAmount_' + paymentType.typeName + '_10%']).orElse(0), 0, 0)}">0</span>
+				円
+			</div>
+			<div>
+				消費税 8%: <span
+					th:text="${#numbers.formatDecimal(T(java.util.Optional).ofNullable(#vars['taxAmount_' + paymentType.typeName + '_8%']).orElse(0), 0, 0)}">0</span>
 				円
 			</div>
 		</th:block>
