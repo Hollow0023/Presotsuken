@@ -131,6 +131,23 @@
 		.tab-content.active {
 			display: block;
 		}
+
+		.btn-payment-complete {
+			width: 70%;
+			height: 50px;
+			background-color: #4CAF50;
+			color: white;
+			border: none;
+			border-radius: 4px;
+			font-size: 16px;
+			cursor: pointer;
+			margin: 10px auto;
+			display: block;
+		}
+
+		.btn-payment-complete:hover {
+			background-color: #45a049;
+		}
 	</style>
 </head>
 <body>
@@ -281,7 +298,7 @@
 				<p>お釣り: <strong><span id="completeChange">0</span>円</strong></p>
 			</div>
 			<p id="completeMessage" style="margin: 10px 0; color: #666;"></p>
-			<button onclick="closePaymentCompleteModal()" style="width: 70%; height: 50px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; margin: 10px auto; display: block;">完了</button>
+			<button class="btn-payment-complete" onclick="closePaymentCompleteModal()">完了</button>
 		</div>
 	</div>
 
