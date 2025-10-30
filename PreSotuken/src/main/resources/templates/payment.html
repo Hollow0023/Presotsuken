@@ -148,6 +148,57 @@
 		.btn-payment-complete:hover {
 			background-color: #45a049;
 		}
+
+		/* 割り勘会計・個別会計モーダルのボタンスタイル */
+		.modal-action-buttons {
+			display: flex;
+			gap: 10px;
+			margin-top: 20px;
+		}
+
+		.modal-action-btn {
+			flex: 1;
+			min-height: 50px;
+			padding: 12px 20px;
+			border: none;
+			border-radius: 4px;
+			font-size: 16px;
+			font-weight: bold;
+			cursor: pointer;
+			transition: all 0.2s ease;
+		}
+
+		.modal-action-btn:hover {
+			transform: translateY(-2px);
+			box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+		}
+
+		.modal-action-btn.primary {
+			background-color: #4CAF50;
+			color: white;
+		}
+
+		.modal-action-btn.primary:hover {
+			background-color: #45a049;
+		}
+
+		.modal-action-btn.secondary {
+			background-color: #757575;
+			color: white;
+		}
+
+		.modal-action-btn.secondary:hover {
+			background-color: #616161;
+		}
+
+		/* モバイルデバイス対応 */
+		@media (max-width: 768px) {
+			.modal-action-btn {
+				min-height: 55px;
+				font-size: 17px;
+				padding: 14px 20px;
+			}
+		}
 	</style>
 </head>
 <body>
@@ -343,8 +394,10 @@
 			</select><br>
 			<label>預かり金額:</label>
 			<input type="number" id="splitDeposit" min="0" placeholder="預かり金額"> 円<br>
-			<button onclick="processSplitPayment()" style="margin-top: 10px;">会計実行</button>
-			<button onclick="closeModal('splitPaymentModal')">キャンセル</button>
+			<div class="modal-action-buttons">
+				<button class="modal-action-btn primary" onclick="processSplitPayment()">会計実行</button>
+				<button class="modal-action-btn secondary" onclick="closeModal('splitPaymentModal')">キャンセル</button>
+			</div>
 		</div>
 	</div>
 
@@ -383,8 +436,10 @@
 			<input type="number" id="individualDiscount" min="0" value="0" oninput="updateIndividualTotal()"> 円<br>
 			<label>預かり金額:</label>
 			<input type="number" id="individualDeposit" min="0" placeholder="預かり金額"> 円<br>
-			<button onclick="processIndividualPayment()" style="margin-top: 10px;">会計実行</button>
-			<button onclick="closeModal('individualPaymentModal')">キャンセル</button>
+			<div class="modal-action-buttons">
+				<button class="modal-action-btn primary" onclick="processIndividualPayment()">会計実行</button>
+				<button class="modal-action-btn secondary" onclick="closeModal('individualPaymentModal')">キャンセル</button>
+			</div>
 		</div>
 	</div>
 
