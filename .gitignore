@@ -1,0 +1,34 @@
+# 作業記録用のマークダウンファイルは不要
+# PRコメントで作業内容を管理するため、以下のファイルは除外
+*_SUMMARY.md
+*_GUIDE.md
+*_INSTRUCTIONS.md
+*_CHECKLIST.md
+*_FIX.md
+CHANGE_SUMMARY.md
+IMPLEMENTATION_SUMMARY.md
+VERIFICATION_*.md
+CODING_AGENT_INSTRUCTIONS.md
+
+# ビルド成果物
+*.class
+*.jar
+*.war
+*.ear
+target/
+build/
+
+# IDE設定ファイル
+.idea/
+*.iml
+*.iws
+.vscode/
+.DS_Store
+
+# ログファイル
+*.log
+
+# 一時ファイル
+*.tmp
+*.swp
+*.bak
