@@ -273,6 +273,16 @@
 			border: none;
 		}
 
+		/* キャンセル・閉じるボタンの背景色をグレーに */
+		.modal-content button.cancel-btn {
+			background-color: #757575 !important;
+			color: white;
+		}
+
+		.modal-content button.cancel-btn:hover {
+			background-color: #616161 !important;
+		}
+
 		/* モーダル内のボタンに背景色を追加 */
 		.modal-content button:not([class*="btn-"]):not([class*="tab-"]) {
 			background-color: #4CAF50;
@@ -281,16 +291,6 @@
 
 		.modal-content button:not([class*="btn-"]):not([class*="tab-"]):hover {
 			background-color: #45a049;
-		}
-
-		/* キャンセル・閉じるボタンの背景色をグレーに */
-		.modal-content button.cancel-btn {
-			background-color: #757575;
-			color: white;
-		}
-
-		.modal-content button.cancel-btn:hover {
-			background-color: #616161;
 		}
 
 		/* 割り勘会計・個別会計モーダル内のセレクトボックスのサイズを拡大 */
