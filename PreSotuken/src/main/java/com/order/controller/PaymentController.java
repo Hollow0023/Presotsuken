@@ -416,6 +416,20 @@ public class PaymentController {
         // Payment を取得
         Payment payment = paymentRepository.findById(req.getPaymentId())
             .orElseThrow(() -> new IllegalArgumentException("Invalid paymentId"));
+        
+        // 既に割り勘会計または個別会計が開始されていないかチェック
+        if ("PARTIAL".equals(payment.getPaymentStatus())) {
+            // 子会計が存在するか確認
+            List<Payment> childPayments = paymentRepository.findByParentPaymentPaymentId(payment.getPaymentId());
+            if (!childPayments.isEmpty()) {
+                // 割り勘会計か個別会計が進行中
+                if (payment.getTotalSplits() != null && payment.getTotalSplits() > 0) {
+                    throw new IllegalArgumentException("割り勘会計が進行中のため、通常会計を実行できません。");
+                } else {
+                    throw new IllegalArgumentException("個別会計が進行中のため、通常会計を実行できません。");
+                }
+            }
+        }
 
         // PaymentType を ID から取得してセット
         if (req.getPaymentTypeId() != null) {
