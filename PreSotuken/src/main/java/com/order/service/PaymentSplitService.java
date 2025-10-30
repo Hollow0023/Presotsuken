@@ -101,8 +101,7 @@ public class PaymentSplitService {
         }
         
         // 元の会計を部分完了状態に更新 (初回のみ)
-        if (!"PARTIAL".equals(originalPayment.getPaymentStatus()) && 
-            !"COMPLETED".equals(originalPayment.getPaymentStatus())) {
+        if (!"PARTIAL".equals(originalPayment.getPaymentStatus())) {
             originalPayment.setPaymentStatus("PARTIAL");
             originalPayment.setTotalSplits(request.getNumberOfSplits());
             paymentRepository.save(originalPayment);
@@ -184,8 +183,7 @@ public class PaymentSplitService {
         }
         
         // 元の会計を部分完了状態に更新 (初回のみ)
-        if (!"PARTIAL".equals(originalPayment.getPaymentStatus()) && 
-            !"COMPLETED".equals(originalPayment.getPaymentStatus())) {
+        if (!"PARTIAL".equals(originalPayment.getPaymentStatus())) {
             originalPayment.setPaymentStatus("PARTIAL");
             paymentRepository.save(originalPayment);
         }
