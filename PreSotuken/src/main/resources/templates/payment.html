@@ -387,8 +387,12 @@
 			const totalSplitsValue = document.getElementById('totalSplits')?.value;
 			totalSplits = totalSplitsValue && totalSplitsValue !== '' ? parseInt(totalSplitsValue) : null;
 			
-			console.log('Initialized paymentStatus:', paymentStatus);
-			console.log('Initialized totalSplits:', totalSplits);
+			console.log('=== Payment Button State Debug Info ===');
+			console.log('Hidden input paymentStatus value:', document.getElementById('paymentStatus')?.value);
+			console.log('Hidden input totalSplits value:', document.getElementById('totalSplits')?.value);
+			console.log('Parsed paymentStatus:', paymentStatus);
+			console.log('Parsed totalSplits:', totalSplits);
+			console.log('========================================');
 			
 			const detailRows = document.querySelectorAll('#detailBody tr');
 			
@@ -481,9 +485,10 @@
 			// 個別会計ボタン
 			const individualButton = document.querySelector('button.full-btn[onclick="openIndividualPaymentModal()"]');
 			
-			console.log('updatePaymentButtonStates called');
+			console.log('=== updatePaymentButtonStates ===');
 			console.log('paymentStatus:', paymentStatus);
 			console.log('totalSplits:', totalSplits);
+			console.log('typeof totalSplits:', typeof totalSplits);
 			
 			// PARTIAL状態（部分完了）の場合、会計方法を制限
 			if (paymentStatus === 'PARTIAL') {
@@ -492,17 +497,27 @@
 				// totalSplitsがnullまたは0の場合は個別会計が実行中
 				const isSplitPaymentInProgress = totalSplits != null && totalSplits > 0;
 				
+				console.log('PARTIAL status detected');
 				console.log('isSplitPaymentInProgress:', isSplitPaymentInProgress);
 				
 				if (isSplitPaymentInProgress) {
 					// 割り勘会計が進行中 → 個別会計と通常会計を無効化
-					console.log('Disabling individual and finalize buttons (split payment in progress)');
+					console.log('=> Disabling individual and finalize buttons (split payment in progress)');
 					disableButton(finalizeButton, '割り勘会計が進行中です');
 					disableButton(individualButton, '割り勘会計が進行中です');
 					// 割り勘会計ボタンは有効のまま
 				} else {
 					// 個別会計が進行中 → 割り勘会計と通常会計を無効化
-					console.log('Disabling split and finalize buttons (individual payment in progress)');
+					console.log('=> Disabling split and finalize buttons (individual payment in progress)');
+					disableButton(finalizeButton, '個別会計が進行中です');
+					disableButton(splitButton, '個別会計が進行中です');
+					// 個別会計ボタンは有効のまま
+				}
+			} else {
+				console.log('Payment status is not PARTIAL (status=' + paymentStatus + '), no buttons disabled');
+			}
+			// COMPLETED状態の場合は何もしない（通常は座席画面に遷移するため、このページには来ない）
+		}
 					disableButton(finalizeButton, '個別会計が進行中です');
 					disableButton(splitButton, '個別会計が進行中です');
 					// 個別会計ボタンは有効のまま
