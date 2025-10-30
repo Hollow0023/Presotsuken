@@ -281,7 +281,7 @@
 				<p>お釣り: <strong><span id="completeChange">0</span>円</strong></p>
 			</div>
 			<p id="completeMessage" style="margin: 10px 0; color: #666;"></p>
-			<button class="btn-primary" onclick="closePaymentCompleteModal()">閉じる</button>
+			<button onclick="closePaymentCompleteModal()" style="width: 70%; height: 50px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; margin: 10px auto; display: block;">完了</button>
 		</div>
 	</div>
 
@@ -717,9 +717,9 @@
 			  );
 		}
 		
-		// モーダルの外側をクリックしたら閉じるようにする
+		// モーダルの外側をクリックしたら閉じるようにする（会計完了モーダルを除く）
 		window.addEventListener('click', function(event) {
-			if (event.target.classList.contains('modal')) {
+			if (event.target.classList.contains('modal') && event.target.id !== 'paymentCompleteModal') {
 				closeModal(event.target.id);
 			}
 		});
