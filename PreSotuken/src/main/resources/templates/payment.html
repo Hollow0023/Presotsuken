@@ -234,10 +234,31 @@
 			font-size: 20px;
 			border: 2px solid #ccc;
 			border-radius: 4px;
-			width: 100%;
 			box-sizing: border-box;
 			min-height: 52px;
 			margin: 10px 0;
+		}
+
+		/* ラベルとインライン入力の改行防止 */
+		.modal-content label,
+		.modal-content .inline-input-group {
+			white-space: nowrap;
+		}
+
+		/* インライン入力（単位付き）のスタイル */
+		.modal-content .inline-input-group input[type="number"] {
+			width: auto;
+			min-width: 150px;
+			display: inline-block;
+			vertical-align: middle;
+		}
+
+		/* 単位テキストのスタイル */
+		.modal-content .inline-input-group .unit {
+			display: inline;
+			margin-left: 8px;
+			font-size: 20px;
+			white-space: nowrap;
 		}
 
 		.modal-content button {
@@ -362,7 +383,9 @@
 	<div id="peopleModal" class="modal">
 		<div class="modal-content">
 			<h3>人数を編集</h3>
-			<input type="number" id="peopleInput" min="1" value="1"> 名
+			<div class="inline-input-group">
+				<input type="number" id="peopleInput" min="1" value="1"><span class="unit">名</span>
+			</div>
 			<button onclick="applyPeopleCount()">保存</button> 
 			<button onclick="closeModal('peopleModal')">閉じる</button>
 		</div>
@@ -385,7 +408,9 @@
 			<div id="amountTab" class="tab-content">
 				<p>発行金額を指定してください。</p>
 				<label>発行額:</label>
-				<input type="number" id="receiptAmountInput" min="0" placeholder="発行額を入力">円
+				<div class="inline-input-group">
+					<input type="number" id="receiptAmountInput" min="0" placeholder="発行額を入力"><span class="unit">円</span>
+				</div>
 				<p style="font-size: 0.9em; color: #666;">
 					残高: <span id="remainingAmount">0</span>円
 				</p>
@@ -409,7 +434,9 @@
 	<div id="receivedModal" class="modal">
 		<div class="modal-content">
 			<h3>預かり金を入力</h3>
-			<input type="number" id="receivedInput" placeholder="預かり額 (例: 10000)" oninput="updateReceived()"> 円
+			<div class="inline-input-group">
+				<input type="number" id="receivedInput" placeholder="預かり額 (例: 10000)" oninput="updateReceived()"><span class="unit">円</span>
+			</div>
 			<button onclick="closeModal('receivedModal')">保存</button>
 		</div>
 	</div>
@@ -435,7 +462,9 @@
 			<p>単価: <span id="modalMenuPrice"></span>円</p>
 			<p>数量: <span id="modalMenuQuantity"></span>個</p>
 			<label>割引額:</label>
-			<input type="number" id="detailDiscountInput" min="0" value="0"> 円
+			<div class="inline-input-group">
+				<input type="number" id="detailDiscountInput" min="0" value="0"><span class="unit">円</span>
+			</div>
 			<input type="hidden" id="currentDetailIndex"> <button onclick="applyDetailDiscount()">保存</button>
 			<button onclick="closeModal('detailDiscountModal')">閉じる</button>
 		</div>
@@ -447,7 +476,9 @@
 			<h3>割り勘会計</h3>
 			<p>合計金額: <span id="splitTotalAmount">0</span>円</p>
 			<label>分割人数:</label>
-			<input type="number" id="splitCount" min="2" value="2" oninput="updateSplitPreview()"> 人<br>
+			<div class="inline-input-group">
+				<input type="number" id="splitCount" min="2" value="2" oninput="updateSplitPreview()"><span class="unit">人</span>
+			</div>
 			<p>1人あたり: <span id="amountPerPerson">0</span>円</p>
 			<p style="font-size: 0.9em; color: #666;">※最後の会計に余りを含めます</p>
 			<hr>
@@ -468,7 +499,9 @@
 				<option th:each="user : ${userList}" th:value="${user.userId}" th:text="${user.userName}"></option>
 			</select><br>
 			<label>預かり金額:</label>
-			<input type="number" id="splitDeposit" min="0" placeholder="預かり金額"> 円<br>
+			<div class="inline-input-group">
+				<input type="number" id="splitDeposit" min="0" placeholder="預かり金額"><span class="unit">円</span>
+			</div>
 			<div class="modal-action-buttons">
 				<button class="modal-action-btn primary" onclick="processSplitPayment()">会計実行</button>
 				<button class="modal-action-btn secondary" onclick="closeModal('splitPaymentModal')">キャンセル</button>
@@ -508,9 +541,13 @@
 				<option th:each="user : ${userList}" th:value="${user.userId}" th:text="${user.userName}"></option>
 			</select><br>
 			<label>割引額:</label>
-			<input type="number" id="individualDiscount" min="0" value="0" oninput="updateIndividualTotal()"> 円<br>
+			<div class="inline-input-group">
+				<input type="number" id="individualDiscount" min="0" value="0" oninput="updateIndividualTotal()"><span class="unit">円</span>
+			</div>
 			<label>預かり金額:</label>
-			<input type="number" id="individualDeposit" min="0" placeholder="預かり金額"> 円<br>
+			<div class="inline-input-group">
+				<input type="number" id="individualDeposit" min="0" placeholder="預かり金額"><span class="unit">円</span>
+			</div>
 			<div class="modal-action-buttons">
 				<button class="modal-action-btn primary" onclick="processIndividualPayment()">会計実行</button>
 				<button class="modal-action-btn secondary" onclick="closeModal('individualPaymentModal')">キャンセル</button>
