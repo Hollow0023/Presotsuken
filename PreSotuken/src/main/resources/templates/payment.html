@@ -138,6 +138,8 @@
 		<h2>注文</h2>
 		 <a href="/">← トップに戻る</a>
 		<input type="hidden" id="paymentId" th:value="${payment.paymentId}" />
+		<input type="hidden" id="paymentStatus" th:value="${payment.paymentStatus}" />
+		<input type="hidden" id="totalSplits" th:value="${payment.totalSplits}" />
 		<table border="1" style="width:100%">
 			<thead>
 				<tr>
@@ -375,11 +377,19 @@
 		let discount = 0, discountReason = "", received = 0, numberOfPeople = 1; 
 		let detailsWithDiscount = []; // 各商品の割引額を保持する新しい配列
 		
-		// 会計ステータスを取得（Thymeleafから渡される）
-		const paymentStatus = /*[[${payment.paymentStatus}]]*/ 'COMPLETED';
-		const totalSplits = /*[[${payment.totalSplits}]]*/ null;
+		// グローバル変数として宣言（window.onload内で初期化）
+		let paymentStatus = 'COMPLETED';
+		let totalSplits = null;
 
 		window.onload = () => {
+			// 会計ステータスを取得（hidden inputから読み取る）
+			paymentStatus = document.getElementById('paymentStatus')?.value || 'COMPLETED';
+			const totalSplitsValue = document.getElementById('totalSplits')?.value;
+			totalSplits = totalSplitsValue && totalSplitsValue !== '' ? parseInt(totalSplitsValue) : null;
+			
+			console.log('Initialized paymentStatus:', paymentStatus);
+			console.log('Initialized totalSplits:', totalSplits);
+			
 			const detailRows = document.querySelectorAll('#detailBody tr');
 			
 			detailsWithDiscount = []; // 初期化
