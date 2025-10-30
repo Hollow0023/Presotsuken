@@ -75,7 +75,7 @@ th, td {
 			総売上（合計）: <span th:text="${#numbers.formatInteger(total ?: 0, 0)}">0</span> 円
 		</div>
 		<div>
-			総売上（10%対象＋消費税10%）: <span th:text="${#numbers.formatInteger((tax10 ?: 0) + (taxAmount10 ?: 0), 0)}">0</span> 円
+			総売上（10%対象＋消費税10%）: <span th:text="${#numbers.formatInteger((tax10 ?: 0) * 1.1, 0)}">0</span> 円
 		</div>
 		<div>
 			総売上（8%対象）: <span th:text="${#numbers.formatInteger(tax8 ?: 0, 0)}">0</span> 円
@@ -87,7 +87,7 @@ th, td {
 			</div>
 			<div>
 				合計（10%対象＋消費税10%）: <span
-					th:text="${#numbers.formatInteger((T(java.util.Optional).ofNullable(#vars['salesByPaymentType_' + paymentType.typeName + '_10%']).orElse(0)) + (T(java.util.Optional).ofNullable(#vars['salesByPaymentType_' + paymentType.typeName + '_10%']).orElse(0) * 0.1), 0)}">0</span>
+					th:text="${#numbers.formatInteger((T(java.util.Optional).ofNullable(#vars['salesByPaymentType_' + paymentType.typeName + '_10%']).orElse(0)) * 1.1, 0)}">0</span>
 				円
 			</div>
 			<div>
