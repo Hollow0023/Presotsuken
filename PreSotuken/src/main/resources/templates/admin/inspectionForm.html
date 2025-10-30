@@ -100,13 +100,17 @@ th, td {
 					th:text="${#numbers.formatInteger(T(java.util.Optional).ofNullable(#vars['salesByPaymentType_' + paymentType.typeName + '_8%']).orElse(0), 0)}">0</span>
 				円
 			</div>
+			<div>
+				消費税 10%: <span
+					th:text="${#numbers.formatInteger(T(java.util.Optional).ofNullable(#vars['taxAmountByPaymentType_' + paymentType.typeName + '_10%']).orElse(0), 0)}">0</span>
+				円
+			</div>
+			<div>
+				消費税 8%: <span
+					th:text="${#numbers.formatInteger(T(java.util.Optional).ofNullable(#vars['taxAmountByPaymentType_' + paymentType.typeName + '_8%']).orElse(0), 0)}">0</span>
+				円
+			</div>
 		</th:block>
-		<div>
-			消費税 10%: <span th:text="${#numbers.formatInteger(taxAmount10 ?: 0, 0)}">0</span> 円
-		</div>
-		<div>
-			消費税 8%: <span th:text="${#numbers.formatInteger(taxAmount8 ?: 0, 0)}">0</span> 円
-		</div>
 		<div>
 			割引（現金）: <span th:text="${#numbers.formatInteger(discountCash ?: 0, 0)}">0</span> 円
 		</div>

@@ -184,13 +184,33 @@ public class InspectionLogService {
 
         // ★★★ ここまで新しい会計種別ごとの税率別売上を追加 ★★★
 
-        // 消費税額 (既存のコード)
+        // 消費税額 (既存のコード - 全体の合計)
         BigDecimal taxAmount10 = safe.apply(paymentDetailRepository.sumTaxAmount(storeId, start, end, new BigDecimal("0.10")));
         BigDecimal taxAmount8 = safe.apply(paymentDetailRepository.sumTaxAmount(storeId, start, end, new BigDecimal("0.08")));
         result.put("taxAmount10", taxAmount10);
         result.put("taxAmount8", taxAmount8);
 
+        // ★★★ 支払い方法別の消費税額を追加 ★★★
+        Map<String, BigDecimal> taxAmountsByPaymentType = new HashMap<>();
+        List<Object[]> taxAmountData = paymentDetailRepository.sumTaxAmountByPaymentTypeAndTaxRate(storeId, start, end);
+        
+        for (Object[] row : taxAmountData) {
+            String typeName = (String) row[0]; // 例: "現金", "カード"
+            Double rate = (Double) row[1]; // 例: 0.10, 0.08
+            BigDecimal taxAmount = safe.apply(BigDecimal.valueOf((Double) row[2])); // 消費税額
 
+            String key = "taxAmountByPaymentType_" + typeName;
+            if (rate != null && rate == 0.10) {
+                key += "_10%";
+            } else if (rate != null && rate == 0.08) {
+                key += "_8%";
+            } else {
+                key += "_その他";
+            }
+            taxAmountsByPaymentType.put(key, taxAmount);
+        }
+        result.putAll(taxAmountsByPaymentType);
+        // ★★★ ここまで支払い方法別の消費税額を追加 ★★★
 
         // 割引
         BigDecimal discountCash = BigDecimal.ZERO;
