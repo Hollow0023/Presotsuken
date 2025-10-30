@@ -129,6 +129,56 @@
 		.voided {
 			background-color: #ffcccc !important;
 		}
+
+		/* タブレット対応: セレクトボックスとテキストボックスを大きく */
+		select {
+			padding: 12px 8px;
+			font-size: 18px;
+			border: 2px solid #ccc;
+			border-radius: 4px;
+			box-sizing: border-box;
+			min-height: 48px;
+		}
+
+		input[type="text"],
+		input[type="number"] {
+			padding: 12px 8px;
+			font-size: 18px;
+			border: 2px solid #ccc;
+			border-radius: 4px;
+			box-sizing: border-box;
+			min-height: 48px;
+		}
+
+		/* モーダル内のテキストボックスとボタンを大きく */
+		.modal-content input[type="number"],
+		.modal-content input[type="text"] {
+			padding: 14px 10px;
+			font-size: 20px;
+			border: 2px solid #ccc;
+			border-radius: 4px;
+			width: 100%;
+			box-sizing: border-box;
+			min-height: 52px;
+			margin: 10px 0;
+		}
+
+		.modal-content button {
+			padding: 14px 24px;
+			font-size: 18px;
+			min-height: 52px;
+			min-width: 120px;
+			font-weight: bold;
+			margin: 8px 4px;
+			border-radius: 6px;
+		}
+
+		/* ボタンに背景色を追加 */
+		button {
+			padding: 12px 20px;
+			font-size: 16px;
+			min-height: 48px;
+		}
 	</style>
 </head>
 <body>

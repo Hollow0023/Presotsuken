@@ -199,6 +199,73 @@
 				padding: 14px 20px;
 			}
 		}
+
+		/* タブレット対応: 右パネルのセレクトボックスとテキストボックスを大きく */
+		.section select {
+			width: 100%;
+			padding: 12px 8px;
+			font-size: 18px;
+			border: 2px solid #ccc;
+			border-radius: 4px;
+			box-sizing: border-box;
+			min-height: 48px;
+		}
+
+		.section input[type="text"],
+		.section input[type="number"] {
+			width: 100%;
+			padding: 12px 8px;
+			font-size: 18px;
+			border: 2px solid #ccc;
+			border-radius: 4px;
+			box-sizing: border-box;
+			min-height: 48px;
+		}
+
+		/* モーダル内のテキストボックスとボタンを大きく */
+		.modal-content input[type="number"],
+		.modal-content input[type="text"] {
+			padding: 14px 10px;
+			font-size: 20px;
+			border: 2px solid #ccc;
+			border-radius: 4px;
+			width: 100%;
+			box-sizing: border-box;
+			min-height: 52px;
+			margin: 10px 0;
+		}
+
+		.modal-content button {
+			padding: 14px 24px;
+			font-size: 18px;
+			min-height: 52px;
+			min-width: 120px;
+			font-weight: bold;
+			margin: 8px 4px;
+			border-radius: 6px;
+			cursor: pointer;
+			border: none;
+		}
+
+		/* モーダル内のボタンに背景色を追加 */
+		.modal-content button:not([class*="btn-"]):not([class*="tab-"]) {
+			background-color: #4CAF50;
+			color: white;
+		}
+
+		.modal-content button:not([class*="btn-"]):not([class*="tab-"]):hover {
+			background-color: #45a049;
+		}
+
+		/* 閉じるボタン用の背景色 */
+		.modal-content button.close-btn {
+			background-color: #757575;
+			color: white;
+		}
+
+		.modal-content button.close-btn:hover {
+			background-color: #616161;
+		}
 	</style>
 </head>
 <body>
@@ -277,7 +344,7 @@
 			<input type="checkbox" id="receiptPrintCheckbox" style="width: auto; height: auto;">
 		</div>
 
-		<button class="full-btn purple">会計前レシート</button>
+		<!-- 会計前レシートボタンを削除: このボタンにはonclickハンドラがなく、機能が実装されていなかったため削除 -->
 		<button class="full-btn green" onclick="finalizePayment()">会計完了</button>
 		<button class="full-btn" style="background-color: #FF9800; color: white;" onclick="openSplitPaymentModal()">割り勘会計</button>
 		<button class="full-btn" style="background-color: #2196F3; color: white;" onclick="openIndividualPaymentModal()">個別会計</button>
@@ -335,7 +402,7 @@
 		<div class="modal-content">
 			<h3>預かり金を入力</h3>
 			<input type="number" id="receivedInput" placeholder="預かり額 (例: 10000)" oninput="updateReceived()"> 円
-			<button onclick="closeModal('receivedModal')">閉じる</button>
+			<button onclick="closeModal('receivedModal')">保存</button>
 		</div>
 	</div>
 
