@@ -287,7 +287,7 @@
 	<div id="peopleModal" class="modal">
 		<div class="modal-content">
 			<h3>人数を編集</h3>
-			<input type="number" id="peopleInput" min="1" value="1"> 名
+			<input type="number" id="peopleInput" min="1" value="1" autocomplete="off" data-form-type="other"> 名
 			<button onclick="applyPeopleCount()">保存</button> 
 			<button onclick="closeModal('peopleModal')">閉じる</button>
 		</div>
@@ -310,7 +310,7 @@
 			<div id="amountTab" class="tab-content">
 				<p>発行金額を指定してください。</p>
 				<label>発行額:</label>
-				<input type="number" id="receiptAmountInput" min="0" placeholder="発行額を入力">円
+				<input type="number" id="receiptAmountInput" min="0" placeholder="発行額を入力" autocomplete="off" data-form-type="other">円
 				<p style="font-size: 0.9em; color: #666;">
 					残高: <span id="remainingAmount">0</span>円
 				</p>
@@ -325,8 +325,8 @@
 		<div class="modal-content">
 			<h3>割引を入力</h3>
 			<p class="tyuuki">*割増は-を付ける</p>
-			<label>割引金額:</label><input type="number" id="discountInput" min="0" placeholder="割引金額を入力"><br>
-			<label>割引理由:</label><input type="text" id="discountReasonInput" placeholder="割引理由を入力"><br>
+			<label>割引金額:</label><input type="number" id="discountInput" min="0" placeholder="割引金額を入力" autocomplete="off" data-form-type="other"><br>
+			<label>割引理由:</label><input type="text" id="discountReasonInput" placeholder="割引理由を入力" autocomplete="off" data-form-type="other"><br>
 			<button onclick="applyDiscount()">保存</button>
 		</div>
 	</div>
@@ -334,7 +334,7 @@
 	<div id="receivedModal" class="modal">
 		<div class="modal-content">
 			<h3>預かり金を入力</h3>
-			<input type="number" id="receivedInput" placeholder="預かり額 (例: 10000)" oninput="updateReceived()"> 円
+			<input type="number" id="receivedInput" placeholder="預かり額 (例: 10000)" oninput="updateReceived()" autocomplete="off" data-form-type="other"> 円
 			<button onclick="closeModal('receivedModal')">閉じる</button>
 		</div>
 	</div>
@@ -360,7 +360,7 @@
 			<p>単価: <span id="modalMenuPrice"></span>円</p>
 			<p>数量: <span id="modalMenuQuantity"></span>個</p>
 			<label>割引額:</label>
-			<input type="number" id="detailDiscountInput" min="0" value="0"> 円
+			<input type="number" id="detailDiscountInput" min="0" value="0" autocomplete="off" data-form-type="other"> 円
 			<input type="hidden" id="currentDetailIndex"> <button onclick="applyDetailDiscount()">保存</button>
 			<button onclick="closeModal('detailDiscountModal')">閉じる</button>
 		</div>
@@ -372,7 +372,7 @@
 			<h3>割り勘会計</h3>
 			<p>合計金額: <span id="splitTotalAmount">0</span>円</p>
 			<label>分割人数:</label>
-			<input type="number" id="splitCount" min="2" value="2" oninput="updateSplitPreview()"> 人<br>
+			<input type="number" id="splitCount" min="2" value="2" oninput="updateSplitPreview()" autocomplete="off" data-form-type="other"> 人<br>
 			<p>1人あたり: <span id="amountPerPerson">0</span>円</p>
 			<p style="font-size: 0.9em; color: #666;">※最後の会計に余りを含めます</p>
 			<hr>
@@ -393,7 +393,7 @@
 				<option th:each="user : ${userList}" th:value="${user.userId}" th:text="${user.userName}"></option>
 			</select><br>
 			<label>預かり金額:</label>
-			<input type="number" id="splitDeposit" min="0" placeholder="預かり金額"> 円<br>
+			<input type="number" id="splitDeposit" min="0" placeholder="預かり金額" autocomplete="off" data-form-type="other"> 円<br>
 			<div class="modal-action-buttons">
 				<button class="modal-action-btn primary" onclick="processSplitPayment()">会計実行</button>
 				<button class="modal-action-btn secondary" onclick="closeModal('splitPaymentModal')">キャンセル</button>
@@ -433,9 +433,9 @@
 				<option th:each="user : ${userList}" th:value="${user.userId}" th:text="${user.userName}"></option>
 			</select><br>
 			<label>割引額:</label>
-			<input type="number" id="individualDiscount" min="0" value="0" oninput="updateIndividualTotal()"> 円<br>
+			<input type="number" id="individualDiscount" min="0" value="0" oninput="updateIndividualTotal()" autocomplete="off" data-form-type="other"> 円<br>
 			<label>預かり金額:</label>
-			<input type="number" id="individualDeposit" min="0" placeholder="預かり金額"> 円<br>
+			<input type="number" id="individualDeposit" min="0" placeholder="預かり金額" autocomplete="off" data-form-type="other"> 円<br>
 			<div class="modal-action-buttons">
 				<button class="modal-action-btn primary" onclick="processIndividualPayment()">会計実行</button>
 				<button class="modal-action-btn secondary" onclick="closeModal('individualPaymentModal')">キャンセル</button>
@@ -1050,7 +1050,7 @@
 					<td><input type="checkbox" class="individual-item-checkbox" data-detail-id="${item.paymentDetailId}" data-unit-price="${unitPrice}" data-max-qty="${item.quantity}"></td>
 					<td>${item.menuName}</td>
 					<td>${item.quantity}</td>
-					<td><input type="number" class="individual-qty-input" min="1" max="${item.quantity}" value="1" style="width: 60px;" disabled></td>
+					<td><input type="number" class="individual-qty-input" min="1" max="${item.quantity}" value="1" style="width: 60px;" disabled autocomplete="off" data-form-type="other"></td>
 					<td class="individual-item-total">0円</td>
 				`;
 				tbody.appendChild(row);
