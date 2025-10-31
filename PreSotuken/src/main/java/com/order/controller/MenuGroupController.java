@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.CookieValue;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -129,6 +130,26 @@ public class MenuGroupController {
             }
 
             menuGroupService.reorderMenuGroup(groupId, direction, storeId);
+            return ResponseEntity.ok(Map.of("success", true));
+        } catch (ResponseStatusException e) {
+            return ResponseEntity.status(e.getStatusCode()).body(Map.of("success", false, "error", e.getReason()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("success", false, "error", "unknown_error"));
+        }
+    }
+    
+    // NEW: JSON返却用API (グループ削除)
+    @DeleteMapping("/api/delete/{groupId}")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> deleteGroup(@PathVariable Integer groupId, @RequestBody Map<String, Object> body) {
+        try {
+            Integer storeId = (Integer) body.get("storeId");
+            
+            if (groupId == null || storeId == null) {
+                return ResponseEntity.badRequest().body(Map.of("success", false, "error", "invalid_input"));
+            }
+            
+            menuGroupService.deleteMenuGroup(groupId, storeId);
             return ResponseEntity.ok(Map.of("success", true));
         } catch (ResponseStatusException e) {
             return ResponseEntity.status(e.getStatusCode()).body(Map.of("success", false, "error", e.getReason()));

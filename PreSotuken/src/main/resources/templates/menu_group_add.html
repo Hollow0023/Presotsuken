@@ -41,6 +41,23 @@
 </div>
 <div id="toast"></div>
 
+<!-- 削除確認モーダル -->
+<div id="deleteModal" class="modal">
+  <div class="modal-content">
+    <h3>メニューグループの削除</h3>
+    <p>このメニューグループを削除しますか？</p>
+    <p class="warning-text">
+      <strong>注意:</strong><br>
+      • 削除すると、このグループに属するメニューはどのグループにも属さない状態になります。<br>
+      • この操作は元に戻せません。
+    </p>
+    <div class="modal-buttons">
+      <button id="confirmDeleteButton" class="delete-button">削除</button>
+      <button id="cancelDeleteButton" class="cancel-button">キャンセル</button>
+    </div>
+  </div>
+</div>
+
 <script>
   // DOM要素を取得
   const groupNameInput = document.getElementById('groupNameInput');
@@ -216,6 +233,7 @@
     
     // ここから追加：管理者限定チェックボックスを生成
     const adminCheckboxDiv = document.createElement('div');
+    adminCheckboxDiv.className = 'admin-checkbox-div';
     adminCheckboxDiv.style.marginTop = '10px'; // スタイル調整
     adminCheckboxDiv.style.marginBottom = '10px';
 
@@ -234,8 +252,18 @@
     // editInput のすぐ後にチェックボックスを追加
     liElement.insertBefore(adminCheckboxDiv, editInput.nextSibling); 
     // ここまで追加
+    
+    // div1: タイトル入力とチェックボックスを含むコンテナ
+    const div1 = document.createElement('div');
+    div1.className = 'edit-main-content';
+    div1.appendChild(editInput);
+    div1.appendChild(adminCheckboxDiv);
+    
+    // div2: ボタンコンテナ（保存、キャンセル、削除）
+    const div2 = document.createElement('div');
+    div2.className = 'edit-button-container';
 
-    // 編集ボタンを「保存」と「キャンセル」に切り替え
+    // 編集ボタンを「保存」ボタンに切り替え
     editButton.textContent = '保存';
     editButton.className = 'save-button';
     // ★修正：adminEditCheckbox を引数に追加
@@ -245,8 +273,43 @@
     cancelButton.textContent = 'キャンセル';
     cancelButton.className = 'cancel-button';
     // ★修正：adminCheckboxDiv を引数に追加
-    cancelButton.onclick = () => disableEditMode(liElement, editInput, groupNameSpan, editButton, cancelButton, currentName, adminCheckboxDiv);
-    editButton.parentNode.insertBefore(cancelButton, editButton.nextSibling); 
+    cancelButton.onclick = () => disableEditMode(liElement, editInput, groupNameSpan, editButton, cancelButton, currentName, adminCheckboxDiv, div1, div2, div3, div4, deleteButton);
+    
+    // 削除ボタンを追加
+    const deleteButton = document.createElement('button');
+    deleteButton.textContent = '削除';
+    deleteButton.className = 'delete-button';
+    deleteButton.onclick = () => showDeleteModal(groupData);
+    
+    div2.appendChild(editButton);
+    div2.appendChild(cancelButton);
+    div2.appendChild(deleteButton);
+    
+    // div3: 上下矢印ボタン
+    const div3 = document.createElement('div');
+    div3.className = 'edit-arrow-container';
+    
+    // 既存の上下矢印ボタンを取得
+    const actionsDiv = liElement.querySelector('.group-actions');
+    const upButton = actionsDiv.querySelector('.up-down-buttons:nth-of-type(1)');
+    const downButton = actionsDiv.querySelector('.up-down-buttons:nth-of-type(2)');
+    
+    if (upButton && downButton) {
+      div3.appendChild(upButton.cloneNode(true));
+      div3.appendChild(downButton.cloneNode(true));
+    }
+    
+    // div4: div2とdiv3をまとめる
+    const div4 = document.createElement('div');
+    div4.className = 'edit-controls-container';
+    div4.appendChild(div2);
+    div4.appendChild(div3);
+    
+    // 既存の構造をクリアして新しい構造を追加
+    liElement.innerHTML = '';
+    liElement.appendChild(div1);
+    liElement.appendChild(div4);
+    liElement.appendChild(groupNameSpan); // 非表示だが保持
   }
 
   // ★修正：adminEditCheckbox を引数に追加
@@ -263,8 +326,8 @@
     }
     // ★修正：forAdminOnly の変更もチェック
     if (newName === groupNameSpan.textContent && newForAdminOnly == (liElement.dataset.forAdminOnly === 'true')) {
-        // ★修正：adminEditCheckboxDiv を渡す
-        disableEditMode(liElement, editInput, groupNameSpan, saveButton, cancelButton, groupNameSpan.textContent, adminEditCheckbox.parentNode);
+        // 変更がない場合は編集モードを終了
+        await fetchAndDisplayGroups();
         return;
     }
 
@@ -294,11 +357,6 @@
       }
       
       showToast("グループ名を更新しました！", 3000, 'success'); // alertをToastに変更
-      groupNameSpan.textContent = newName;
-      // ★修正：liElementのdatasetも更新
-      liElement.dataset.forAdminOnly = newForAdminOnly;
-      // ★修正：adminEditCheckboxDiv を渡す
-      disableEditMode(liElement, editInput, groupNameSpan, saveButton, cancelButton, newName, adminEditCheckbox.parentNode);
       // 再表示して「管理者限定」バッジを更新するために再フェッチ
       await fetchAndDisplayGroups(); 
     } catch (error) {
@@ -310,28 +368,10 @@
     }
   }
 
-  // 編集モードを終了するヘルパー関数
-  // ★修正：adminCheckboxDiv を引数に追加
-  function disableEditMode(liElement, editInput, groupNameSpan, saveButton, cancelButton, originalName, adminCheckboxDiv) {
-    editInput.remove(); 
-    groupNameSpan.textContent = originalName; 
-    groupNameSpan.style.display = 'inline'; 
-
-    // ここから追加：管理者限定チェックボックスを削除
-    if (adminCheckboxDiv) {
-        adminCheckboxDiv.remove();
-    }
-    // ここまで追加
-
-    saveButton.textContent = '編集';
-    saveButton.className = ''; 
-    // ★修正：fetchAndDisplayGroups を直接呼ぶことで、最新のデータでリスト全体を再描画する
-    saveButton.onclick = () => fetchAndDisplayGroups(); 
-
-
-    if (cancelButton) {
-      cancelButton.remove(); 
-    }
+  // 編集モードを終了するヘルパー関数（簡略化版）
+  function disableEditMode() {
+    // 単純に全体を再描画
+    fetchAndDisplayGroups();
   }
 
 
@@ -371,6 +411,77 @@
       // document.querySelectorAll('.up-down-buttons').forEach(btn => btn.disabled = false);
     }
   }
+
+  // --- 5. グループの削除 ---
+  let groupToDelete = null;
+  
+  // 削除モーダルを表示
+  function showDeleteModal(groupData) {
+    groupToDelete = groupData;
+    const modal = document.getElementById('deleteModal');
+    modal.style.display = 'block';
+  }
+  
+  // 削除モーダルを閉じる
+  function hideDeleteModal() {
+    const modal = document.getElementById('deleteModal');
+    modal.style.display = 'none';
+    groupToDelete = null;
+  }
+  
+  // 削除を実行
+  async function deleteGroup() {
+    if (!groupToDelete) return;
+    
+    const confirmButton = document.getElementById('confirmDeleteButton');
+    const cancelButton = document.getElementById('cancelDeleteButton');
+    
+    confirmButton.disabled = true;
+    cancelButton.disabled = true;
+    
+    try {
+      const response = await fetch(`/menu/group/api/delete/${groupToDelete.groupId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ storeId: storeId })
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        if (data && data.error === "not_found") {
+          alert("該当するグループが見つかりません。");
+        } else if (response.status === 403) {
+          alert("不正な操作です。");
+        } else {
+          throw new Error('サーバーエラー: ' + response.status + ' - ' + (data.message || '未知のエラー'));
+        }
+        return;
+      }
+      
+      showToast("グループを削除しました", 3000, 'success');
+      hideDeleteModal();
+      await fetchAndDisplayGroups(); // リストを再読み込み
+    } catch (error) {
+      console.error('グループ削除中にエラーが発生しました:', error);
+      alert('グループの削除に失敗しました。');
+    } finally {
+      confirmButton.disabled = false;
+      cancelButton.disabled = false;
+    }
+  }
+  
+  // モーダルのボタンイベント設定
+  document.getElementById('confirmDeleteButton').onclick = deleteGroup;
+  document.getElementById('cancelDeleteButton').onclick = hideDeleteModal;
+  
+  // モーダルの外側をクリックしたら閉じる
+  window.onclick = function(event) {
+    const modal = document.getElementById('deleteModal');
+    if (event.target === modal) {
+      hideDeleteModal();
+    }
+  };
 
   // ページ読み込み時にグループ一覧を取得・表示
   document.addEventListener('DOMContentLoaded', fetchAndDisplayGroups);

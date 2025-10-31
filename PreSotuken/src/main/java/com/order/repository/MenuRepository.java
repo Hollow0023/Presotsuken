@@ -41,6 +41,8 @@ public interface MenuRepository extends JpaRepository<Menu, Integer> {
     // isPlanStarterがtrueで、特定のplanIdを持つメニューをmenu_nameでソートして取得（削除されていないもののみ）
     List<Menu> findByIsPlanStarterTrueAndPlanIdAndDeletedAtIsNullOrderByMenuNameAsc(Integer planId);
     
+    // 特定のメニューグループに属するメニューを取得（削除されていないもののみ）
+    List<Menu> findByMenuGroup_GroupIdAndDeletedAtIsNull(Integer groupId);
     
 //    List<Menu> findByStore_StoreIdAndIsSoldOutFalseAndIsPlanTargetFalseAndTimeSlot_TimeSlotIdInOrderByMenuNameAsc(
 //            Integer storeId, List<Integer> timeSlotIds);
