@@ -546,6 +546,7 @@ class PaymentSplitServiceTest {
         // Then
         assertNotNull(result);
         // 入店人数がnullの場合は検証がスキップされ、正常に処理される
+        // これは後方互換性のための仕様：古いデータで入店人数が記録されていない場合でも割り勘会計を可能にする
         assertEquals(660.0, result.getTotal(), 0.01); // 3300 / 5 = 660
     }
 }
