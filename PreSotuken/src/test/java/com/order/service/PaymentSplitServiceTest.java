@@ -425,4 +425,128 @@ class PaymentSplitServiceTest {
             paymentSplitService.processIndividualPayment(request);
         });
     }
+    
+    @Test
+    void 割り勘会計_分割人数が入店人数を超える場合はエラー() {
+        // Given
+        visit.setNumberOfPeople(3); // 入店人数は3人
+        
+        SplitPaymentRequest request = new SplitPaymentRequest();
+        request.setPaymentId(1);
+        request.setNumberOfSplits(5); // 5人で割ろうとする（入店人数より多い）
+        request.setCurrentSplit(1);
+        request.setPaymentTime(LocalDateTime.now());
+        request.setDeposit(700.0);
+        
+        when(paymentRepository.findById(1)).thenReturn(Optional.of(originalPayment));
+        // paymentDetailRepository.findByPaymentPaymentId は呼ばれないので stubbing しない
+        
+        // When & Then
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            paymentSplitService.processSplitPayment(request);
+        });
+        
+        // エラーメッセージに入店人数が含まれていることを確認
+        assertTrue(exception.getMessage().contains("3人"));
+        assertTrue(exception.getMessage().contains("入店人数"));
+    }
+    
+    @Test
+    void 割り勘会計_分割人数が入店人数と同じ場合は成功() {
+        // Given
+        visit.setNumberOfPeople(3); // 入店人数は3人
+        
+        SplitPaymentRequest request = new SplitPaymentRequest();
+        request.setPaymentId(1);
+        request.setNumberOfSplits(3); // 3人で割る（入店人数と同じ）
+        request.setCurrentSplit(1);
+        request.setPaymentTime(LocalDateTime.now());
+        request.setDeposit(1100.0);
+        
+        when(paymentRepository.findById(1)).thenReturn(Optional.of(originalPayment));
+        when(paymentDetailRepository.findByPaymentPaymentId(1)).thenReturn(paymentDetails);
+        when(paymentRepository.findByParentPaymentPaymentId(1)).thenReturn(Arrays.asList());
+        when(paymentRepository.save(any(Payment.class))).thenAnswer(i -> {
+            Payment p = (Payment) i.getArguments()[0];
+            if (p.getPaymentId() == null) {
+                p.setPaymentId(100);
+            }
+            return p;
+        });
+        
+        // When
+        Payment result = paymentSplitService.processSplitPayment(request);
+        
+        // Then
+        assertNotNull(result);
+        assertEquals(1100.0, result.getTotal(), 0.01);
+        assertEquals(1, result.getSplitNumber());
+        assertEquals(3, result.getTotalSplits());
+    }
+    
+    @Test
+    void 割り勘会計_分割人数が入店人数より少ない場合は成功() {
+        // Given
+        visit.setNumberOfPeople(5); // 入店人数は5人
+        
+        SplitPaymentRequest request = new SplitPaymentRequest();
+        request.setPaymentId(1);
+        request.setNumberOfSplits(3); // 3人で割る（入店人数より少ない）
+        request.setCurrentSplit(1);
+        request.setPaymentTime(LocalDateTime.now());
+        request.setDeposit(1100.0);
+        
+        when(paymentRepository.findById(1)).thenReturn(Optional.of(originalPayment));
+        when(paymentDetailRepository.findByPaymentPaymentId(1)).thenReturn(paymentDetails);
+        when(paymentRepository.findByParentPaymentPaymentId(1)).thenReturn(Arrays.asList());
+        when(paymentRepository.save(any(Payment.class))).thenAnswer(i -> {
+            Payment p = (Payment) i.getArguments()[0];
+            if (p.getPaymentId() == null) {
+                p.setPaymentId(100);
+            }
+            return p;
+        });
+        
+        // When
+        Payment result = paymentSplitService.processSplitPayment(request);
+        
+        // Then
+        assertNotNull(result);
+        assertEquals(1100.0, result.getTotal(), 0.01);
+        assertEquals(1, result.getSplitNumber());
+        assertEquals(3, result.getTotalSplits());
+    }
+    
+    @Test
+    void 割り勘会計_入店人数がnullの場合は検証をスキップ() {
+        // Given
+        visit.setNumberOfPeople(null); // 入店人数が設定されていない
+        
+        SplitPaymentRequest request = new SplitPaymentRequest();
+        request.setPaymentId(1);
+        request.setNumberOfSplits(5); // 5人で割る
+        request.setCurrentSplit(1);
+        request.setPaymentTime(LocalDateTime.now());
+        request.setDeposit(700.0);
+        
+        when(paymentRepository.findById(1)).thenReturn(Optional.of(originalPayment));
+        when(paymentDetailRepository.findByPaymentPaymentId(1)).thenReturn(paymentDetails);
+        when(paymentRepository.findByParentPaymentPaymentId(1)).thenReturn(Arrays.asList());
+        when(paymentRepository.save(any(Payment.class))).thenAnswer(i -> {
+            Payment p = (Payment) i.getArguments()[0];
+            if (p.getPaymentId() == null) {
+                p.setPaymentId(100);
+            }
+            return p;
+        });
+        
+        // When
+        Payment result = paymentSplitService.processSplitPayment(request);
+        
+        // Then
+        assertNotNull(result);
+        // 入店人数がnullの場合は検証がスキップされ、正常に処理される
+        // これは後方互換性のための仕様：古いデータで入店人数が記録されていない場合でも割り勘会計を可能にする
+        assertEquals(660.0, result.getTotal(), 0.01); // 3300 / 5 = 660
+    }
 }

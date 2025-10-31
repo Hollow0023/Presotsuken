@@ -56,6 +56,13 @@ public class PaymentSplitService {
             }
         }
         
+        // 分割人数が入店人数以下であることを検証
+        // numberOfPeopleがnullの場合は検証をスキップ（後方互換性のため）
+        Integer numberOfPeople = originalPayment.getVisit().getNumberOfPeople();
+        if (numberOfPeople != null && request.getNumberOfSplits() > numberOfPeople) {
+            throw new IllegalArgumentException("分割人数は入店人数（" + numberOfPeople + "人）以下で指定してください。");
+        }
+        
         // 合計金額を計算
         List<PaymentDetail> details = paymentDetailRepository.findByPaymentPaymentId(request.getPaymentId());
         double totalAmount = calculateTotalWithTax(details, originalPayment.getDiscount());
