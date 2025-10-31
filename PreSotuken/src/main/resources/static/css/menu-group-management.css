@@ -249,6 +249,15 @@ input.edit-input {
     margin-top: 20px;
 }
 
+/* モーダルのキャンセルボタンをグレーに */
+.modal-buttons .cancel-button {
+    background-color: #6c757d;
+}
+
+.modal-buttons .cancel-button:hover {
+    background-color: #5a6268;
+}
+
 /* 編集モードのレイアウト調整 */
 .group-item {
     display: flex;
