@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -32,6 +34,8 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/menu/group")
 public class MenuGroupController {
 
+    private static final Logger logger = LoggerFactory.getLogger(MenuGroupController.class);
+    
     private final MenuGroupRepository menuGroupRepository;
     private final StoreRepository storeRepository;
     private final MenuGroupService menuGroupService;
@@ -154,7 +158,8 @@ public class MenuGroupController {
         } catch (ResponseStatusException e) {
             return ResponseEntity.status(e.getStatusCode()).body(Map.of("success", false, "error", e.getReason()));
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("success", false, "error", "unknown_error"));
+            logger.error("メニューグループの削除中に予期しないエラーが発生しました。groupId: {}, error: {}", groupId, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("success", false, "error", "server_error", "message", "メニューグループの削除に失敗しました。"));
         }
     }
 

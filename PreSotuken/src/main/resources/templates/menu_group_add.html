@@ -463,12 +463,12 @@
   document.getElementById('cancelDeleteButton').onclick = hideDeleteModal;
   
   // モーダルの外側をクリックしたら閉じる
-  window.onclick = function(event) {
+  window.addEventListener('click', function(event) {
     const modal = document.getElementById('deleteModal');
     if (event.target === modal) {
       hideDeleteModal();
     }
-  };
+  });
 
   // ページ読み込み時にグループ一覧を取得・表示
   document.addEventListener('DOMContentLoaded', fetchAndDisplayGroups);
