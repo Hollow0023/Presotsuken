@@ -1039,10 +1039,14 @@
 			
 			document.getElementById("splitTotalAmount").innerText = total;
 			
+			// 分割人数の最大値を入店人数に設定
+			const splitCountInput = document.getElementById("splitCount");
+			splitCountInput.setAttribute('max', numberOfPeople);
+			
 			// 既に分割数が設定されていなければ、人数で初期化
-			const currentSplitCount = document.getElementById("splitCount").value;
+			const currentSplitCount = splitCountInput.value;
 			if (!currentSplitCount || currentSplitCount == 2) {
-				document.getElementById("splitCount").value = numberOfPeople;
+				splitCountInput.value = numberOfPeople;
 			}
 			
 			// 分割番号の選択肢を生成
@@ -1080,8 +1084,15 @@
 			updateSplitOptions();
 			
 			const total = parseFloat(document.getElementById("splitTotalAmount").innerText) || 0;
-			const splitCount = parseInt(document.getElementById("splitCount").value) || 2;
+			let splitCount = parseInt(document.getElementById("splitCount").value) || 2;
 			const currentNumber = parseInt(document.getElementById("splitCurrentNumber").value) || 1;
+			
+			// 分割人数が入店人数を超えていないか検証
+			if (splitCount > numberOfPeople) {
+				alert("分割人数は入店人数（" + numberOfPeople + "人）以下で指定してください。");
+				document.getElementById("splitCount").value = numberOfPeople;
+				splitCount = numberOfPeople;
+			}
 			
 			const amountPerPerson = Math.floor(total / splitCount);
 			document.getElementById("amountPerPerson").innerText = amountPerPerson;
