@@ -8,9 +8,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.order.entity.Menu;
 import com.order.entity.MenuGroup;
 import com.order.entity.Store;
 import com.order.repository.MenuGroupRepository;
+import com.order.repository.MenuRepository;
 import com.order.repository.StoreRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -21,6 +23,7 @@ public class MenuGroupService {
 
     private final MenuGroupRepository menuGroupRepository;
     private final StoreRepository storeRepository;
+    private final MenuRepository menuRepository;
 
     // グループ一覧取得
     public List<MenuGroup> getMenuGroupsByStoreId(Integer storeId) {
@@ -125,5 +128,27 @@ public class MenuGroupService {
         } else {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "無効な方向です。'up'または'down'を指定してください。");
         }
+    }
+    
+    // メニューグループの削除
+    @Transactional
+    public void deleteMenuGroup(Integer groupId, Integer storeId) {
+        MenuGroup menuGroup = menuGroupRepository.findById(groupId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "メニューグループが見つかりません。"));
+        
+        // 該当の店舗に紐づくグループかチェック
+        if (!menuGroup.getStore().getStoreId().equals(storeId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "不正な操作です。");
+        }
+        
+        // 該当グループに属するメニューを取得し、menuGroupをnullに設定（未割当化）
+        List<Menu> menusInGroup = menuRepository.findByMenuGroup_GroupIdAndDeletedAtIsNull(groupId);
+        for (Menu menu : menusInGroup) {
+            menu.setMenuGroup(null);
+        }
+        menuRepository.saveAll(menusInGroup);
+        
+        // メニューグループを削除
+        menuGroupRepository.delete(menuGroup);
     }
 }

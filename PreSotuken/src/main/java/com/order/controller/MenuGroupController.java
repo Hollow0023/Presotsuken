@@ -4,11 +4,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.CookieValue;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -31,6 +34,8 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/menu/group")
 public class MenuGroupController {
 
+    private static final Logger logger = LoggerFactory.getLogger(MenuGroupController.class);
+    
     private final MenuGroupRepository menuGroupRepository;
     private final StoreRepository storeRepository;
     private final MenuGroupService menuGroupService;
@@ -134,6 +139,27 @@ public class MenuGroupController {
             return ResponseEntity.status(e.getStatusCode()).body(Map.of("success", false, "error", e.getReason()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("success", false, "error", "unknown_error"));
+        }
+    }
+    
+    // NEW: JSON返却用API (グループ削除)
+    @DeleteMapping("/api/delete/{groupId}")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> deleteGroup(@PathVariable Integer groupId, @RequestBody Map<String, Object> body) {
+        try {
+            Integer storeId = (Integer) body.get("storeId");
+            
+            if (groupId == null || storeId == null) {
+                return ResponseEntity.badRequest().body(Map.of("success", false, "error", "invalid_input"));
+            }
+            
+            menuGroupService.deleteMenuGroup(groupId, storeId);
+            return ResponseEntity.ok(Map.of("success", true));
+        } catch (ResponseStatusException e) {
+            return ResponseEntity.status(e.getStatusCode()).body(Map.of("success", false, "error", e.getReason()));
+        } catch (Exception e) {
+            logger.error("メニューグループの削除中に予期しないエラーが発生しました。groupId: {}, error: {}", groupId, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("success", false, "error", "server_error", "message", "メニューグループの削除に失敗しました。"));
         }
     }
 
