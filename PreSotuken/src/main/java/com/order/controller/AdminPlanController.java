@@ -17,7 +17,6 @@ import com.order.dto.PlanRequestDto;
 import com.order.dto.PlanResponseDto;
 import com.order.entity.MenuGroup;
 import com.order.repository.MenuGroupRepository;
-import com.order.repository.StoreRepository;
 import com.order.service.PlanService;
 
 import lombok.RequiredArgsConstructor;
@@ -29,7 +28,6 @@ public class AdminPlanController {
 
     private final PlanService planService;
     private final MenuGroupRepository menuGroupRepository;
-    private final StoreRepository storeRepository;
 
     // プラン管理の単一画面表示
     @GetMapping

@@ -46,11 +46,6 @@ public class ImageUploadService {
         }
 
         // ユニークなファイル名を生成 (UUID + 拡張子)
-        String originalFilename = imageFile.getOriginalFilename();
-        String fileExtension = "";
-        if (originalFilename != null && originalFilename.contains(".")) {
-            fileExtension = originalFilename.substring(originalFilename.lastIndexOf("."));
-        }
         String newFileName = UUID.randomUUID().toString() + ".jpg"; 
 
         // ファイルの保存パス

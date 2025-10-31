@@ -321,8 +321,7 @@ public class PaymentSplitService {
      * 残りの会計情報を取得
      */
     public RemainingPaymentDto getRemainingPayment(Integer paymentId) {
-        Payment payment = paymentRepository.findById(paymentId)
-            .orElseThrow(() -> new IllegalArgumentException("会計が見つかりません: " + paymentId));
+    	paymentRepository.findById(paymentId)	.orElseThrow(() -> new IllegalArgumentException("会計が見つかりません: " + paymentId));
         
         RemainingPaymentDto result = new RemainingPaymentDto();
         result.setPaymentId(paymentId);

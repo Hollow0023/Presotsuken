@@ -28,11 +28,9 @@ import com.order.repository.MenuOptionRepository;
 import com.order.repository.MenuPrinterMapRepository;
 import com.order.repository.MenuRepository;
 import com.order.repository.PaymentDetailRepository;
-import com.order.repository.PaymentRepository;
 import com.order.repository.PlanMenuGroupMapRepository;
 import com.order.repository.PrinterConfigRepository;
 import com.order.repository.StoreRepository;
-import com.order.repository.VisitRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -49,8 +47,6 @@ public class MenuAddService {
     private final MenuGroupRepository menuGroupRepository;
 
     private final PaymentDetailRepository paymentDetailRepository;
-    private final PaymentRepository paymentRepository;
-    private final VisitRepository visitRepository;
     private final PlanMenuGroupMapRepository planMenuGroupMapRepository;
     private final PaymentLookupService paymentLookup;
     

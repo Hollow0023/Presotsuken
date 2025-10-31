@@ -101,7 +101,6 @@ public class ReceiptService {
         if (paymentDiscount.compareTo(BigDecimal.ZERO) > 0 && totalGross.compareTo(BigDecimal.ZERO) > 0) {
             // 割引を税込金額の比率で按分
             BigDecimal discountRatio10 = gross10.divide(totalGross, 10, RoundingMode.HALF_UP);
-            BigDecimal discountRatio8 = gross8.divide(totalGross, 10, RoundingMode.HALF_UP);
             
             BigDecimal discount10 = paymentDiscount.multiply(discountRatio10).setScale(0, RoundingMode.HALF_UP);
             BigDecimal discount8 = paymentDiscount.subtract(discount10);
@@ -206,11 +205,9 @@ public class ReceiptService {
 
             // 按分比率を計算
             BigDecimal ratio10 = BigDecimal.ZERO;
-            BigDecimal ratio8 = BigDecimal.ZERO;
             
             if (remainingTotal.compareTo(BigDecimal.ZERO) > 0) {
                 ratio10 = remaining10.divide(remainingTotal, 10, RoundingMode.HALF_UP);
-                ratio8 = remaining8.divide(remainingTotal, 10, RoundingMode.HALF_UP);
             }
 
             // 按分して配分

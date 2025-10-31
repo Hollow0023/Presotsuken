@@ -19,8 +19,19 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.order.dto.IndividualPaymentRequest;
 import com.order.dto.RemainingPaymentDto;
 import com.order.dto.SplitPaymentRequest;
-import com.order.entity.*;
-import com.order.repository.*;
+import com.order.entity.Menu;
+import com.order.entity.Payment;
+import com.order.entity.PaymentDetail;
+import com.order.entity.Seat;
+import com.order.entity.Store;
+import com.order.entity.TaxRate;
+import com.order.entity.User;
+import com.order.entity.Visit;
+import com.order.repository.PaymentDetailRepository;
+import com.order.repository.PaymentRepository;
+import com.order.repository.PaymentTypeRepository;
+import com.order.repository.UserRepository;
+import com.order.repository.VisitRepository;
 
 /**
  * PaymentSplitServiceのテスト
@@ -283,8 +294,6 @@ class PaymentSplitServiceTest {
         detail2.setQuantity(1);
         detail2.setSubtotal(500.0);
         detail2.setTaxRate(taxRate);
-        
-        List<PaymentDetail> allDetails = Arrays.asList(paymentDetails.get(0), detail2);
         
         IndividualPaymentRequest request = new IndividualPaymentRequest();
         request.setPaymentId(1);

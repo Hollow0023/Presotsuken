@@ -1,7 +1,6 @@
 package com.order.controller;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import java.time.LocalDateTime;
@@ -18,8 +17,18 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.ResponseEntity;
 
-import com.order.entity.*;
-import com.order.repository.*;
+import com.order.entity.Payment;
+import com.order.entity.PaymentType;
+import com.order.entity.Seat;
+import com.order.entity.Store;
+import com.order.entity.User;
+import com.order.entity.Visit;
+import com.order.repository.PaymentDetailRepository;
+import com.order.repository.PaymentRepository;
+import com.order.repository.PaymentTypeRepository;
+import com.order.repository.SeatRepository;
+import com.order.repository.UserRepository;
+import com.order.repository.VisitRepository;
 import com.order.service.PaymentSplitService;
 
 /**

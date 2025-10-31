@@ -5,7 +5,6 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import java.util.Arrays;
-import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -16,8 +15,21 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.ui.Model;
 
-import com.order.entity.*;
-import com.order.repository.*;
+import com.order.entity.Menu;
+import com.order.entity.Payment;
+import com.order.entity.PaymentDetail;
+import com.order.entity.PaymentType;
+import com.order.entity.Seat;
+import com.order.entity.Store;
+import com.order.entity.TaxRate;
+import com.order.entity.User;
+import com.order.entity.Visit;
+import com.order.repository.PaymentDetailRepository;
+import com.order.repository.PaymentRepository;
+import com.order.repository.PaymentTypeRepository;
+import com.order.repository.SeatRepository;
+import com.order.repository.UserRepository;
+import com.order.repository.VisitRepository;
 import com.order.service.PaymentSplitService;
 
 /**

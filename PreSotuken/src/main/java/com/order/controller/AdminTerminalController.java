@@ -3,7 +3,6 @@ package com.order.controller;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
@@ -22,7 +21,6 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.order.dto.TerminalCreationDto;
 import com.order.entity.Seat;
-import com.order.entity.Store;
 import com.order.entity.Terminal;
 import com.order.service.TerminalService;
 

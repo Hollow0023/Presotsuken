@@ -1,7 +1,6 @@
 package com.order.service;
 
 import java.util.List;
-import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
@@ -155,7 +154,7 @@ public class TerminalService {
             throw new IllegalArgumentException("店舗IDが指定されていません。");
         }
 
-        Store store = storeRepository.findById(storeId)
+        storeRepository.findById(storeId)
             .orElseThrow(() -> new IllegalArgumentException("指定された店舗が見つかりません。"));
 
         return seatRepository.findByStore_StoreId(storeId);

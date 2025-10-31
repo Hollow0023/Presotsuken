@@ -41,10 +41,6 @@ import lombok.RequiredArgsConstructor;
  * メニューの追加、編集、画像アップロード、プラン管理などを担当します
  */
 
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletRequest;
-import lombok.RequiredArgsConstructor;
-
 @Controller
 @RequiredArgsConstructor
 @RequestMapping(value = "/menu") // ★producesを一旦削除し、メソッドレベルで設定
