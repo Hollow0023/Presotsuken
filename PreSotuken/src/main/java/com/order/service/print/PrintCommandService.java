@@ -88,6 +88,48 @@ public class PrintCommandService {
         command.put("repeat", repeat);
         return command;
     }
+    
+    // addTextLangコマンド生成ヘルパー
+    public ObjectNode createAddTextLangCommand(String lang) {
+        ObjectNode cmd = objectMapper.createObjectNode();
+        cmd.put("api", "addTextLang");
+        cmd.put("lang", lang);
+        return cmd;
+    }
+
+    // addTextFontコマンド生成ヘルパー
+    public ObjectNode createAddTextFontCommand(String font) {
+        ObjectNode cmd = objectMapper.createObjectNode();
+        cmd.put("api", "addTextFont");
+        cmd.put("font", font);
+        return cmd;
+    }
+    
+    // addImageコマンド生成ヘルパー (Base64データを含める)
+    public ObjectNode createAddImageCommand(String base64Content, int x, int y, int width, int height, String color, String mode) {
+        ObjectNode cmd = objectMapper.createObjectNode();
+        cmd.put("api", "addImage");
+        cmd.put("base64Content", base64Content); // Base64データをそのまま渡す
+        cmd.put("x", x);
+        cmd.put("y", y);
+        cmd.put("width", width);
+        cmd.put("height", height);
+        cmd.put("color", color); // "COLOR_1" など
+        cmd.put("mode", mode); // "MONO", "GRAY16" など
+        return cmd;
+    }
+    
+    public ObjectNode createQRCodeCommand(String data) {
+        ObjectNode cmd = objectMapper.createObjectNode();
+        cmd.put("api", "addSymbol");
+        cmd.put("type", "pdf417_standard"); // または "qrcode_model_2"
+        cmd.put("level", "level_m");
+        cmd.put("width", 3);
+        cmd.put("height", 0);
+        cmd.put("size", 0);
+        cmd.put("data", data);
+        return cmd;
+    }
 
     /**
      * コマンドリストをJSON文字列に変換
