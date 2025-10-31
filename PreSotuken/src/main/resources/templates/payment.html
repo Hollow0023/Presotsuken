@@ -5,6 +5,12 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>会計詳細</title>
 	<style>
+		.testWrap{
+			display: flex;
+			width:100%;
+			justify-content: space-between;
+		}
+		
 		body {
 			font-family: sans-serif;
 			padding: 0;
@@ -107,6 +113,10 @@
 			border-radius: 8px;
 			max-height: 90vh;
 			overflow-y: auto;
+		}
+		
+		.modal-content p{
+			margin:0;
 		}
 
 		.tab-container {
@@ -230,12 +240,12 @@
 		/* モーダル内のテキストボックスとボタンを大きく */
 		.modal-content input[type="number"],
 		.modal-content input[type="text"] {
-			padding: 14px 10px;
+			padding: 1px 10px;
 			font-size: 20px;
 			border: 2px solid #ccc;
 			border-radius: 4px;
 			box-sizing: border-box;
-			min-height: 52px;
+			min-height: 40px;
 			margin: 10px 0;
 		}
 
@@ -271,26 +281,30 @@
 			border-radius: 6px;
 			cursor: pointer;
 			border: none;
+			background-color:#4CAF50;
+			color:white;
+		}
+		
+		.modal-content button:hover {
+			background-color: #45a049;
 		}
 
 		/* キャンセル・閉じるボタンの背景色をグレーに */
+		.modal-action-btn secondary{
+			background-color: #757575;
+			color: white;
+		}
+		.modal-action-btn secondary:hover{
+			background-color: #616161;
+		}
+		
 		.modal-content button.cancel-btn {
-			background-color: #757575 !important;
+			background-color: #757575;
 			color: white;
 		}
 
 		.modal-content button.cancel-btn:hover {
-			background-color: #616161 !important;
-		}
-
-		/* モーダル内のボタンに背景色を追加 */
-		.modal-content button:not([class*="btn-"]):not([class*="tab-"]) {
-			background-color: #4CAF50;
-			color: white;
-		}
-
-		.modal-content button:not([class*="btn-"]):not([class*="tab-"]):hover {
-			background-color: #45a049;
+			background-color: #616161;
 		}
 
 		/* 割り勘会計・個別会計モーダル内のセレクトボックスのサイズを拡大 */
@@ -305,6 +319,7 @@
 			width: 100%;
 			margin: 8px 0;
 		}
+		
 	</style>
 </head>
 <body>
@@ -387,7 +402,7 @@
 		<button class="full-btn green" onclick="finalizePayment()">会計完了</button>
 		<button class="full-btn" style="background-color: #FF9800; color: white;" onclick="openSplitPaymentModal()">割り勘会計</button>
 		<button class="full-btn" style="background-color: #2196F3; color: white;" onclick="openIndividualPaymentModal()">個別会計</button>
-		<button class="full-btn red" onclick="goBackToSeats()">取引中止</button>
+		<button class="full-btn red" onclick="goBackToSeats()">キャンセル</button>
 	</div>
 
 	<div id="peopleModal" class="modal">
@@ -482,14 +497,17 @@
 
 	<!-- 割り勘会計モーダル -->
 	<div id="splitPaymentModal" class="modal">
-		<div class="modal-content" style="width: 400px;">
+		<div class="modal-content" style="width: 600px;">
 			<h3>割り勘会計</h3>
 			<p>合計金額: <span id="splitTotalAmount">0</span>円</p>
+			
+			
 			<label>分割人数:</label>
 			<div class="inline-input-group">
 				<input type="number" id="splitCount" min="2" value="2" oninput="updateSplitPreview()"><span class="unit">人</span>
 			</div>
-			<p>1人あたり: <span id="amountPerPerson">0</span>円</p>
+			<p >1人あたり: <span id="amountPerPerson">0</span>円</p>
+			
 			<p style="font-size: 0.9em; color: #666;">※最後の会計に余りを含めます</p>
 			<hr>
 			<label>現在の会計:</label>
@@ -498,16 +516,26 @@
 			</select><br>
 			<p>今回の支払額: <span id="currentSplitAmount">0</span>円</p>
 			<hr>
-			<label>支払い種別:</label>
-			<select id="splitPaymentType">
-				<option value="">選択してください</option>
-				<option th:each="type : ${paymentTypeList}" th:value="${type.typeId}" th:text="${type.typeName}"></option>
-			</select><br>
-			<label>担当者:</label>
-			<select id="splitCashier">
-				<option value="">選択してください</option>
-				<option th:each="user : ${userList}" th:value="${user.userId}" th:text="${user.userName}"></option>
-			</select><br>
+			
+			<div class="testWrap">
+				<div>
+					<label>支払い種別:</label>
+					<select id="splitPaymentType">
+						<option value="">選択してください</option>
+						<option th:each="type : ${paymentTypeList}" th:value="${type.typeId}" th:text="${type.typeName}"></option>
+					</select><br>
+				</div>
+				<div>
+					<label>担当者:</label>
+					<select id="splitCashier">
+						<option value="">選択してください</option>
+						<option th:each="user : ${userList}" th:value="${user.userId}" th:text="${user.userName}"></option>
+					</select>
+				</div>
+			</div>
+			<br>
+			
+			
 			<label>預かり金額:</label>
 			<div class="inline-input-group">
 				<input type="number" id="splitDeposit" min="0" placeholder="預かり金額"><span class="unit">円</span>
@@ -550,14 +578,32 @@
 				<option value="">選択してください</option>
 				<option th:each="user : ${userList}" th:value="${user.userId}" th:text="${user.userName}"></option>
 			</select><br>
-			<label>割引額:</label>
-			<div class="inline-input-group">
-				<input type="number" id="individualDiscount" min="0" value="0" oninput="updateIndividualTotal()"><span class="unit">円</span>
+			
+			<div class="testWrap">
+			
+				<div>
+					<label>割引額:</label>
+					<div class="inline-input-group">
+						<input type="number" id="individualDiscount" min="0" value="0" oninput="updateIndividualTotal()"><span class="unit">円</span>
+					</div>
+				</div>
+				
+				<div>
+					<label>預かり金額:</label>
+					<div class="inline-input-group">
+						<input type="number" id="individualDeposit" min="0" placeholder="預かり金額"><span class="unit">円</span>
+					</div>
+				</div>
+
 			</div>
-			<label>預かり金額:</label>
-			<div class="inline-input-group">
-				<input type="number" id="individualDeposit" min="0" placeholder="預かり金額"><span class="unit">円</span>
-			</div>
+			
+
+			
+			
+
+
+			
+			
 			<div class="modal-action-buttons">
 				<button class="modal-action-btn primary" onclick="processIndividualPayment()">会計実行</button>
 				<button class="modal-action-btn secondary" onclick="closeModal('individualPaymentModal')">キャンセル</button>
