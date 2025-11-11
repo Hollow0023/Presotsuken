@@ -57,7 +57,10 @@
     <div th:replace="~{fragments/burger-menu :: burger-drawer}"></div>
     
 <h1>売上分析（複数日時間別）</h1>
-<a href="/sales-analysis">← 日付別分析に戻る</a> | <a href="/sales-analysis/time-range">時間範囲指定分析</a>
+<div class="navigation-buttons">
+    <button onclick="location.href='/sales-analysis'" class="nav-button">← 日付別分析に戻る</button>
+    <button onclick="location.href='/sales-analysis/time-range'" class="nav-button">時間範囲指定分析</button>
+</div>
 
 <form id="multiDayForm" method="get" action="/sales-analysis/multi-day">
     <fieldset>
