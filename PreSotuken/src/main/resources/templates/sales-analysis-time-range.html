@@ -2,7 +2,7 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>売上分析</title>
+    <title>売上分析（時間範囲指定）</title>
     <link rel="stylesheet" href="/css/sales-analysis.css">
     <!-- バーガーメニューのCSS -->
     <link rel="stylesheet" href="/css/components/navigation.css">
@@ -14,13 +14,24 @@
     <!-- バーガーメニュードロワー -->
     <div th:replace="~{fragments/burger-menu :: burger-drawer}"></div>
     
-<h1>売上分析</h1>
-<a href="/">← トップに戻る</a> | <a href="/sales-analysis/time-range">時間範囲指定分析</a>
+<h1>売上分析（時間範囲指定）</h1>
+<a href="/sales-analysis">← 日付別分析に戻る</a>
 
-<form id="dateForm" method="get" action="/sales-analysis">
-    <label>日付: <input type="date" name="date" th:value="${date}"></label>
-    <button type="submit">表示</button>
+<form id="timeRangeForm" method="get" action="/sales-analysis/time-range">
+    <fieldset>
+        <legend>分析期間</legend>
+        <label>開始日: <input type="date" name="startDate" th:value="${startDate}" required></label>
+        <label>開始時刻: <input type="time" name="startTime" th:value="${startTime}" required></label>
+        <br>
+        <label>終了日: <input type="date" name="endDate" th:value="${endDate}" required></label>
+        <label>終了時刻: <input type="time" name="endTime" th:value="${endTime}" required></label>
+        <br>
+        <button type="submit">表示</button>
+    </fieldset>
 </form>
+
+<p>期間: <span th:text="${startDate}"></span> <span th:text="${startTime}"></span> ～ <span th:text="${endDate}"></span> <span th:text="${endTime}"></span></p>
+
 <table id="analysisTable">
     <thead>
     <tr>
@@ -35,7 +46,7 @@
     </tr>
     </thead>
     <tbody>
-    <tr th:each="row : ${hourlyData}" th:attr="data-hour=${row.hour}">
+    <tr th:each="row : ${hourlyData}">
         <td th:text="${row.hour} + ':00 - ' + (${row.hour}+1) + ':00'"></td>
         <td th:text="${row.customers}"></td>
         <td><span th:text="${#numbers.formatDecimal(row.customerUnitPriceWithoutTax,0,0)}"></span>円</td>
@@ -59,41 +70,6 @@
     </tr>
     </tfoot>
 </table>
-<div id="detailModal" class="modal">
-    <div class="modal-content">
-        <span class="close">&times;</span>
-        <div id="modalBody"></div>
-    </div>
-</div>
-<script>
-const modal = document.getElementById('detailModal');
-const modalBody = document.getElementById('modalBody');
-const closeBtn = modal.querySelector('.close');
-closeBtn.onclick = () => modal.style.display = 'none';
-window.onclick = e => { if (e.target === modal) modal.style.display = 'none'; };
-
-document.querySelectorAll('#analysisTable tbody tr').forEach(row => {
-    row.addEventListener('click', () => {
-        const hour = row.dataset.hour;
-        const date = document.querySelector('input[name="date"]').value;
-        fetch(`/sales-analysis/details?date=${date}&hour=${hour}`)
-            .then(res => res.json())
-            .then(data => {
-                let html = `<h2>${hour}時の販売内訳</h2>`;
-                html += '<table><thead><tr><th>商品</th><th>数量</th><th>税込金額</th><th>税抜金額</th></tr></thead><tbody>';
-                data.forEach(item => {
-                    const priceIn = Math.round(item.priceWithTax).toLocaleString();
-                    const priceEx = Math.round(item.priceWithoutTax).toLocaleString();
-                    html += `<tr><td>${item.menuName}</td><td>${item.quantity}</td><td>${priceIn}円</td><td>${priceEx}円</td></tr>`;
-
-                });
-                html += '</tbody></table>';
-                modalBody.innerHTML = html;
-                modal.style.display = 'block';
-            });
-    });
-});
-</script>
 
 <!-- バーガーメニューのJavaScript -->
 <div th:replace="~{fragments/burger-menu :: burger-menu-js}"></div>
