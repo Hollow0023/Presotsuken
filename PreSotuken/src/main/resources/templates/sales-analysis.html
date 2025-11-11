@@ -15,7 +15,7 @@
     <div th:replace="~{fragments/burger-menu :: burger-drawer}"></div>
     
 <h1>売上分析</h1>
-<a href="/">← トップに戻る</a> | <a href="/sales-analysis/time-range">時間範囲指定分析</a>
+<a href="/">← トップに戻る</a> | <a href="/sales-analysis/time-range">時間範囲指定分析</a> | <a href="/sales-analysis/multi-day">複数日時間別分析</a>
 
 <form id="dateForm" method="get" action="/sales-analysis">
     <label>日付: <input type="date" name="date" th:value="${date}"></label>
