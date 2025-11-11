@@ -2,6 +2,7 @@ package com.order.controller;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import com.order.entity.Payment;
 import com.order.repository.PaymentDetailRepository;
 import com.order.repository.PaymentRepository;
+import com.order.repository.StoreRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -27,6 +29,7 @@ public class SalesAnalysisController {
 
     private final PaymentRepository paymentRepository;
     private final PaymentDetailRepository paymentDetailRepository;
+    private final StoreRepository storeRepository;
 
     @GetMapping("/sales-analysis")
     public String showDailySales(
@@ -37,8 +40,16 @@ public class SalesAnalysisController {
         if (date == null) {
             date = LocalDate.now();
         }
-        LocalDateTime startOfDay = date.atStartOfDay();
-        LocalDateTime endOfDay = startOfDay.plusDays(1);
+        
+        // 店舗の区切り時間を取得（デフォルトは3:00）
+        LocalTime transitionTime = storeRepository.findById(storeId)
+            .map(store -> store.getTransitionTime() != null ? store.getTransitionTime() : LocalTime.of(3, 0))
+            .orElse(LocalTime.of(3, 0));
+        
+        // 選択された日付の区切り時間から次の日の区切り時間までの期間を取得
+        LocalDateTime startOfDay = date.atTime(transitionTime);
+        LocalDateTime endOfDay = date.plusDays(1).atTime(transitionTime);
+        
         List<Payment> payments = paymentRepository
                 .findByStoreStoreIdAndPaymentTimeBetween(storeId, startOfDay, endOfDay);
 
@@ -88,8 +99,15 @@ public class SalesAnalysisController {
             @CookieValue(name = "storeId", required = false) Integer storeId,
             @RequestParam("date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
             @RequestParam("hour") int hour) {
-        LocalDateTime start = date.atStartOfDay().plusHours(hour);
+        // 店舗の区切り時間を取得（デフォルトは3:00）
+        LocalTime transitionTime = storeRepository.findById(storeId)
+            .map(store -> store.getTransitionTime() != null ? store.getTransitionTime() : LocalTime.of(3, 0))
+            .orElse(LocalTime.of(3, 0));
+        
+        // 選択された日付の区切り時間を基準として、指定された時間の範囲を計算
+        LocalDateTime start = date.atTime(transitionTime).plusHours(hour);
         LocalDateTime end = start.plusHours(1);
+        
         List<Object[]> result = paymentDetailRepository.sumMenuQuantityByTime(storeId, start, end);
         List<Map<String, Object>> list = new ArrayList<>();
         for (Object[] r : result) {

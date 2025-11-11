@@ -17,11 +17,13 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.order.entity.InspectionLog;
+import com.order.entity.Store;
 import com.order.repository.CashTransactionRepository;
 import com.order.repository.InspectionLogRepository;
 import com.order.repository.PaymentDetailRepository;
 import com.order.repository.PaymentRepository;
 import com.order.repository.PaymentTypeRepository;
+import com.order.repository.StoreRepository;
 import com.order.repository.VisitRepository;
 
 @ExtendWith(MockitoExtension.class)
@@ -44,6 +46,9 @@ class InspectionLogServiceTest {
     
     @Mock
     private VisitRepository visitRepository;
+    
+    @Mock
+    private StoreRepository storeRepository;
 
     @InjectMocks
     private InspectionLogService inspectionLogService;
@@ -70,6 +75,12 @@ class InspectionLogServiceTest {
     void testBuildInspectionSummary_CalculatesTaxAmountByPaymentType() {
         // Given
         Integer storeId = 1;
+        
+        // Mock Store entity
+        Store mockStore = new Store();
+        mockStore.setStoreId(storeId);
+        mockStore.setTransitionTime(java.time.LocalTime.of(3, 0));
+        when(storeRepository.findById(storeId)).thenReturn(java.util.Optional.of(mockStore));
         
         // Mock基本的なデータ
         when(inspectionLogRepository.existsByStoreIdAndInspectionTimeBetween(eq(storeId), any(), any()))
