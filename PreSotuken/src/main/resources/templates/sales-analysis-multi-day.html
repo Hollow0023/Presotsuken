@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>売上分析（複数日時間別）</title>
+    <link rel="stylesheet" href="/css/sales-analysis.css">
+    <link rel="stylesheet" href="/css/components/navigation.css">
+    <style>
+        .multi-day-table {
+            font-size: 12px;
+        }
+        .multi-day-table th,
+        .multi-day-table td {
+            padding: 4px;
+            text-align: right;
+        }
+        .multi-day-table th.date-col {
+            text-align: center;
+            position: sticky;
+            left: 0;
+            background-color: #f2f2f2;
+            z-index: 10;
+        }
+        .multi-day-table td.date-col {
+            text-align: center;
+            font-weight: bold;
+            position: sticky;
+            left: 0;
+            background-color: #fff;
+            z-index: 10;
+        }
+        .multi-day-table tfoot td.date-col {
+            background-color: #f9f9f9;
+        }
+        .multi-day-table {
+            overflow-x: auto;
+            display: block;
+        }
+        .multi-day-table thead,
+        .multi-day-table tbody,
+        .multi-day-table tfoot {
+            display: table;
+            width: 100%;
+            table-layout: fixed;
+        }
+        .hour-column {
+            min-width: 60px;
+        }
+        .total-column {
+            min-width: 80px;
+            background-color: #f0f8ff;
+        }
+    </style>
+</head>
+<body>
+    <div th:replace="~{fragments/burger-menu :: burger-button}"></div>
+    <div th:replace="~{fragments/burger-menu :: burger-drawer}"></div>
+    
+<h1>売上分析（複数日時間別）</h1>
+<div class="navigation-buttons">
+    <button onclick="location.href='/sales-analysis'" class="nav-button">← 日付別分析に戻る</button>
+    <button onclick="location.href='/sales-analysis/time-range'" class="nav-button">時間範囲指定分析</button>
+</div>
+
+<form id="multiDayForm" method="get" action="/sales-analysis/multi-day">
+    <fieldset>
+        <legend>分析期間</legend>
+        <label>開始日: <input type="date" name="startDate" th:value="${startDate}" required></label>
+        <label>終了日: <input type="date" name="endDate" th:value="${endDate}" required></label>
+        <button type="submit">表示</button>
+    </fieldset>
+</form>
+
+<p>期間: <span th:text="${startDate}"></span> ～ <span th:text="${endDate}"></span></p>
+
+<h2>売上（税込）</h2>
+<div style="overflow-x: auto;">
+    <table class="multi-day-table">
+        <thead>
+        <tr>
+            <th class="date-col">日付</th>
+            <th class="hour-column" th:each="hour : ${#numbers.sequence(0, 23)}" th:text="${hour} + '時'"></th>
+            <th class="total-column">日次合計</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="dayData : ${dailyHourlyData}">
+            <td class="date-col" th:text="${#temporals.format(dayData.date, 'MM/dd')}"></td>
+            <td class="hour-column" th:each="hour : ${#numbers.sequence(0, 23)}" 
+                th:text="${#numbers.formatDecimal(dayData.hourlySalesWithTax[hour], 0, 0)}"></td>
+            <td class="total-column" th:text="${#numbers.formatDecimal(dayData.dailyTotalWithTax, 0, 0)}"></td>
+        </tr>
+        </tbody>
+        <tfoot>
+        <tr class="total-row">
+            <td class="date-col"><strong>時間別合計</strong></td>
+            <td class="hour-column" th:each="hour : ${#numbers.sequence(0, 23)}" 
+                th:text="${#numbers.formatDecimal(hourlyTotalWithTax[hour], 0, 0)}"></td>
+            <td class="total-column"><strong th:text="${#numbers.formatDecimal(grandTotalWithTax, 0, 0)}"></strong></td>
+        </tr>
+        </tfoot>
+    </table>
+</div>
+
+<h2>売上（税抜）</h2>
+<div style="overflow-x: auto;">
+    <table class="multi-day-table">
+        <thead>
+        <tr>
+            <th class="date-col">日付</th>
+            <th class="hour-column" th:each="hour : ${#numbers.sequence(0, 23)}" th:text="${hour} + '時'"></th>
+            <th class="total-column">日次合計</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="dayData : ${dailyHourlyData}">
+            <td class="date-col" th:text="${#temporals.format(dayData.date, 'MM/dd')}"></td>
+            <td class="hour-column" th:each="hour : ${#numbers.sequence(0, 23)}" 
+                th:text="${#numbers.formatDecimal(dayData.hourlySalesWithoutTax[hour], 0, 0)}"></td>
+            <td class="total-column" th:text="${#numbers.formatDecimal(dayData.dailyTotalWithoutTax, 0, 0)}"></td>
+        </tr>
+        </tbody>
+        <tfoot>
+        <tr class="total-row">
+            <td class="date-col"><strong>時間別合計</strong></td>
+            <td class="hour-column" th:each="hour : ${#numbers.sequence(0, 23)}" 
+                th:text="${#numbers.formatDecimal(hourlyTotalWithoutTax[hour], 0, 0)}"></td>
+            <td class="total-column"><strong th:text="${#numbers.formatDecimal(grandTotalWithoutTax, 0, 0)}"></strong></td>
+        </tr>
+        </tfoot>
+    </table>
+</div>
+
+<h2>客数</h2>
+<div style="overflow-x: auto;">
+    <table class="multi-day-table">
+        <thead>
+        <tr>
+            <th class="date-col">日付</th>
+            <th class="hour-column" th:each="hour : ${#numbers.sequence(0, 23)}" th:text="${hour} + '時'"></th>
+            <th class="total-column">日次合計</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="dayData : ${dailyHourlyData}">
+            <td class="date-col" th:text="${#temporals.format(dayData.date, 'MM/dd')}"></td>
+            <td class="hour-column" th:each="hour : ${#numbers.sequence(0, 23)}" 
+                th:text="${dayData.hourlyCustomers[hour]}"></td>
+            <td class="total-column" th:text="${dayData.dailyTotalCustomers}"></td>
+        </tr>
+        </tbody>
+        <tfoot>
+        <tr class="total-row">
+            <td class="date-col"><strong>時間別合計</strong></td>
+            <td class="hour-column" th:each="hour : ${#numbers.sequence(0, 23)}" 
+                th:text="${hourlyTotalCustomers[hour]}"></td>
+            <td class="total-column"><strong th:text="${grandTotalCustomers}"></strong></td>
+        </tr>
+        </tfoot>
+    </table>
+</div>
+
+<div th:replace="~{fragments/burger-menu :: burger-menu-js}"></div>
+</body>
+</html>
