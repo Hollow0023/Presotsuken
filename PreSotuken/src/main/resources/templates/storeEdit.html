@@ -57,6 +57,13 @@
                 <textarea id="receiptFooter" th:field="*{receiptFooter}"></textarea>
             </div>
             <div>
+                <label for="transitionTime">1日の区切り時間:</label>
+                <input type="time" id="transitionTime" th:field="*{transitionTime}" />
+                <small style="display: block; margin-top: 5px; color: #666;">
+                    この時間を境に1日の売上・点検の集計期間を区切ります（例: 03:00）
+                </small>
+            </div>
+            <div>
                 <button type="submit">更新</button>
             </div>
         </form>

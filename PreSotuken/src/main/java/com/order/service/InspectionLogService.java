@@ -50,8 +50,13 @@ public class InspectionLogService {
 
     @Transactional
     public void registerInspection(Integer storeId, InspectionLogRequest request, boolean performWithdrawal) {
+        // 店舗の区切り時間を取得（デフォルトは3:00）
+        LocalTime transitionTime = storeRepository.findById(storeId)
+            .map(store -> store.getTransitionTime() != null ? store.getTransitionTime() : LocalTime.of(3, 0))
+            .orElse(LocalTime.of(3, 0));
+        
         LocalDateTime now = LocalDateTime.now();
-        LocalDateTime start = now.with(LocalTime.of(3, 0));
+        LocalDateTime start = now.with(transitionTime);
         if (now.isBefore(start)) start = start.minusDays(1);
         LocalDateTime end = start.plusDays(1);
 
@@ -126,9 +131,14 @@ public class InspectionLogService {
     }
 
     public Map<String, Object> buildInspectionSummary(Integer storeId) {
+        // 店舗の区切り時間を取得（デフォルトは3:00）
+        LocalTime transitionTime = storeRepository.findById(storeId)
+            .map(store -> store.getTransitionTime() != null ? store.getTransitionTime() : LocalTime.of(3, 0))
+            .orElse(LocalTime.of(3, 0));
+        
         LocalDateTime now = LocalDateTime.now();
-        LocalDate today = now.toLocalDate();
-        LocalDateTime start = LocalDateTime.of(today, LocalTime.of(3, 0));
+        LocalDateTime start = now.with(transitionTime);
+        if (now.isBefore(start)) start = start.minusDays(1);
         LocalDateTime end = start.plusDays(1);
 
         Map<String, Object> result = new HashMap<>();
