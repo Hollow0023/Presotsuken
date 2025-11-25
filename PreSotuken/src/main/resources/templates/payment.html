@@ -356,13 +356,13 @@
 			
 			// 割り勘会計の支払い種別変更時に預かり額を自動入力（現金以外の場合）
 			document.getElementById("splitPaymentType").addEventListener('change', function() {
-				const currentSplitAmount = parseInt(document.getElementById("currentSplitAmount").innerText) || 0;
+				const currentSplitAmount = parseFloat(document.getElementById("currentSplitAmount").innerText) || 0;
 				handlePaymentTypeChange(this, 'splitDeposit', currentSplitAmount);
 			});
 			
 			// 個別会計の支払い種別変更時に預かり額を自動入力（現金以外の場合）
 			document.getElementById("individualPaymentType").addEventListener('change', function() {
-				const individualTotal = parseInt(document.getElementById("individualTotalAmount").innerText) || 0;
+				const individualTotal = parseFloat(document.getElementById("individualTotalAmount").innerText) || 0;
 				handlePaymentTypeChange(this, 'individualDeposit', individualTotal);
 			});
 		};
@@ -384,7 +384,7 @@
 				if (typeof customTotal === 'number') {
 					totalAmount = customTotal;
 				} else {
-					totalAmount = parseInt(document.getElementById("total").innerText.replace('円', '')) || 0;
+					totalAmount = parseFloat(document.getElementById("total").innerText.replace('円', '')) || 0;
 				}
 				
 				// 預かり額を合計額に設定
