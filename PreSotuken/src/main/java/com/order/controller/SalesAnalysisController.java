@@ -74,9 +74,11 @@ public class SalesAnalysisController {
         List<Map<String, Object>> hourlyData = new ArrayList<>();
         double cumulativeWithTax = 0;
         double cumulativeWithoutTax = 0;
+        int totalCustomers = 0;
         for (int i = 0; i < 24; i++) {
             cumulativeWithTax += hourlySalesWithTax[i];
             cumulativeWithoutTax += hourlySalesWithoutTax[i];
+            totalCustomers += hourlyCustomers[i];
             Map<String, Object> m = new HashMap<>();
             m.put("hour", i);
             m.put("customers", hourlyCustomers[i]);
@@ -89,8 +91,20 @@ public class SalesAnalysisController {
             hourlyData.add(m);
         }
 
+        // 合計行のデータを追加
+        Map<String, Object> totalRow = new HashMap<>();
+        totalRow.put("hour", -1); // 合計行を識別するための特殊値
+        totalRow.put("customers", totalCustomers);
+        totalRow.put("customerUnitPriceWithTax", totalCustomers > 0 ? cumulativeWithTax / totalCustomers : 0);
+        totalRow.put("customerUnitPriceWithoutTax", totalCustomers > 0 ? cumulativeWithoutTax / totalCustomers : 0);
+        totalRow.put("hourSalesWithTax", cumulativeWithTax);
+        totalRow.put("hourSalesWithoutTax", cumulativeWithoutTax);
+        totalRow.put("cumulativeSalesWithTax", cumulativeWithTax);
+        totalRow.put("cumulativeSalesWithoutTax", cumulativeWithoutTax);
+
         model.addAttribute("date", date);
         model.addAttribute("hourlyData", hourlyData);
+        model.addAttribute("totalRow", totalRow);
         return "sales-analysis";
     }
 
@@ -120,6 +134,205 @@ public class SalesAnalysisController {
             list.add(m);
         }
         return ResponseEntity.ok(list);
+    }
+
+    @GetMapping("/sales-analysis/time-range")
+    public String showTimeRangeSales(
+            @CookieValue(name = "storeId", required = false) Integer storeId,
+            @RequestParam(name = "startDate", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(name = "startTime", required = false) String startTime,
+            @RequestParam(name = "endDate", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(name = "endTime", required = false) String endTime,
+            Model model) {
+        
+        // デフォルト値の設定: 本日の0:00から23:59まで
+        if (startDate == null) {
+            startDate = LocalDate.now();
+        }
+        if (startTime == null || startTime.isEmpty()) {
+            startTime = "00:00";
+        }
+        if (endDate == null) {
+            endDate = LocalDate.now();
+        }
+        if (endTime == null || endTime.isEmpty()) {
+            endTime = "23:59";
+        }
+
+        // LocalDateTimeに変換
+        LocalDateTime startDateTime = LocalDateTime.of(startDate, java.time.LocalTime.parse(startTime));
+        LocalDateTime endDateTime = LocalDateTime.of(endDate, java.time.LocalTime.parse(endTime));
+
+        // 終了時刻を次の分の開始時刻に調整（23:59 -> 24:00相当）
+        endDateTime = endDateTime.plusMinutes(1);
+
+        List<Payment> payments = paymentRepository
+                .findByStoreStoreIdAndPaymentTimeBetween(storeId, startDateTime, endDateTime);
+
+        double[] hourlySalesWithTax = new double[24];
+        double[] hourlySalesWithoutTax = new double[24];
+        int[] hourlyCustomers = new int[24];
+        
+        for (Payment p : payments) {
+            if (p.getPaymentTime() == null) continue;
+            int hour = p.getPaymentTime().getHour();
+            double total = p.getTotal() != null ? p.getTotal() : 0;
+            hourlySalesWithTax[hour] += total;
+            double subtotal = paymentDetailRepository.findByPaymentPaymentId(p.getPaymentId())
+                    .stream()
+                    .mapToDouble(pd -> pd.getSubtotal() != null ? pd.getSubtotal() : 0)
+                    .sum();
+            hourlySalesWithoutTax[hour] += subtotal;
+            if (p.getVisit() != null && p.getVisit().getNumberOfPeople() != null) {
+                hourlyCustomers[hour] += p.getVisit().getNumberOfPeople();
+            }
+        }
+
+        List<Map<String, Object>> hourlyData = new ArrayList<>();
+        double cumulativeWithTax = 0;
+        double cumulativeWithoutTax = 0;
+        int totalCustomers = 0;
+        for (int i = 0; i < 24; i++) {
+            cumulativeWithTax += hourlySalesWithTax[i];
+            cumulativeWithoutTax += hourlySalesWithoutTax[i];
+            totalCustomers += hourlyCustomers[i];
+            Map<String, Object> m = new HashMap<>();
+            m.put("hour", i);
+            m.put("customers", hourlyCustomers[i]);
+            m.put("customerUnitPriceWithTax", hourlyCustomers[i] > 0 ? hourlySalesWithTax[i] / hourlyCustomers[i] : 0);
+            m.put("customerUnitPriceWithoutTax", hourlyCustomers[i] > 0 ? hourlySalesWithoutTax[i] / hourlyCustomers[i] : 0);
+            m.put("hourSalesWithTax", hourlySalesWithTax[i]);
+            m.put("hourSalesWithoutTax", hourlySalesWithoutTax[i]);
+            m.put("cumulativeSalesWithTax", cumulativeWithTax);
+            m.put("cumulativeSalesWithoutTax", cumulativeWithoutTax);
+            hourlyData.add(m);
+        }
+
+        // 合計行のデータを追加
+        Map<String, Object> totalRow = new HashMap<>();
+        totalRow.put("hour", -1);
+        totalRow.put("customers", totalCustomers);
+        totalRow.put("customerUnitPriceWithTax", totalCustomers > 0 ? cumulativeWithTax / totalCustomers : 0);
+        totalRow.put("customerUnitPriceWithoutTax", totalCustomers > 0 ? cumulativeWithoutTax / totalCustomers : 0);
+        totalRow.put("hourSalesWithTax", cumulativeWithTax);
+        totalRow.put("hourSalesWithoutTax", cumulativeWithoutTax);
+        totalRow.put("cumulativeSalesWithTax", cumulativeWithTax);
+        totalRow.put("cumulativeSalesWithoutTax", cumulativeWithoutTax);
+
+        model.addAttribute("startDate", startDate);
+        model.addAttribute("startTime", startTime);
+        model.addAttribute("endDate", endDate);
+        model.addAttribute("endTime", endTime);
+        model.addAttribute("hourlyData", hourlyData);
+        model.addAttribute("totalRow", totalRow);
+        return "sales-analysis-time-range";
+    }
+
+    @GetMapping("/sales-analysis/multi-day")
+    public String showMultiDaySales(
+            @CookieValue(name = "storeId", required = false) Integer storeId,
+            @RequestParam(name = "startDate", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(name = "endDate", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            Model model) {
+        
+        // デフォルト値の設定: 過去7日間
+        if (endDate == null) {
+            endDate = LocalDate.now();
+        }
+        if (startDate == null) {
+            startDate = endDate.minusDays(6);
+        }
+
+        // 日付ごと、時間ごとの売上データを格納
+        List<Map<String, Object>> dailyHourlyData = new ArrayList<>();
+        
+        LocalDate currentDate = startDate;
+        while (!currentDate.isAfter(endDate)) {
+            LocalDateTime startOfDay = currentDate.atStartOfDay();
+            LocalDateTime endOfDay = startOfDay.plusDays(1);
+            
+            List<Payment> payments = paymentRepository
+                    .findByStoreStoreIdAndPaymentTimeBetween(storeId, startOfDay, endOfDay);
+            
+            double[] hourlySalesWithTax = new double[24];
+            double[] hourlySalesWithoutTax = new double[24];
+            int[] hourlyCustomers = new int[24];
+            
+            for (Payment p : payments) {
+                if (p.getPaymentTime() == null) continue;
+                int hour = p.getPaymentTime().getHour();
+                double total = p.getTotal() != null ? p.getTotal() : 0;
+                hourlySalesWithTax[hour] += total;
+                double subtotal = paymentDetailRepository.findByPaymentPaymentId(p.getPaymentId())
+                        .stream()
+                        .mapToDouble(pd -> pd.getSubtotal() != null ? pd.getSubtotal() : 0)
+                        .sum();
+                hourlySalesWithoutTax[hour] += subtotal;
+                if (p.getVisit() != null && p.getVisit().getNumberOfPeople() != null) {
+                    hourlyCustomers[hour] += p.getVisit().getNumberOfPeople();
+                }
+            }
+            
+            Map<String, Object> dayData = new HashMap<>();
+            dayData.put("date", currentDate);
+            dayData.put("hourlySalesWithTax", hourlySalesWithTax);
+            dayData.put("hourlySalesWithoutTax", hourlySalesWithoutTax);
+            dayData.put("hourlyCustomers", hourlyCustomers);
+            
+            // 日次合計を計算
+            double dailyTotalWithTax = 0;
+            double dailyTotalWithoutTax = 0;
+            int dailyTotalCustomers = 0;
+            for (int i = 0; i < 24; i++) {
+                dailyTotalWithTax += hourlySalesWithTax[i];
+                dailyTotalWithoutTax += hourlySalesWithoutTax[i];
+                dailyTotalCustomers += hourlyCustomers[i];
+            }
+            dayData.put("dailyTotalWithTax", dailyTotalWithTax);
+            dayData.put("dailyTotalWithoutTax", dailyTotalWithoutTax);
+            dayData.put("dailyTotalCustomers", dailyTotalCustomers);
+            
+            dailyHourlyData.add(dayData);
+            currentDate = currentDate.plusDays(1);
+        }
+        
+        // 時間ごとの合計（全日合計）を計算
+        double[] hourlyTotalWithTax = new double[24];
+        double[] hourlyTotalWithoutTax = new double[24];
+        int[] hourlyTotalCustomers = new int[24];
+        double grandTotalWithTax = 0;
+        double grandTotalWithoutTax = 0;
+        int grandTotalCustomers = 0;
+        
+        for (Map<String, Object> dayData : dailyHourlyData) {
+            double[] salesWithTax = (double[]) dayData.get("hourlySalesWithTax");
+            double[] salesWithoutTax = (double[]) dayData.get("hourlySalesWithoutTax");
+            int[] customers = (int[]) dayData.get("hourlyCustomers");
+            for (int i = 0; i < 24; i++) {
+                hourlyTotalWithTax[i] += salesWithTax[i];
+                hourlyTotalWithoutTax[i] += salesWithoutTax[i];
+                hourlyTotalCustomers[i] += customers[i];
+            }
+            grandTotalWithTax += (Double) dayData.get("dailyTotalWithTax");
+            grandTotalWithoutTax += (Double) dayData.get("dailyTotalWithoutTax");
+            grandTotalCustomers += (Integer) dayData.get("dailyTotalCustomers");
+        }
+        
+        model.addAttribute("startDate", startDate);
+        model.addAttribute("endDate", endDate);
+        model.addAttribute("dailyHourlyData", dailyHourlyData);
+        model.addAttribute("hourlyTotalWithTax", hourlyTotalWithTax);
+        model.addAttribute("hourlyTotalWithoutTax", hourlyTotalWithoutTax);
+        model.addAttribute("hourlyTotalCustomers", hourlyTotalCustomers);
+        model.addAttribute("grandTotalWithTax", grandTotalWithTax);
+        model.addAttribute("grandTotalWithoutTax", grandTotalWithoutTax);
+        model.addAttribute("grandTotalCustomers", grandTotalCustomers);
+        
+        return "sales-analysis-multi-day";
     }
 }
 
