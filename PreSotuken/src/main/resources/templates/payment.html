@@ -348,7 +348,58 @@
 			}
 			calculateTotals(); // 初回ロード時に合計値を計算
 			updatePaymentButtonStates(); // 会計ボタンの状態を更新
+			
+			// 支払い種別変更時に預かり額を自動入力（現金以外の場合）
+			document.getElementById("paymentTypeSelect").addEventListener('change', function() {
+				handlePaymentTypeChange(this, 'receivedInput');
+			});
+			
+			// 割り勘会計の支払い種別変更時に預かり額を自動入力（現金以外の場合）
+			document.getElementById("splitPaymentType").addEventListener('change', function() {
+				const currentSplitAmount = parseInt(document.getElementById("currentSplitAmount").innerText) || 0;
+				handlePaymentTypeChange(this, 'splitDeposit', currentSplitAmount);
+			});
+			
+			// 個別会計の支払い種別変更時に預かり額を自動入力（現金以外の場合）
+			document.getElementById("individualPaymentType").addEventListener('change', function() {
+				const individualTotal = parseInt(document.getElementById("individualTotalAmount").innerText) || 0;
+				handlePaymentTypeChange(this, 'individualDeposit', individualTotal);
+			});
 		};
+
+		/**
+		 * 支払い種別が変更されたときに、現金以外なら預かり額を合計額に自動入力
+		 * @param {HTMLSelectElement} selectElement 支払い種別のセレクトボックス
+		 * @param {string} depositInputId 預かり額入力フィールドのID
+		 * @param {number} customTotal カスタムの合計額（割り勘・個別会計用）。省略時は通常の合計を使用
+		 */
+		function handlePaymentTypeChange(selectElement, depositInputId, customTotal) {
+			const selectedOption = selectElement.options[selectElement.selectedIndex];
+			const typeName = selectedOption ? selectedOption.text : '';
+			
+			// 「現金」を含まない場合は預かり額を合計額に自動入力
+			if (typeName && !typeName.includes('現金')) {
+				// 合計額を取得（カスタム値があればそれを使用、なければ通常の合計を使用）
+				let totalAmount;
+				if (typeof customTotal === 'number') {
+					totalAmount = customTotal;
+				} else {
+					totalAmount = parseInt(document.getElementById("total").innerText.replace('円', '')) || 0;
+				}
+				
+				// 預かり額を合計額に設定
+				const depositInput = document.getElementById(depositInputId);
+				if (depositInput) {
+					depositInput.value = totalAmount;
+					
+					// 通常会計の場合はreceived変数も更新してお釣り計算に反映
+					if (depositInputId === 'receivedInput') {
+						received = totalAmount;
+						calculateTotals();
+					}
+				}
+			}
+		}
 
 		// 小計・合計を計算する関数を修正
 		function calculateTotals() {
