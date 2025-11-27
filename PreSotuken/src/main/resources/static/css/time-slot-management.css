@@ -1,0 +1,286 @@
+/* Time Slot Management CSS */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 20px;
+    background-color: #f4f7f6;
+    color: #333;
+}
+
+.container {
+    max-width: 900px;
+    margin: 20px auto;
+    padding: 25px;
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    background-color: #fff;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+h1, h2 {
+    color: #2c3e50;
+    margin-bottom: 15px;
+}
+
+h1 {
+    text-align: center;
+    margin-bottom: 30px;
+    font-size: 2.2em;
+}
+
+h2 {
+    font-size: 1.6em;
+    border-bottom: 2px solid #e0e0e0;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+    margin-top: 30px;
+}
+
+.description {
+    color: #666;
+    margin-bottom: 20px;
+    font-size: 0.95em;
+}
+
+/* リンク */
+a {
+    color: #007bff;
+    text-decoration: none;
+    margin-bottom: 20px;
+    display: inline-block;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* 時間帯リスト */
+#timeSlotList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+#timeSlotList li {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    margin-bottom: 12px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+#timeSlotList li:hover {
+    background-color: #f0f3f5;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* フォーム要素 */
+.slot-name, .slot-time {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.slot-name {
+    flex: 1;
+    min-width: 200px;
+}
+
+.slot-time {
+    min-width: 150px;
+}
+
+.slot-actions {
+    display: flex;
+    gap: 8px;
+}
+
+/* ラベル */
+label {
+    font-weight: 500;
+    color: #555;
+    white-space: nowrap;
+    font-size: 0.9em;
+}
+
+/* 入力フィールド */
+input[type="text"] {
+    flex-grow: 1;
+    min-width: 120px;
+    padding: 8px 12px;
+    border: 1px solid #bdc3c7;
+    border-radius: 5px;
+    font-size: 1em;
+}
+
+input[type="time"] {
+    padding: 8px 12px;
+    border: 1px solid #bdc3c7;
+    border-radius: 5px;
+    font-size: 1em;
+    min-width: 100px;
+}
+
+input[type="text"]:focus,
+input[type="time"]:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0,123,255,0.1);
+}
+
+/* ボタン */
+button {
+    padding: 8px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.95em;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    white-space: nowrap;
+}
+
+button:hover {
+    transform: translateY(-1px);
+}
+
+button:active {
+    transform: translateY(0);
+}
+
+/* 更新ボタン */
+.btn-update {
+    background-color: #28a745;
+    color: white;
+}
+
+.btn-update:hover {
+    background-color: #218838;
+}
+
+/* 削除ボタン */
+.btn-delete {
+    background-color: #dc3545;
+    color: white;
+}
+
+.btn-delete:hover {
+    background-color: #c82333;
+}
+
+/* 追加ボタン */
+.btn-add {
+    background-color: #007bff;
+    color: white;
+    padding: 10px 25px;
+    font-size: 1em;
+    margin-top: 15px;
+}
+
+.btn-add:hover {
+    background-color: #0056b3;
+}
+
+/* 新規登録フォームエリア */
+.new-slot-form {
+    background-color: #ecf0f1;
+    padding: 20px;
+    border-radius: 8px;
+    margin-top: 15px;
+}
+
+.form-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.form-row label {
+    min-width: 80px;
+}
+
+.form-row input[type="text"] {
+    flex: 1;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+    body {
+        padding: 10px;
+    }
+
+    .container {
+        padding: 15px;
+    }
+
+    h1 {
+        font-size: 1.8em;
+    }
+
+    h2 {
+        font-size: 1.3em;
+    }
+
+    #timeSlotList li {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+
+    .slot-name, .slot-time {
+        width: 100%;
+    }
+
+    .slot-name {
+        min-width: 100%;
+    }
+
+    .slot-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+
+    .slot-actions button {
+        flex: 1;
+    }
+
+    input[type="text"],
+    input[type="time"] {
+        width: 100%;
+    }
+
+    .new-slot-form {
+        padding: 15px;
+    }
+
+    .form-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .form-row label {
+        margin-bottom: 5px;
+    }
+
+    .btn-add {
+        width: 100%;
+    }
+}
+
+/* ハイライト効果 */
+@keyframes highlight {
+    0% {
+        background-color: #d4edda;
+    }
+    100% {
+        background-color: #f9f9f9;
+    }
+}
+
+.highlight-success {
+    animation: highlight 1.5s ease;
+}

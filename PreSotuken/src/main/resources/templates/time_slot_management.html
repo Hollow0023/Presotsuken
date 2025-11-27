@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>時間帯管理</title>
+    <!-- バーガーメニューのCSS -->
+    <link rel="stylesheet" href="/css/components/navigation.css">
+    <link rel="stylesheet" href="/css/time-slot-management.css">
+</head>
+<body>
+    <!-- バーガーメニューボタン -->
+    <div th:replace="~{fragments/burger-menu :: burger-button}"></div>
+    
+    <!-- バーガーメニュードロワー -->
+    <div th:replace="~{fragments/burger-menu :: burger-drawer}"></div>
+
+<div class="container">
+    <h1>時間帯管理</h1>
+    <a href="/">← トップに戻る</a>
+    <input type="hidden" id="currentStoreId" th:value="${storeId}">
+
+    <h2>時間帯一覧</h2>
+    <p class="description">メニューの提供時間帯を設定します。ランチ・ディナーなどの時間帯を登録できます。</p>
+    <ul id="timeSlotList">
+        <li th:each="ts : ${timeSlots}" th:data-slot-id="${ts.timeSlotId}">
+            <div class="slot-name">
+                <label>名前:</label>
+                <input type="text" th:value="${ts.name}" class="slot-name-input" placeholder="時間帯名">
+            </div>
+            <div class="slot-time">
+                <label>開始:</label>
+                <input type="time" th:value="${ts.startTime}" class="start-time-input">
+            </div>
+            <div class="slot-time">
+                <label>終了:</label>
+                <input type="time" th:value="${ts.endTime}" class="end-time-input">
+            </div>
+            <div class="slot-actions">
+                <button type="button" class="btn-update" th:attr="onclick='updateTimeSlot(this.closest(\'li\'))'">更新</button>
+                <button type="button" class="btn-delete" th:attr="onclick='deleteTimeSlot(' + ${ts.timeSlotId} + ')'">削除</button>
+            </div>
+        </li>
+    </ul>
+
+    <h2>新規時間帯</h2>
+    <div class="new-slot-form">
+        <div class="form-row">
+            <label>名前:</label>
+            <input type="text" id="newSlotName" placeholder="例: ランチ">
+        </div>
+        <div class="form-row">
+            <label>開始時間:</label>
+            <input type="time" id="newStartTime" value="11:00">
+        </div>
+        <div class="form-row">
+            <label>終了時間:</label>
+            <input type="time" id="newEndTime" value="14:00">
+        </div>
+        <button type="button" class="btn-add" onclick="createTimeSlot()">追加</button>
+    </div>
+</div>
+
+<script src="/js/time-slot-management.js"></script>
+
+<!-- バーガーメニューのJavaScript -->
+<div th:replace="~{fragments/burger-menu :: burger-menu-js}"></div>
+</body>
+</html>
