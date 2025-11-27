@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>税率設定</title>
+    <!-- バーガーメニューのCSS -->
+    <link rel="stylesheet" href="/css/components/navigation.css">
+    <link rel="stylesheet" href="/css/tax-rate-setting.css">
+</head>
+<body>
+    <!-- バーガーメニューボタン -->
+    <div th:replace="~{fragments/burger-menu :: burger-button}"></div>
+    
+    <!-- バーガーメニュードロワー -->
+    <div th:replace="~{fragments/burger-menu :: burger-drawer}"></div>
+
+<div class="container">
+    <h1>税率設定</h1>
+    <a href="/">← トップに戻る</a>
+    <input type="hidden" id="currentStoreId" th:value="${storeId}">
+
+    <h2>税率一覧</h2>
+    <ul id="taxRateList">
+        <li th:each="tr : ${taxRates}" th:data-rate-id="${tr.taxRateId}">
+            <input type="number" step="0.01" min="0" max="100" th:value="${tr.rate * 100}" class="rate-input">
+            <span class="percent-label">%</span>
+            <button type="button" th:attr="onclick='updateTaxRate(this.parentElement)'">更新</button>
+            <button type="button" th:attr="onclick='deleteTaxRate(' + ${tr.taxRateId} + ')'">削除</button>
+        </li>
+    </ul>
+
+    <h2>新規税率追加</h2>
+    <div class="new-tax-form">
+        <input type="number" step="0.01" min="0" max="100" id="newTaxRate" placeholder="税率（例: 10）">
+        <span class="percent-label">%</span>
+        <button type="button" onclick="createTaxRate()">追加</button>
+    </div>
+</div>
+
+<script src="/js/tax-rate-setting.js"></script>
+
+<!-- バーガーメニューのJavaScript -->
+<div th:replace="~{fragments/burger-menu :: burger-menu-js}"></div>
+</body>
+</html>
