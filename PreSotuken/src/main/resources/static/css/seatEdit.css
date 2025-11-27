@@ -166,9 +166,9 @@ tbody tr:hover {
 }
 
 .btn-sm {
-    padding: 8px 14px;
-    font-size: 14px;
-    min-height: 40px;
+    padding: 12px 20px;
+    font-size: 16px;
+    min-height: 48px;
 }
 
 /* 操作ボタン */
