@@ -80,17 +80,22 @@ public class LoginController {
 
 		String clientIp = getClientIp(request);
 		Optional<Terminal> optTerminal = terminalRepository.findByIpAddressAndStore_StoreId(clientIp, storeId);
+		
+		// クッキー保存（店舗情報は常に保存）
+		addCookie(response, "storeId", String.valueOf(storeId));
+		addCookie(response, "storeName", storeName);
+		
+		// Terminal未登録の場合はTerminal登録画面へ遷移
 		if (optTerminal.isEmpty()) {
-			return "redirect:/login?error=terminalNotFound";
+			addCookie(response, "adminFlag", "true");
+			return "redirect:/admin/terminals";
 		}
 
 		Terminal terminal = optTerminal.get();
 
-		// クッキー保存
-		addCookie(response, "storeId", String.valueOf(storeId));
+		// Terminal情報のクッキー保存
 		addCookie(response, "terminalId", String.valueOf(terminal.getTerminalId()));
 		addCookie(response, "adminFlag", String.valueOf(terminal.isAdmin()));
-		addCookie(response, "storeName", storeName);
 		if (!terminal.isAdmin()) {
 			addCookie(response, "seatId", String.valueOf(terminal.getSeat().getSeatId()));
 		}

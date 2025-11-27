@@ -45,4 +45,21 @@ public class StoreService {
         // Repositoryを使ってデータベースに店舗情報を保存（更新）してるよ
         return storeRepository.save(store);
     }
+
+    /**
+     * 新しい店舗を作成します
+     * 
+     * @param storeName 店舗名
+     * @return 作成された店舗オブジェクト
+     * @throws IllegalArgumentException 店舗名が不正な場合
+     */
+    public Store createStore(String storeName) {
+        if (storeName == null || storeName.trim().isEmpty()) {
+            throw new IllegalArgumentException("店舗名を入力してください。");
+        }
+
+        Store newStore = new Store();
+        newStore.setStoreName(storeName.trim());
+        return storeRepository.save(newStore);
+    }
 }

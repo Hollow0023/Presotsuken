@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>店舗登録完了</title>
+    <link rel="stylesheet" th:href="@{/css/store-register.css}">
+</head>
+<body>
+    <div class="complete-form">
+        <h2>店舗登録完了</h2>
+        <div class="info-section">
+            <p>店舗の登録が完了しました。</p>
+            <p>以下の情報を使ってログインしてください。</p>
+        </div>
+        <div class="store-info">
+            <div class="info-row">
+                <span class="info-label">店舗ID:</span>
+                <span class="info-value" th:text="${storeId}">1</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">店舗名:</span>
+                <span class="info-value" th:text="${storeName}">サンプル店舗</span>
+            </div>
+        </div>
+        <div class="important-notice">
+            <p><strong>※ 重要:</strong> 店舗IDと店舗名はログイン時に必要です。必ず控えておいてください。</p>
+        </div>
+        <a href="/login" class="complete-btn">完了</a>
+    </div>
+</body>
+</html>

@@ -44,6 +44,25 @@ function updateSeatRequiredState(isAdminCheckbox, seatSelect) {
     }
 }
 
+/**
+ * クライアントのIPアドレスを取得してフィールドに自動入力する関数
+ * @param {HTMLInputElement} inputElement - IPアドレスを入力するinput要素
+ */
+async function autoFillClientIp(inputElement) {
+    try {
+        const response = await fetch('/admin/terminals/client-ip');
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        inputElement.value = data.ip;
+        showToast('IPアドレスを自動入力しました。', 2000, 'success');
+    } catch (error) {
+        console.error('IPアドレスの取得に失敗しました:', error);
+        showToast('IPアドレスの取得に失敗しました。', 3000, 'error');
+    }
+}
+
 
 // データフェッチとDOM更新
 // -----------------------------------------------------------------------------
@@ -195,6 +214,13 @@ document.addEventListener('DOMContentLoaded', () => {
         updateSeatRequiredState(isAdminCheckbox, seatSelect);
     });
 
+    // ★★★ 追加: IP自動入力ボタンのイベントリスナーを設定 ★★★
+    const autoFillIpBtn = document.getElementById('autoFillIpBtn');
+    if (autoFillIpBtn) {
+        autoFillIpBtn.addEventListener('click', () => {
+            autoFillClientIp(ipAddressBaseInput);
+        });
+    }
 
     // 端末追加フォームの送信イベントリスナーを設定
     document.getElementById('addTerminalForm').addEventListener('submit', async (e) => {
@@ -274,6 +300,13 @@ document.addEventListener('DOMContentLoaded', () => {
         updateSeatRequiredState(editIsAdminCheckbox, editSeatSelect);
     });
 
+    // ★★★ 追加: 編集モーダル用のIP自動入力ボタンのイベントリスナーを設定 ★★★
+    const editAutoFillIpBtn = document.getElementById('editAutoFillIpBtn');
+    if (editAutoFillIpBtn) {
+        editAutoFillIpBtn.addEventListener('click', () => {
+            autoFillClientIp(editIpAddressBaseInput);
+        });
+    }
 
     // 端末編集フォームの送信イベントリスナー設定
     document.getElementById('editTerminalForm').addEventListener('submit', async (e) => {

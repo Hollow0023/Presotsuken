@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>店舗登録</title>
+    <link rel="stylesheet" th:href="@{/css/store-register.css}">
+</head>
+<body>
+    <div class="register-form">
+        <h2>店舗新規登録</h2>
+        <form action="/store/register" method="post">
+            <div class="form-group">
+                <label for="storeName">店舗名:</label>
+                <input type="text" id="storeName" name="storeName" required placeholder="店舗名を入力してください">
+            </div>
+            <button type="submit">登録</button>
+            
+            <div th:if="${error}" class="error" th:text="${error}">
+                エラーメッセージ
+            </div>
+        </form>
+        <div class="login-link">
+            <a href="/login">ログインページへ戻る</a>
+        </div>
+    </div>
+</body>
+</html>

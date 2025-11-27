@@ -24,6 +24,7 @@ import com.order.entity.Seat;
 import com.order.entity.Terminal;
 import com.order.service.TerminalService;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 
 /**
@@ -170,5 +171,27 @@ public class AdminTerminalController {
         }
         List<Terminal> terminals = terminalService.getTerminalsByStoreId(storeId);
         return ResponseEntity.ok(terminals);
+    }
+
+    /**
+     * クライアントのIPアドレスを取得します
+     * 
+     * @param request HTTPリクエスト
+     * @return IPアドレス
+     */
+    @GetMapping("/client-ip")
+    @ResponseBody
+    public ResponseEntity<Map<String, String>> getClientIp(HttpServletRequest request) {
+        String xfHeader = request.getHeader("X-Forwarded-For");
+        String ip = (xfHeader == null) ? request.getRemoteAddr() : xfHeader.split(",")[0];
+
+        // IPv6のループバックアドレスをIPv4形式に変換
+        if ("0:0:0:0:0:0:0:1".equals(ip) || "::1".equals(ip)) {
+            ip = "127.0.0.1";
+        }
+
+        Map<String, String> response = new HashMap<>();
+        response.put("ip", ip);
+        return ResponseEntity.ok(response);
     }
 }

@@ -91,6 +91,23 @@ button:hover {
     background-color: #e67e22;
 }
 
+/* IP自動入力ボタン */
+.auto-fill-btn {
+    padding: 8px 12px;
+    background-color: #27ae60;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    margin-left: 10px;
+    transition: background-color 0.3s ease;
+}
+
+.auto-fill-btn:hover {
+    background-color: #219a52;
+}
+
 /* チェックボックス用のスタイル */
 .checkbox-container {
     margin-bottom: 15px;
