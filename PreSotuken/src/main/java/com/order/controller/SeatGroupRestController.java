@@ -14,7 +14,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.order.entity.SeatGroup;
+import com.order.entity.Store;
 import com.order.repository.SeatGroupRepository;
+import com.order.repository.StoreRepository;
 
 @RestController
 @RequestMapping("/api/seat-groups")
@@ -22,6 +24,9 @@ public class SeatGroupRestController {
 
     @Autowired
     private SeatGroupRepository seatGroupRepository;
+
+    @Autowired
+    private StoreRepository storeRepository;
 
     // グループ一覧（storeId指定）
     @GetMapping("/by-store/{storeId}")
@@ -32,6 +37,13 @@ public class SeatGroupRestController {
     // グループ追加
     @PostMapping
     public SeatGroup createGroup(@RequestBody SeatGroup group) {
+        // フロントエンドから送信されたstoreオブジェクトのIDを使用して、
+        // データベースから実際のStoreエンティティを取得する
+        if (group.getStore() != null && group.getStore().getStoreId() != null) {
+            Store store = storeRepository.findById(group.getStore().getStoreId())
+                .orElseThrow(() -> new RuntimeException("Store not found: " + group.getStore().getStoreId()));
+            group.setStore(store);
+        }
         return seatGroupRepository.save(group);
     }
 
