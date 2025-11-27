@@ -6,44 +6,35 @@ let editingGroupId = null;
 document.addEventListener('DOMContentLoaded', function () {
     const seatTableBody = document.querySelector('#seatTable tbody');
 
-    // 座席グループ行のクリックイベント（グループ選択）
+    // 座席グループテーブルのクリックイベント（統合）
     document.getElementById('seatGroupTabs').addEventListener('click', (e) => {
         const row = e.target.closest('.seat-group-row');
         if (!row) return;
         
-        // 編集・削除ボタンのクリックの場合はグループ選択しない
-        if (e.target.classList.contains('edit-group-btn') || 
-            e.target.classList.contains('delete-group-btn')) {
+        const groupId = row.getAttribute('data-group-id');
+        const groupName = row.querySelector('.group-name').textContent;
+        
+        // 編集ボタンクリック
+        if (e.target.classList.contains('edit-group-btn')) {
+            openGroupEditModal(groupId, groupName);
             return;
         }
         
-        document.querySelectorAll('.seat-group-row').forEach(r => r.classList.remove('active'));
-        row.classList.add('active');
-        currentGroupId = row.getAttribute('data-group-id');
-        loadSeats(currentGroupId);
-    });
-
-    // 座席グループ編集ボタンのクリックイベント
-    document.getElementById('seatGroupTabs').addEventListener('click', (e) => {
-        if (e.target.classList.contains('edit-group-btn')) {
-            const row = e.target.closest('.seat-group-row');
-            const groupId = row.getAttribute('data-group-id');
-            const groupName = row.querySelector('.group-name').textContent;
-            openGroupEditModal(groupId, groupName);
-        }
-    });
-
-    // 座席グループ削除ボタンのクリックイベント
-    document.getElementById('seatGroupTabs').addEventListener('click', (e) => {
+        // 削除ボタンクリック
         if (e.target.classList.contains('delete-group-btn')) {
-            const row = e.target.closest('.seat-group-row');
-            const groupId = row.getAttribute('data-group-id');
-            const groupName = row.querySelector('.group-name').textContent;
             if (confirm(`「${groupName}」を削除しますか？`)) {
                 fetch(`/api/seat-groups/${groupId}`, { method: 'DELETE' })
-                    .then(() => location.reload());
+                    .then(() => location.reload())
+                    .catch(() => alert('グループの削除に失敗しました'));
             }
+            return;
         }
+        
+        // グループ選択
+        document.querySelectorAll('.seat-group-row').forEach(r => r.classList.remove('active'));
+        row.classList.add('active');
+        currentGroupId = groupId;
+        loadSeats(currentGroupId);
     });
 
     // グループ追加
@@ -65,7 +56,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ seatGroupName: groupName })
-            }).then(() => location.reload());
+            })
+            .then(() => location.reload())
+            .catch(() => alert('グループの更新に失敗しました'));
         } else {
             // 新規追加
             const storeId = getCookie('storeId');
@@ -76,7 +69,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     seatGroupName: groupName,
                     store: { storeId: parseInt(storeId) }
                 })
-            }).then(() => location.reload());
+            })
+            .then(() => location.reload())
+            .catch(() => alert('グループの追加に失敗しました'));
         }
     });
 
@@ -121,12 +116,15 @@ document.addEventListener('DOMContentLoaded', function () {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ seatGroupName: newName })
-                    }).then(() => location.reload());
+                    })
+                    .then(() => location.reload())
+                    .catch(() => alert('グループの更新に失敗しました'));
                 }
             } else if (action === '2') {
                 if (confirm('本当に削除しますか？')) {
                     fetch(`/api/seat-groups/${groupId}`, { method: 'DELETE' })
-                        .then(() => location.reload());
+                        .then(() => location.reload())
+                        .catch(() => alert('グループの削除に失敗しました'));
                 }
             }
         }
@@ -203,10 +201,12 @@ document.addEventListener('DOMContentLoaded', function () {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
-        }).then(() => {
+        })
+        .then(() => {
             closeSeatModal();
             loadSeats(currentGroupId);
-        });
+        })
+        .catch(() => alert('座席の保存に失敗しました'));
     });
 
     function clearModalInputs() {
@@ -248,7 +248,8 @@ document.addEventListener('DOMContentLoaded', function () {
 	                tr.appendChild(td);
 	                seatTableBody.appendChild(tr);
 	            });
-	        });
+	        })
+	        .catch(() => alert('座席一覧の取得に失敗しました'));
 	}
 
     function createDeleteButton(seat) {
@@ -259,9 +260,11 @@ document.addEventListener('DOMContentLoaded', function () {
             if (confirm(`「${seat.seatName}」を削除しますか？`)) {
                 fetch(`/seat/delete/${seat.seatId}`, {
                     method: 'DELETE'
-                }).then(() => {
+                })
+                .then(() => {
                     loadSeats(currentGroupId);
-                });
+                })
+                .catch(() => alert('座席の削除に失敗しました'));
             }
         });
         return button;
