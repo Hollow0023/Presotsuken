@@ -214,7 +214,7 @@ document.addEventListener('DOMContentLoaded', () => {
         updateSeatRequiredState(isAdminCheckbox, seatSelect);
     });
 
-    // ★★★ 追加: IP自動入力ボタンのイベントリスナーを設定 ★★★
+    // IP自動入力ボタンのイベントリスナーを設定
     const autoFillIpBtn = document.getElementById('autoFillIpBtn');
     if (autoFillIpBtn) {
         autoFillIpBtn.addEventListener('click', () => {
@@ -300,7 +300,7 @@ document.addEventListener('DOMContentLoaded', () => {
         updateSeatRequiredState(editIsAdminCheckbox, editSeatSelect);
     });
 
-    // ★★★ 追加: 編集モーダル用のIP自動入力ボタンのイベントリスナーを設定 ★★★
+    // 編集モーダル用のIP自動入力ボタンのイベントリスナーを設定
     const editAutoFillIpBtn = document.getElementById('editAutoFillIpBtn');
     if (editAutoFillIpBtn) {
         editAutoFillIpBtn.addEventListener('click', () => {
