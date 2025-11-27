@@ -23,7 +23,7 @@
     <h2>税率一覧</h2>
     <ul id="taxRateList">
         <li th:each="tr : ${taxRates}" th:data-rate-id="${tr.taxRateId}">
-            <input type="number" step="0.01" min="0" max="100" th:value="${tr.rate}" class="rate-input">
+            <input type="number" step="0.01" min="0" max="100" th:value="${tr.rate * 100}" class="rate-input">
             <span class="percent-label">%</span>
             <button type="button" th:attr="onclick='updateTaxRate(this.parentElement)'">更新</button>
             <button type="button" th:attr="onclick='deleteTaxRate(' + ${tr.taxRateId} + ')'">削除</button>

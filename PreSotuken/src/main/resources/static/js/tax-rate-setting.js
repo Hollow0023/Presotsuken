@@ -1,6 +1,17 @@
 /**
  * 税率設定ページのJavaScript
+ * 
+ * DBでは税率は倍率（0.1 = 10%、0.08 = 8%）で管理されています。
+ * ユーザー画面では%表示（10、8）として扱い、API送信時に倍率に変換します。
  */
+
+/**
+ * %表示の税率をDB用の倍率に変換
+ * 例: 10 -> 0.1、8 -> 0.08
+ */
+function percentToRate(percent) {
+    return percent / 100;
+}
 
 /**
  * 新しい税率を作成
@@ -13,11 +24,14 @@ async function createTaxRate() {
         return;
     }
     
-    const rate = parseFloat(rateValue);
-    if (rate < 0 || rate > 100) {
+    const percentValue = parseFloat(rateValue);
+    if (percentValue < 0 || percentValue > 100) {
         alert('税率は0から100の間で入力してください');
         return;
     }
+    
+    // %表示を倍率に変換してAPI送信
+    const rate = percentToRate(percentValue);
     
     try {
         const response = await fetch('/taxrates', {
@@ -50,11 +64,14 @@ async function updateTaxRate(li) {
         return;
     }
     
-    const rate = parseFloat(rateValue);
-    if (rate < 0 || rate > 100) {
+    const percentValue = parseFloat(rateValue);
+    if (percentValue < 0 || percentValue > 100) {
         alert('税率は0から100の間で入力してください');
         return;
     }
+    
+    // %表示を倍率に変換してAPI送信
+    const rate = percentToRate(percentValue);
     
     try {
         const response = await fetch(`/taxrates/${taxRateId}`, {
