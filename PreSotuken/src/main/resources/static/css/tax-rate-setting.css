@@ -1,0 +1,220 @@
+/* Tax Rate Setting CSS */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 20px;
+    background-color: #f4f7f6;
+    color: #333;
+}
+
+.container {
+    max-width: 900px;
+    margin: 20px auto;
+    padding: 25px;
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    background-color: #fff;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+h1, h2 {
+    color: #2c3e50;
+    margin-bottom: 15px;
+}
+
+h1 {
+    text-align: center;
+    margin-bottom: 30px;
+    font-size: 2.2em;
+}
+
+h2 {
+    font-size: 1.6em;
+    border-bottom: 2px solid #e0e0e0;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+    margin-top: 30px;
+}
+
+/* リンク */
+a {
+    color: #007bff;
+    text-decoration: none;
+    margin-bottom: 20px;
+    display: inline-block;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* 税率リスト */
+#taxRateList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+#taxRateList li {
+    display: flex;
+    align-items: center;
+    padding: 12px 15px;
+    margin-bottom: 10px;
+    border: 1px solid #e0e0e0;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+#taxRateList li:hover {
+    background-color: #f0f3f5;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* 入力フィールド */
+input[type="number"] {
+    width: 120px;
+    padding: 8px 12px;
+    border: 1px solid #bdc3c7;
+    border-radius: 5px;
+    font-size: 1em;
+}
+
+input[type="number"]:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0,123,255,0.1);
+}
+
+/* パーセントラベル */
+.percent-label {
+    font-size: 1em;
+    color: #555;
+    margin-right: 10px;
+}
+
+/* ボタン */
+button {
+    padding: 8px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.95em;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    white-space: nowrap;
+}
+
+button:hover {
+    transform: translateY(-1px);
+}
+
+button:active {
+    transform: translateY(0);
+}
+
+/* 更新ボタン */
+button[onclick*="updateTaxRate"] {
+    background-color: #28a745;
+    color: white;
+}
+
+button[onclick*="updateTaxRate"]:hover {
+    background-color: #218838;
+}
+
+/* 削除ボタン */
+button[onclick*="deleteTaxRate"] {
+    background-color: #dc3545;
+    color: white;
+}
+
+button[onclick*="deleteTaxRate"]:hover {
+    background-color: #c82333;
+}
+
+/* 追加ボタン */
+button[onclick*="createTaxRate"] {
+    background-color: #007bff;
+    color: white;
+    padding: 10px 20px;
+    font-size: 1em;
+}
+
+button[onclick*="createTaxRate"]:hover {
+    background-color: #0056b3;
+}
+
+/* 新規登録フォームエリア */
+.new-tax-form {
+    background-color: #ecf0f1;
+    padding: 15px;
+    border-radius: 8px;
+    margin-top: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+    body {
+        padding: 10px;
+    }
+
+    .container {
+        padding: 15px;
+    }
+
+    h1 {
+        font-size: 1.8em;
+    }
+
+    h2 {
+        font-size: 1.3em;
+    }
+
+    #taxRateList li {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+    }
+
+    input[type="number"] {
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    button {
+        width: 100%;
+    }
+
+    .new-tax-form {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .new-tax-form input[type="number"] {
+        width: 100%;
+    }
+
+    .new-tax-form button {
+        width: 100%;
+        margin-top: 5px;
+    }
+}
+
+/* ハイライト効果 */
+@keyframes highlight {
+    0% {
+        background-color: #d4edda;
+    }
+    100% {
+        background-color: #f9f9f9;
+    }
+}
+
+.highlight-success {
+    animation: highlight 1.5s ease;
+}
