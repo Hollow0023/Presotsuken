@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', function () {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 seatGroupName: name,
-                storeId: parseInt(storeId)
+                store: { storeId: parseInt(storeId) }
             })
         }).then(() => location.reload());
     });
