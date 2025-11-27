@@ -7,7 +7,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.CookieValue;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -26,7 +25,6 @@ import lombok.RequiredArgsConstructor;
 
 @Controller
 @RequestMapping("/taxrates")
-@CrossOrigin
 @RequiredArgsConstructor
 public class TaxRateController {
 
@@ -76,8 +74,7 @@ public class TaxRateController {
                                                   @CookieValue("storeId") int storeId) {
         return taxRateRepository.findByTaxRateId(taxRateId)
                 .map(existing -> {
-                    // 税率が該当の店舗に属しているか確認
-                    if (!existing.getStore().getStoreId().equals(storeId)) {
+                    if (!isOwnedByStore(existing, storeId)) {
                         return new ResponseEntity<TaxRate>(HttpStatus.FORBIDDEN);
                     }
                     existing.setRate(taxRate.getRate());
@@ -96,13 +93,19 @@ public class TaxRateController {
                                                @CookieValue("storeId") int storeId) {
         return taxRateRepository.findByTaxRateId(taxRateId)
                 .map(existing -> {
-                    // 税率が該当の店舗に属しているか確認
-                    if (!existing.getStore().getStoreId().equals(storeId)) {
+                    if (!isOwnedByStore(existing, storeId)) {
                         return new ResponseEntity<Void>(HttpStatus.FORBIDDEN);
                     }
                     taxRateRepository.delete(existing);
                     return new ResponseEntity<Void>(HttpStatus.NO_CONTENT);
                 })
                 .orElse(new ResponseEntity<>(HttpStatus.NOT_FOUND));
+    }
+
+    /**
+     * 税率が指定した店舗に属しているか確認
+     */
+    private boolean isOwnedByStore(TaxRate taxRate, int storeId) {
+        return taxRate.getStore().getStoreId().equals(storeId);
     }
 }
