@@ -111,12 +111,13 @@ tbody tr:hover {
 
 /* ボタンスタイル */
 .btn {
-    padding: 8px 16px;
+    padding: 12px 20px;
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 14px;
+    font-size: 16px;
     transition: background-color 0.3s;
+    min-height: 44px;
 }
 
 .btn-primary {
@@ -165,14 +166,15 @@ tbody tr:hover {
 }
 
 .btn-sm {
-    padding: 4px 8px;
-    font-size: 12px;
+    padding: 8px 14px;
+    font-size: 14px;
+    min-height: 40px;
 }
 
 /* 操作ボタン */
 .action-buttons {
     display: flex;
-    gap: 5px;
+    gap: 8px;
 }
 
 /*---------以下モーダル---------*/
