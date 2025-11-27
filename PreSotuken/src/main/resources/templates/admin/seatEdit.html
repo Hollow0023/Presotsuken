@@ -16,43 +16,100 @@
     <div th:replace="~{fragments/burger-menu :: burger-drawer}"></div>
     
 <div class="container">
-    <div class="sidebar">
-        <h2>座席グループ</h2>
-        <ul id="seatGroupTabs">
-            <li th:each="group : ${seatGroups}"
-                th:data-group-id="${group.seatGroupId}"
-                th:text="${group.seatGroupName}"
-                class="seat-group-tab">
-            </li>
-        </ul>
-        <button id="addGroupBtn">＋ グループ追加</button>
+    <div class="header">
+        <h1>座席管理</h1>
     </div>
+    <a href="/">← トップに戻る</a>
+    
+    <div class="content-wrapper">
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h2>座席グループ</h2>
+                <button id="addGroupBtn" class="btn btn-primary">＋ グループ追加</button>
+            </div>
+            <table id="seatGroupTable">
+                <thead>
+                    <tr>
+                        <th>グループ名</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="seatGroupTabs">
+                    <tr th:each="group : ${seatGroups}"
+                        th:data-group-id="${group.seatGroupId}"
+                        class="seat-group-row">
+                        <td th:text="${group.seatGroupName}" class="group-name"></td>
+                        <td class="action-buttons">
+                            <button class="btn btn-warning btn-sm edit-group-btn">編集</button>
+                            <button class="btn btn-danger btn-sm delete-group-btn">削除</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
 
-    <div class="main-content">
-        <h2>座席一覧</h2>
-        <table id="seatTable">
-            <thead>
-                <tr>
-                    <th>座席名</th>
-                    <th>定員</th>
-                    <th>操作</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- JSで動的に追加 -->
-            </tbody>
-        </table>
-        <button id="addSeatBtn">＋ 座席追加</button>
+        <div class="main-content">
+            <div class="main-header">
+                <h2>座席一覧</h2>
+                <button id="addSeatBtn" class="btn btn-primary">＋ 座席追加</button>
+            </div>
+            <table id="seatTable">
+                <thead>
+                    <tr>
+                        <th>座席名</th>
+                        <th>定員</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- JSで動的に追加 -->
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 
+<!-- 座席追加/編集モーダル -->
 <div id="seatModal" class="modal hidden">
     <div class="modal-content">
-        <h3>座席を追加</h3>
-        <label>座席名：<input type="text" id="seatNameInput"></label><br>
-        <label>定員数：<input type="number" id="maxCapacityInput" min="1" value="1"></label><br>
-        <button id="saveSeatBtn">追加</button>
-        <button id="cancelSeatBtn">キャンセル</button>
+        <div class="modal-header">
+            <h3 id="seatModalTitle">座席を追加</h3>
+            <button class="close-btn" id="cancelSeatBtn">×</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label for="seatNameInput">座席名：</label>
+                <input type="text" id="seatNameInput">
+            </div>
+            <div class="form-group">
+                <label for="maxCapacityInput">定員数：</label>
+                <input type="number" id="maxCapacityInput" min="1" value="1">
+            </div>
+            <div class="form-actions">
+                <button id="saveSeatBtn" class="btn btn-success">追加</button>
+                <button id="cancelSeatBtnBottom" class="btn btn-secondary">キャンセル</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 座席グループ編集モーダル -->
+<div id="groupModal" class="modal hidden">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="groupModalTitle">グループを編集</h3>
+            <button class="close-btn" id="cancelGroupBtn">×</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label for="groupNameInput">グループ名：</label>
+                <input type="text" id="groupNameInput">
+            </div>
+            <div class="form-actions">
+                <button id="saveGroupBtn" class="btn btn-success">保存</button>
+                <button id="cancelGroupBtnBottom" class="btn btn-secondary">キャンセル</button>
+            </div>
+        </div>
     </div>
 </div>
 
