@@ -6,6 +6,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.util.Optional;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -19,6 +21,7 @@ import com.order.entity.Store;
 import com.order.interceptor.AdminPageInterceptor;
 import com.order.interceptor.LoginCheckInterceptor;
 import com.order.repository.SeatGroupRepository;
+import com.order.repository.StoreRepository;
 import com.order.service.CookieUtil;
 
 /**
@@ -33,6 +36,9 @@ class SeatGroupRestControllerTest {
 
     @MockBean
     private SeatGroupRepository seatGroupRepository;
+
+    @MockBean
+    private StoreRepository storeRepository;
 
     @MockBean
     private CookieUtil cookieUtil;
@@ -51,6 +57,12 @@ class SeatGroupRestControllerTest {
         // Mock interceptors to allow the request
         when(loginCheckInterceptor.preHandle(any(), any(), any())).thenReturn(true);
         when(adminPageInterceptor.preHandle(any(), any(), any())).thenReturn(true);
+        
+        // Mock the store repository to return a Store entity
+        Store mockStore = new Store();
+        mockStore.setStoreId(1);
+        mockStore.setStoreName("テスト店舗");
+        when(storeRepository.findById(1)).thenReturn(Optional.of(mockStore));
         
         // Mock the repository save to return a SeatGroup with ID
         when(seatGroupRepository.save(any(SeatGroup.class))).thenAnswer(invocation -> {
