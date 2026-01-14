@@ -105,7 +105,7 @@ public class MenuAddService {
     
     // ★ 顧客向け注文画面に表示するメニューグループを取得するメソッド (ソート順適用)
     public List<MenuGroup> getCustomerMenuGroups(Integer storeId) {
-        // forAdminOnlyがfalseまたはnull、かつ isPlanTargetがfalseのメニューグループのみを返す
+        // forAdminOnlyがfalseまたはnull、かつ isPlanTargetがfalseまたはnull（通常のメニューグループ）のみを返す
         return menuGroupRepository.findCustomerMenuGroupsByStoreId(storeId);
     }
 

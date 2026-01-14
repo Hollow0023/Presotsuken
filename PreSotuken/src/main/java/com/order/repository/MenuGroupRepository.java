@@ -21,10 +21,10 @@ public interface MenuGroupRepository extends JpaRepository<MenuGroup, Integer> {
     // 全てのメニューグループをsort_orderでソートして取得 (管理者用)
     List<MenuGroup> findByStore_StoreIdOrderBySortOrderAsc(Integer storeId);
 
-    // 顧客向けで、isPlanTarget=false かつ forAdminOnly=false/null のメニューグループをソートして取得
+    // 顧客向けで、isPlanTarget=false/null かつ forAdminOnly=false/null のメニューグループをソートして取得
     // 明示的なクエリで正しい条件を指定
     @Query("SELECT mg FROM MenuGroup mg WHERE mg.store.storeId = :storeId " +
-           "AND mg.isPlanTarget = false " +
+           "AND (mg.isPlanTarget = false OR mg.isPlanTarget IS NULL) " +
            "AND (mg.forAdminOnly = false OR mg.forAdminOnly IS NULL) " +
            "ORDER BY mg.sortOrder ASC")
     List<MenuGroup> findCustomerMenuGroupsByStoreId(@Param("storeId") Integer storeId);
