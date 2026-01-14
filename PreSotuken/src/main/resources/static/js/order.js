@@ -587,15 +587,6 @@ function showDescriptionFromData(btn) {
 // =============================================================================
 
 /**
- * 商品説明をデータから表示する関数
- * @param {HTMLElement} btn - 説明表示ボタン要素
- */
-function showDescriptionFromData(btn) {
-    const description = btn.getAttribute('data-description');
-    alert(description || '説明がありません。');
-}
-
-/**
  * タブを切り替える関数
  * @param {HTMLElement} tabElement - クリックされたタブ要素
  */
