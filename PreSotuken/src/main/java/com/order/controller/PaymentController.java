@@ -593,20 +593,13 @@ public class PaymentController {
         
         // 税抜き小計を計算
         double subtotal = remainingDetails.stream()
-                .mapToDouble(pd -> {
-                    double base = pd.getSubtotal() != null ? pd.getSubtotal() : 0;
-                    double detailDiscount = pd.getDiscount() != null ? pd.getDiscount() : 0;
-                    double net = base - detailDiscount;
-                    return net > 0 ? net : 0;
-                })
+                .mapToDouble(this::calculateNetSubtotal)
                 .sum();
         
         // 税込み合計金額を計算
         double totalWithTax = remainingDetails.stream()
                 .mapToDouble(pd -> {
-                    double base = pd.getSubtotal() != null ? pd.getSubtotal() : 0;
-                    double detailDiscount = pd.getDiscount() != null ? pd.getDiscount() : 0;
-                    double netSubtotalWithoutTax = Math.max(base - detailDiscount, 0);
+                    double netSubtotalWithoutTax = calculateNetSubtotal(pd);
                     double taxRate = pd.getTaxRate() != null ? pd.getTaxRate().getRate() : 0;
                     return netSubtotalWithoutTax * (1 + taxRate);
                 })
@@ -626,5 +619,15 @@ public class PaymentController {
         response.put("remainingItemCount", remainingDetails.size());
         
         return ResponseEntity.ok(response);
+    }
+    
+    /**
+     * PaymentDetailの正味小計を計算（割引を考慮）
+     */
+    private double calculateNetSubtotal(PaymentDetail pd) {
+        double base = pd.getSubtotal() != null ? pd.getSubtotal() : 0;
+        double detailDiscount = pd.getDiscount() != null ? pd.getDiscount() : 0;
+        double net = base - detailDiscount;
+        return net > 0 ? net : 0;
     }
 }
