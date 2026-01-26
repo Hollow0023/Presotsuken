@@ -155,6 +155,26 @@ class PaymentDetailDeleteTest {
     }
     
     @Test
+    void 店舗IDがnullの場合401が返されること() {
+        // 店舗IDがnull
+        Integer paymentDetailId = 101;
+        Integer storeId = null;
+        
+        // テスト実行
+        ResponseEntity<Map<String, Object>> response = 
+            paymentController.deletePaymentDetail(paymentDetailId, storeId);
+        
+        // 検証
+        assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertFalse((Boolean) response.getBody().get("success"));
+        assertEquals("店舗情報が取得できません。", response.getBody().get("message"));
+        
+        // 削除が呼ばれていないことを確認
+        verify(paymentDetailRepository, never()).deleteById(any());
+    }
+    
+    @Test
     void 存在しない商品明細を削除しようとすると404が返されること() {
         // 存在しない商品明細ID
         Integer paymentDetailId = 999;
@@ -169,6 +189,8 @@ class PaymentDetailDeleteTest {
         
         // 検証
         assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertFalse((Boolean) response.getBody().get("success"));
         
         // 削除が呼ばれていないことを確認
         verify(paymentDetailRepository, never()).deleteById(any());

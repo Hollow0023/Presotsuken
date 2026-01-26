@@ -556,13 +556,21 @@ public class PaymentController {
             @PathVariable Integer paymentDetailId,
             @CookieValue(name = "storeId", required = false) Integer storeId) {
         
+        // 店舗IDのnullチェック
+        if (storeId == null) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("success", false);
+            error.put("message", "店舗情報が取得できません。");
+            return ResponseEntity.status(401).body(error);
+        }
+        
         // PaymentDetailを取得
         PaymentDetail detail = paymentDetailRepository.findById(paymentDetailId).orElse(null);
         if (detail == null) {
             Map<String, Object> error = new HashMap<>();
             error.put("success", false);
             error.put("message", "指定された商品が見つかりません。");
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.status(404).body(error);
         }
         
         // 店舗IDの確認
