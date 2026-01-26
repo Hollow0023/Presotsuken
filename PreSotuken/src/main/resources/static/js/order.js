@@ -112,7 +112,7 @@ function toggleHistory() {
  * @param {HTMLElement} toggleBtn - トグルボタン要素
  */
 function fetchOrderHistoryForDisplay(historyModal, toggleBtn) {
-    fetch('/order/history')
+    fetch(`/order/history?seatId=${seatId}`)
         .then(res => res.json())
         .then(data => {
             const tbody = document.querySelector('#historyTable tbody');
@@ -511,7 +511,7 @@ function submitOrder() {
  * 注文履歴モーダル内の表示を更新するためのフェッチ関数
  */
 function fetchOrderHistoryForHistoryModal() {
-    fetch('/order/history')
+    fetch(`/order/history?seatId=${seatId}`)
         .then(res => res.json())
         .then(data => {
             const tbody = document.querySelector('#historyTable tbody');
