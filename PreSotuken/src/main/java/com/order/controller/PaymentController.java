@@ -546,4 +546,77 @@ public class PaymentController {
             return ResponseEntity.notFound().build();
         }
     }
+    
+    /**
+     * 商品明細を削除
+     */
+    @Transactional
+    @PostMapping("/payments/details/{paymentDetailId}/delete")
+    public ResponseEntity<Map<String, Object>> deletePaymentDetail(
+            @PathVariable Integer paymentDetailId,
+            @CookieValue(name = "storeId", required = false) Integer storeId) {
+        
+        // PaymentDetailを取得
+        PaymentDetail detail = paymentDetailRepository.findById(paymentDetailId).orElse(null);
+        if (detail == null) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("success", false);
+            error.put("message", "指定された商品が見つかりません。");
+            return ResponseEntity.notFound().build();
+        }
+        
+        // 店舗IDの確認
+        if (!detail.getStore().getStoreId().equals(storeId)) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("success", false);
+            error.put("message", "権限がありません。");
+            return ResponseEntity.status(403).body(error);
+        }
+        
+        // Paymentを取得
+        Payment payment = detail.getPayment();
+        Integer paymentId = payment.getPaymentId();
+        
+        // 商品明細を削除
+        paymentDetailRepository.deleteById(paymentDetailId);
+        
+        // 残りの商品明細を取得して合計を再計算
+        List<PaymentDetail> remainingDetails = paymentDetailRepository.findByPaymentPaymentId(paymentId);
+        
+        // 税抜き小計を計算
+        double subtotal = remainingDetails.stream()
+                .mapToDouble(pd -> {
+                    double base = pd.getSubtotal() != null ? pd.getSubtotal() : 0;
+                    double detailDiscount = pd.getDiscount() != null ? pd.getDiscount() : 0;
+                    double net = base - detailDiscount;
+                    return net > 0 ? net : 0;
+                })
+                .sum();
+        
+        // 税込み合計金額を計算
+        double totalWithTax = remainingDetails.stream()
+                .mapToDouble(pd -> {
+                    double base = pd.getSubtotal() != null ? pd.getSubtotal() : 0;
+                    double detailDiscount = pd.getDiscount() != null ? pd.getDiscount() : 0;
+                    double netSubtotalWithoutTax = Math.max(base - detailDiscount, 0);
+                    double taxRate = pd.getTaxRate() != null ? pd.getTaxRate().getRate() : 0;
+                    return netSubtotalWithoutTax * (1 + taxRate);
+                })
+                .sum();
+        
+        // Paymentを更新
+        payment.setSubtotal(subtotal);
+        double discount = payment.getDiscount() != null ? payment.getDiscount() : 0;
+        payment.setTotal(totalWithTax - discount);
+        paymentRepository.save(payment);
+        
+        // レスポンスを返す
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("subtotal", subtotal);
+        response.put("total", payment.getTotal());
+        response.put("remainingItemCount", remainingDetails.size());
+        
+        return ResponseEntity.ok(response);
+    }
 }

@@ -176,7 +176,10 @@
 			<div class="inline-input-group">
 				<input type="number" id="detailDiscountInput" min="0" value="0"><span class="unit">円</span>
 			</div>
-			<input type="hidden" id="currentDetailIndex"> <button onclick="applyDetailDiscount()">保存</button>
+			<input type="hidden" id="currentDetailIndex">
+			<input type="hidden" id="currentPaymentDetailId">
+			<button onclick="applyDetailDiscount()">保存</button>
+			<button style="background-color: #dc3545; margin-left: 10px;" onclick="deletePaymentDetail()">削除</button>
 			<button class="cancel-btn" onclick="closeModal('detailDiscountModal')">閉じる</button>
 		</div>
 	</div>
@@ -643,6 +646,7 @@
 			document.getElementById("modalMenuQuantity").innerText = item.quantity;
 			document.getElementById("detailDiscountInput").value = item.discountAmount; // 現在の割引額をセット
 			document.getElementById("currentDetailIndex").value = index; // どの商品かを保存
+			document.getElementById("currentPaymentDetailId").value = item.paymentDetailId; // paymentDetailIdを保存
 
 			openModal('detailDiscountModal');
 		}
@@ -669,6 +673,57 @@
 
 			closeModal('detailDiscountModal');
 			calculateTotals(); // 全体の合計を再計算（これでテーブルの割引表示も更新される）
+		}
+		
+		// 商品明細を削除する関数
+		function deletePaymentDetail() {
+			const index = parseInt(document.getElementById("currentDetailIndex").value);
+			const paymentDetailId = document.getElementById("currentPaymentDetailId").value;
+			const item = detailsWithDiscount[index];
+			
+			// 削除確認
+			if (!confirm(`商品「${item.menuName}」を削除してもよろしいですか？\nこの操作は取り消せません。`)) {
+				return;
+			}
+			
+			// 最後の商品の場合は追加警告
+			if (detailsWithDiscount.length === 1) {
+				if (!confirm("これは最後の商品です。削除すると注文が空になりますが、本当に削除しますか？")) {
+					return;
+				}
+			}
+			
+			// APIを呼び出して削除
+			fetch(`/payments/details/${paymentDetailId}/delete`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				}
+			})
+			.then(response => {
+				if (!response.ok) {
+					throw new Error('削除に失敗しました');
+				}
+				return response.json();
+			})
+			.then(data => {
+				if (data.success) {
+					// 成功時の処理
+					alert('商品を削除しました。');
+					
+					// モーダルを閉じる
+					closeModal('detailDiscountModal');
+					
+					// ページをリロードして最新の状態を表示
+					location.reload();
+				} else {
+					alert('削除に失敗しました: ' + (data.message || '不明なエラー'));
+				}
+			})
+			.catch(error => {
+				console.error('削除エラー:', error);
+				alert('削除中にエラーが発生しました。');
+			});
 		}
 		
 		//時間の取得
