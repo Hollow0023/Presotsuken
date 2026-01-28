@@ -605,8 +605,6 @@ function switchTab(tabElement) {
             item.classList.remove('d-none');
         } else {
             item.classList.add('d-none');
-            // 飲み放題メニューの表示クラスも削除して確実に非表示にする
-            item.classList.remove('active-plan-menu');
         }
     });
 }
@@ -722,20 +720,14 @@ window.addEventListener('DOMContentLoaded', () => {
                     console.log(`プラン ${activatedPlanId} がシート ${seatId} でアクティブ化されました。`);
                     console.log("表示されるメニューグループID:", activatedMenuGroupIds);
 
-                    document.querySelectorAll('.menu-tab[data-is-plan-target="true"]').forEach(tab => {
-                        tab.classList.remove('active-plan-group');
-                    });
-                    document.querySelectorAll('.menu-item[data-is-plan-target="true"]').forEach(item => {
-                        item.classList.remove('active-plan-menu');
-                    });
-
+                    // アクティブ化されたメニューグループとメニューアイテムの d-none を削除
                     activatedMenuGroupIds.forEach(groupId => {
                         const menuGroupTab = document.querySelector(`.menu-tab[data-group-id="${groupId}"]`);
                         if (menuGroupTab) {
-                            menuGroupTab.classList.add('active-plan-group');
+                            menuGroupTab.classList.remove('d-none');
                         }
                         document.querySelectorAll(`.menu-item[data-group-id="${groupId}"]`).forEach(item => {
-                            item.classList.add('active-plan-menu');
+                            item.classList.remove('d-none');
                         });
                     });
                     
@@ -811,9 +803,10 @@ window.onload = () => {
     
     handleUrlToastMessage();
 
-    const firstNonPlanTargetTab = document.querySelector('.menu-tab:not([data-is-plan-target="true"])');
-    if (firstNonPlanTargetTab) {
-        switchTab(firstNonPlanTargetTab);
+    // d-none クラスが付いていないタブを優先的に選択
+    const firstVisibleTab = document.querySelector('.menu-tab:not(.d-none)');
+    if (firstVisibleTab) {
+        switchTab(firstVisibleTab);
     } else {
         const anyTab = document.querySelector('.menu-tab');
         if (anyTab) {
@@ -826,10 +819,10 @@ function activatePlanGroups(groupIds) {
     groupIds.forEach(groupId => {
         const menuGroupTab = document.querySelector(`.menu-tab[data-group-id="${groupId}"]`);
         if (menuGroupTab) {
-            menuGroupTab.classList.add('active-plan-group');
+            menuGroupTab.classList.remove('d-none');
         }
         document.querySelectorAll(`.menu-item[data-group-id="${groupId}"]`).forEach(item => {
-            item.classList.add('active-plan-menu');
+            item.classList.remove('d-none');
         });
     });
 }

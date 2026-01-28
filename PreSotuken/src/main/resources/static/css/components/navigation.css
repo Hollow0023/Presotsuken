@@ -158,15 +158,6 @@
     border-bottom-color: #007bff;
 }
 
-/* プラン対象メニューの表示制御 */
-.menu-tab[data-is-plan-target="true"] {
-    display: none;
-}
-
-.menu-tab[data-is-plan-target="true"].active-plan-group {
-    display: block;
-}
-
 /* ========================================
    ページタイトル
 ======================================== */

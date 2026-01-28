@@ -32,13 +32,14 @@
 			</div>
 			<div th:each="group : ${menuGroups}"
 				th:data-group-id="${group.groupId}" th:text="${group.groupName}"
+				th:classappend="${group.isPlanTarget ? 'd-none' : ''}"
 				class="menu-tab"></div>
 		</div>
 
 <div class="menu-list" id="menuList">
     <div th:each="menu : ${menus}" class="menu-item"
         th:data-group-id="${menu.menuGroupId}"
-        th:data-is-plan-target="${menu.menuGroupIsPlanTarget}">
+        th:classappend="${menu.menuGroupIsPlanTarget ? 'd-none' : ''}">
         <div class="menu-image-wrapper">
             <img th:src="@{${menu.menuImage}}"
                 onerror="this.onerror=null;this.src='/images/noimage.jpg'"
