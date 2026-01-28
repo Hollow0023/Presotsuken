@@ -600,9 +600,14 @@ function switchTab(tabElement) {
     // 関連するメニューアイテムのみ表示し、他は非表示にする
     document.querySelectorAll('.menu-item').forEach(item => {
         const itemGroupId = item.getAttribute('data-group-id');
+        const isPlanTarget = item.getAttribute('data-is-plan-target') === 'true';
         
         if (itemGroupId === groupId) {
             item.classList.remove('d-none');
+            // プラン対象メニューの場合、active-plan-menuクラスを追加して表示
+            if (isPlanTarget) {
+                item.classList.add('active-plan-menu');
+            }
         } else {
             item.classList.add('d-none');
             // 飲み放題メニューの表示クラスも削除して確実に非表示にする
