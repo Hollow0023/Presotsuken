@@ -20,6 +20,7 @@ import com.order.dto.PaymentFinalizeRequest;
 import com.order.dto.SplitPaymentRequest;
 import com.order.dto.IndividualPaymentRequest;
 import com.order.dto.RemainingPaymentDto;
+import com.order.dto.ChildPaymentUpdateRequest;
 import com.order.entity.Payment;
 import com.order.entity.PaymentDetail;
 import com.order.entity.PaymentType;
@@ -227,6 +228,7 @@ public class PaymentController {
             childMap.put("splitNumber", child.getSplitNumber());
             childMap.put("amount", child.getTotal());
             childMap.put("paymentTime", child.getPaymentTime());
+            childMap.put("paymentTypeId", child.getPaymentType() != null ? child.getPaymentType().getTypeId() : null);
             childMap.put("paymentTypeName", child.getPaymentType() != null ? child.getPaymentType().getTypeName() : null);
             childMap.put("cashierName", child.getCashier() != null ? child.getCashier().getUserName() : null);
             childMap.put("deposit", child.getDeposit());
@@ -629,5 +631,80 @@ public class PaymentController {
         double detailDiscount = pd.getDiscount() != null ? pd.getDiscount() : 0;
         double net = base - detailDiscount;
         return net > 0 ? net : 0;
+    }
+    
+    /**
+     * 子会計（割り勘会計の詳細）を編集
+     */
+    @Transactional
+    @PostMapping("/payments/history/{paymentId}/child/{childPaymentId}/edit")
+    public ResponseEntity<Map<String, Object>> editChildPayment(
+            @CookieValue(name = "storeId", required = false) Integer storeId,
+            @PathVariable("paymentId") Integer paymentId,
+            @PathVariable("childPaymentId") Integer childPaymentId,
+            @RequestBody ChildPaymentUpdateRequest req) {
+        
+        // 親会計を取得
+        Payment parentPayment = paymentRepository.findById(paymentId).orElse(null);
+        if (parentPayment == null || !parentPayment.getStore().getStoreId().equals(storeId)) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("success", false);
+            error.put("message", "親会計が見つかりません。");
+            return ResponseEntity.status(404).body(error);
+        }
+        
+        // 子会計を取得
+        Payment childPayment = paymentRepository.findById(childPaymentId).orElse(null);
+        if (childPayment == null || !childPayment.getStore().getStoreId().equals(storeId)) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("success", false);
+            error.put("message", "子会計が見つかりません。");
+            return ResponseEntity.status(404).body(error);
+        }
+        
+        // 子会計が親会計に属しているか確認
+        if (childPayment.getParentPayment() == null || 
+            !childPayment.getParentPayment().getPaymentId().equals(paymentId)) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("success", false);
+            error.put("message", "この子会計は指定された親会計に属していません。");
+            return ResponseEntity.status(400).body(error);
+        }
+        
+        // 支払い方法を更新
+        if (req.getPaymentTypeId() != null) {
+            PaymentType type = paymentTypeRepository.findById(req.getPaymentTypeId()).orElse(null);
+            if (type == null) {
+                Map<String, Object> error = new HashMap<>();
+                error.put("success", false);
+                error.put("message", "指定された支払い方法が見つかりません。");
+                return ResponseEntity.status(400).body(error);
+            }
+            childPayment.setPaymentType(type);
+        }
+        
+        // 金額を更新
+        if (req.getAmount() != null) {
+            if (req.getAmount() <= 0) {
+                Map<String, Object> error = new HashMap<>();
+                error.put("success", false);
+                error.put("message", "金額は0より大きい値を指定してください。");
+                return ResponseEntity.status(400).body(error);
+            }
+            childPayment.setTotal(req.getAmount());
+        }
+        
+        // 保存
+        paymentRepository.save(childPayment);
+        
+        // レスポンスを返す
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("paymentId", childPayment.getPaymentId());
+        response.put("amount", childPayment.getTotal());
+        response.put("paymentTypeName", childPayment.getPaymentType() != null ? 
+            childPayment.getPaymentType().getTypeName() : null);
+        
+        return ResponseEntity.ok(response);
     }
 }
