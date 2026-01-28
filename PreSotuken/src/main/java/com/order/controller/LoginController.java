@@ -64,6 +64,7 @@ public class LoginController {
 
 			if (found != null) {
 				// 管理者端末かどうかで遷移先を変更
+				// adminFlagがnullまたは"true"以外の場合は非管理者として扱う
 				boolean isAdmin = "true".equals(adminFlag);
 				return isAdmin ? "redirect:/seats" : "redirect:/visits/orderwait";
 			}
