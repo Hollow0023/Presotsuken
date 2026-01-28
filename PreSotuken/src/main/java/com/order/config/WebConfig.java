@@ -8,6 +8,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import com.order.interceptor.AdminPageInterceptor;
 import com.order.interceptor.LoginCheckInterceptor;
+import com.order.interceptor.SeatAccessInterceptor;
 
 /**
  * Web MVC設定を行うコンフィギュレーションクラス
@@ -17,6 +18,7 @@ import com.order.interceptor.LoginCheckInterceptor;
 public class WebConfig implements WebMvcConfigurer {
     private final LoginCheckInterceptor loginCheckInterceptor;
     private final AdminPageInterceptor adminPageInterceptor;
+    private final SeatAccessInterceptor seatAccessInterceptor;
 
     @Value("${upload.path}")
     private String uploadPath;
@@ -26,10 +28,12 @@ public class WebConfig implements WebMvcConfigurer {
      * 
      * @param loginCheckInterceptor ログインチェックインターセプター
      * @param adminPageInterceptor 管理者ページアクセスチェックインターセプター
+     * @param seatAccessInterceptor 座席画面アクセスチェックインターセプター
      */
-    public WebConfig(LoginCheckInterceptor loginCheckInterceptor, AdminPageInterceptor adminPageInterceptor) {
+    public WebConfig(LoginCheckInterceptor loginCheckInterceptor, AdminPageInterceptor adminPageInterceptor, SeatAccessInterceptor seatAccessInterceptor) {
         this.loginCheckInterceptor = loginCheckInterceptor;
         this.adminPageInterceptor = adminPageInterceptor;
+        this.seatAccessInterceptor = seatAccessInterceptor;
     }
 
     /**
@@ -44,11 +48,12 @@ public class WebConfig implements WebMvcConfigurer {
     
     /**
      * インターセプターを登録します
-     * ログインチェックと管理者ページアクセスチェックを設定します
+     * ログインチェック、管理者ページアクセスチェック、座席画面アクセスチェックを設定します
      */
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(loginCheckInterceptor).addPathPatterns("/**");
         registry.addInterceptor(adminPageInterceptor).addPathPatterns("/admin/**");
+        registry.addInterceptor(seatAccessInterceptor).addPathPatterns("/seats/**");
     }
 }
