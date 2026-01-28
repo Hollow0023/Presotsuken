@@ -305,12 +305,32 @@
 						<th>支払い方法</th>
 						<th>担当者</th>
 						<th>支払い時刻</th>
+						<th>操作</th>
 					</tr>
 				</thead>
 				<tbody id="splitPaymentTableBody">
 					<!-- 動的に追加される -->
 				</tbody>
 			</table>
+		</div>
+
+		<!-- 子会計編集モーダル -->
+		<div id="editChildPaymentModal" class="modal">
+			<div class="modal-content">
+				<h3>割り勘詳細の編集</h3>
+				<p><strong>番号:</strong> <span id="editChildPaymentNumber"></span></p>
+				
+				<label><strong>支払い方法:</strong></label>
+				<select id="editChildPaymentType">
+					<!-- 動的に追加される -->
+				</select>
+				
+				<label><strong>支払い金額:</strong></label>
+				<input type="number" id="editChildPaymentAmount" min="0" step="1">円
+				
+				<button class="btn-primary" onclick="saveChildPaymentEdit()">保存</button>
+				<button class="btn-secondary" onclick="closeModal('editChildPaymentModal')">キャンセル</button>
+			</div>
 		</div>
 
 		<div class="section">
@@ -517,7 +537,21 @@
 					<td>${child.paymentTypeName || '-'}</td>
 					<td>${child.cashierName || '-'}</td>
 					<td>${paymentTime}</td>
+					<td>
+						<button class="btn-primary" data-payment-id="${child.paymentId}" data-split-number="${child.splitNumber}" data-amount="${amount}" data-payment-type-id="${child.paymentTypeId || ''}">編集</button>
+					</td>
 				`;
+				
+				// 編集ボタンにイベントリスナーを追加
+				const editBtn = tr.querySelector('.btn-primary');
+				editBtn.addEventListener('click', function() {
+					const paymentId = parseInt(this.dataset.paymentId);
+					const splitNumber = parseInt(this.dataset.splitNumber);
+					const amount = parseFloat(this.dataset.amount);
+					const paymentTypeId = this.dataset.paymentTypeId ? parseInt(this.dataset.paymentTypeId) : null;
+					openEditChildPaymentModal(paymentId, splitNumber, amount, paymentTypeId);
+				});
+				
 				tbody.appendChild(tr);
 			});
 		}
@@ -822,6 +856,85 @@
 			}).catch(error => {
 				console.error('Error:', error);
 				alert('取消中にエラーが発生しました');
+			});
+		}
+		
+		// 子会計編集モーダルを開く
+		let currentEditingChildPaymentId = null;
+		function openEditChildPaymentModal(childPaymentId, splitNumber, amount, paymentTypeId) {
+			currentEditingChildPaymentId = childPaymentId;
+			
+			// 番号を設定
+			document.getElementById('editChildPaymentNumber').innerText = `${splitNumber}人目`;
+			
+			// 支払い方法セレクトボックスを設定
+			const select = document.getElementById('editChildPaymentType');
+			select.innerHTML = '';
+			
+			// paymentDataから支払い方法リストを取得して設定
+			if (paymentData && paymentData.paymentTypes) {
+				paymentData.paymentTypes.forEach(pt => {
+					const option = document.createElement('option');
+					option.value = pt.id;
+					option.text = pt.name;
+					option.selected = pt.id === paymentTypeId;
+					select.appendChild(option);
+				});
+			}
+			
+			// 金額を設定
+			document.getElementById('editChildPaymentAmount').value = amount;
+			
+			// モーダルを開く
+			openModal('editChildPaymentModal');
+		}
+		
+		// 子会計の編集内容を保存する
+		function saveChildPaymentEdit() {
+			if (!currentEditingChildPaymentId) {
+				alert('編集対象が選択されていません');
+				return;
+			}
+			
+			const paymentTypeId = parseInt(document.getElementById('editChildPaymentType').value);
+			const amount = parseFloat(document.getElementById('editChildPaymentAmount').value);
+			
+			// バリデーション
+			if (isNaN(paymentTypeId) || !paymentTypeId) {
+				alert('支払い方法を選択してください');
+				return;
+			}
+			
+			if (isNaN(amount) || amount <= 0) {
+				alert('金額は0より大きい値を入力してください');
+				return;
+			}
+			
+			const payload = {
+				paymentTypeId: paymentTypeId,
+				amount: amount
+			};
+			
+			fetch(`/payments/history/${paymentId}/child/${currentEditingChildPaymentId}/edit`, {
+				method: 'POST',
+				headers: {'Content-Type': 'application/json'},
+				body: JSON.stringify(payload)
+			}).then(res => {
+				if (res.ok) {
+					alert('子会計を更新しました');
+					closeModal('editChildPaymentModal');
+					currentEditingChildPaymentId = null;
+					// データを再読み込み
+					loadPaymentDetails();
+					loadPaymentSummary();
+				} else {
+					return res.json().then(data => {
+						alert(data.message || '更新に失敗しました');
+					});
+				}
+			}).catch(error => {
+				console.error('Error:', error);
+				alert('更新中にエラーが発生しました');
 			});
 		}
 	</script>
