@@ -74,20 +74,24 @@ class CallListManager {
      * 音声再生のためのユーザーインタラクションを設定
      */
     setupAudioInteraction() {
-        document.addEventListener('click', () => {
+        const handleFirstClick = () => {
             if (!this.hasInteracted && this.chime) {
                 this.chime.muted = true;
                 this.chime.play().then(() => {
                     this.chime.pause();
                     this.chime.currentTime = 0;
                     this.chime.muted = false;
+                    this.hasInteracted = true;
                     console.log('チャイム音源の準備ができました！');
+                    // 音声準備が成功したらイベントリスナーを削除
+                    document.removeEventListener('click', handleFirstClick);
                 }).catch(error => {
                     console.warn("初期音声再生の試行に失敗しました:", error);
+                    // 失敗した場合はリトライできるようにリスナーを残す
                 });
-                this.hasInteracted = true;
             }
-        }, { once: true });
+        };
+        document.addEventListener('click', handleFirstClick);
     }
 
     /**
