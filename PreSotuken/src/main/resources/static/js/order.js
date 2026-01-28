@@ -811,6 +811,13 @@ window.onload = () => {
     
     handleUrlToastMessage();
 
+    // 飲み放題プランがアクティブな場合、該当のメニューグループを表示
+    const planTargetTabs = document.querySelectorAll('.menu-tab[data-is-plan-target="true"]');
+    if (planTargetTabs.length > 0) {
+        const activePlanGroupIds = Array.from(planTargetTabs).map(tab => tab.dataset.groupId);
+        activatePlanGroups(activePlanGroupIds);
+    }
+
     const firstNonPlanTargetTab = document.querySelector('.menu-tab:not([data-is-plan-target="true"])');
     if (firstNonPlanTargetTab) {
         switchTab(firstNonPlanTargetTab);
