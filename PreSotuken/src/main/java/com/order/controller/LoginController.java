@@ -94,7 +94,9 @@ public class LoginController {
 		
 		// Terminal未登録の場合はTerminal登録画面へ遷移
 		if (optTerminal.isEmpty()) {
-			addCookie(response, "adminFlag", "true");
+			// 端末登録待ち状態であることを示すフラグを設定
+			addCookie(response, "pendingTerminalRegistration", "true");
+			addCookie(response, "adminFlag", "false");
 			return "redirect:/admin/terminals";
 		}
 

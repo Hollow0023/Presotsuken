@@ -30,9 +30,10 @@ public class TerminalService {
      * 
      * @param dto 端末作成用DTO
      * @param storeId 店舗ID
+     * @return 作成された端末
      * @throws IllegalArgumentException 入力データが不正な場合
      */
-    public void createTerminal(TerminalCreationDto dto, Integer storeId) {
+    public Terminal createTerminal(TerminalCreationDto dto, Integer storeId) {
         if (storeId == null) {
             throw new IllegalArgumentException("店舗IDが指定されていません。");
         }
@@ -66,7 +67,7 @@ public class TerminalService {
         newTerminal.setIpAddress(ipAddress);
         newTerminal.setAdmin(dto.isAdmin());
 
-        terminalRepository.save(newTerminal);
+        return terminalRepository.save(newTerminal);
     }
 
     /**
