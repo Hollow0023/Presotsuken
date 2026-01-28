@@ -269,4 +269,32 @@ class ChildPaymentEditTest {
         assertEquals(404, response.getStatusCode().value());
         verify(paymentRepository, never()).save(any(Payment.class));
     }
+    
+    @Test
+    void testEditChildPayment_異常系_両方のフィールドがnull() {
+        // 準備
+        ChildPaymentUpdateRequest request = new ChildPaymentUpdateRequest();
+        // paymentTypeIdもamountも設定しない
+        
+        // 実行
+        ResponseEntity<?> response = paymentController.editChildPayment(1, 100, 101, request);
+        
+        // 検証
+        assertEquals(400, response.getStatusCode().value());
+        verify(paymentRepository, never()).save(any(Payment.class));
+    }
+    
+    @Test
+    void testEditChildPayment_異常系_storeIdがnull() {
+        // 準備
+        ChildPaymentUpdateRequest request = new ChildPaymentUpdateRequest();
+        request.setAmount(1200.0);
+        
+        // 実行 (storeIdをnullで渡す)
+        ResponseEntity<?> response = paymentController.editChildPayment(null, 100, 101, request);
+        
+        // 検証
+        assertEquals(401, response.getStatusCode().value());
+        verify(paymentRepository, never()).save(any(Payment.class));
+    }
 }

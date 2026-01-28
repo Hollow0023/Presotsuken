@@ -538,9 +538,20 @@
 					<td>${child.cashierName || '-'}</td>
 					<td>${paymentTime}</td>
 					<td>
-						<button class="btn-primary" onclick="openEditChildPaymentModal(${child.paymentId}, ${child.splitNumber}, ${amount}, '${child.paymentTypeName || ''}', ${child.paymentTypeId || 'null'})">編集</button>
+						<button class="btn-primary" data-payment-id="${child.paymentId}" data-split-number="${child.splitNumber}" data-amount="${amount}" data-payment-type-id="${child.paymentTypeId || ''}">編集</button>
 					</td>
 				`;
+				
+				// 編集ボタンにイベントリスナーを追加
+				const editBtn = tr.querySelector('.btn-primary');
+				editBtn.addEventListener('click', function() {
+					const paymentId = parseInt(this.dataset.paymentId);
+					const splitNumber = parseInt(this.dataset.splitNumber);
+					const amount = parseFloat(this.dataset.amount);
+					const paymentTypeId = this.dataset.paymentTypeId ? parseInt(this.dataset.paymentTypeId) : null;
+					openEditChildPaymentModal(paymentId, splitNumber, amount, paymentTypeId);
+				});
+				
 				tbody.appendChild(tr);
 			});
 		}
@@ -850,7 +861,7 @@
 		
 		// 子会計編集モーダルを開く
 		let currentEditingChildPaymentId = null;
-		function openEditChildPaymentModal(childPaymentId, splitNumber, amount, paymentTypeName, paymentTypeId) {
+		function openEditChildPaymentModal(childPaymentId, splitNumber, amount, paymentTypeId) {
 			currentEditingChildPaymentId = childPaymentId;
 			
 			// 番号を設定
@@ -888,7 +899,13 @@
 			const paymentTypeId = parseInt(document.getElementById('editChildPaymentType').value);
 			const amount = parseFloat(document.getElementById('editChildPaymentAmount').value);
 			
-			if (!amount || amount <= 0) {
+			// バリデーション
+			if (isNaN(paymentTypeId) || !paymentTypeId) {
+				alert('支払い方法を選択してください');
+				return;
+			}
+			
+			if (isNaN(amount) || amount <= 0) {
 				alert('金額は0より大きい値を入力してください');
 				return;
 			}

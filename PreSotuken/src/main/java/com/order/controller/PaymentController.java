@@ -644,6 +644,22 @@ public class PaymentController {
             @PathVariable("childPaymentId") Integer childPaymentId,
             @RequestBody ChildPaymentUpdateRequest req) {
         
+        // 店舗IDのnullチェック
+        if (storeId == null) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("success", false);
+            error.put("message", "店舗情報が取得できません。");
+            return ResponseEntity.status(401).body(error);
+        }
+        
+        // リクエストの検証: 少なくとも1つのフィールドが指定されている必要がある
+        if (req.getPaymentTypeId() == null && req.getAmount() == null) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("success", false);
+            error.put("message", "支払い方法または金額を指定してください。");
+            return ResponseEntity.status(400).body(error);
+        }
+        
         // 親会計を取得
         Payment parentPayment = paymentRepository.findById(paymentId).orElse(null);
         if (parentPayment == null || !parentPayment.getStore().getStoreId().equals(storeId)) {
