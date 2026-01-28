@@ -607,6 +607,8 @@ function switchTab(tabElement) {
             // プラン対象メニューの場合、active-plan-menuクラスを追加して表示
             if (isPlanTarget) {
                 item.classList.add('active-plan-menu');
+            } else {
+                item.classList.remove('active-plan-menu');
             }
         } else {
             item.classList.add('d-none');
