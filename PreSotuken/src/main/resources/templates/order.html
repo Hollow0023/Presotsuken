@@ -31,7 +31,9 @@
 				<a id="backToSeatList" href="/">← 座席リストに戻る</a>
 			</div>
 			<div th:each="group : ${menuGroups}"
-				th:data-group-id="${group.groupId}" th:text="${group.groupName}"
+				th:data-group-id="${group.groupId}"
+				th:data-is-plan-target="${group.isPlanTarget}"
+				th:text="${group.groupName}"
 				class="menu-tab"></div>
 		</div>
 
