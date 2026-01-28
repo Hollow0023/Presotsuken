@@ -37,8 +37,7 @@
 
 <div class="menu-list" id="menuList">
     <div th:each="menu : ${menus}" class="menu-item"
-        th:data-group-id="${menu.menuGroupId}"
-        th:data-is-plan-target="${menu.menuGroupIsPlanTarget}">
+        th:data-group-id="${menu.menuGroupId}">
         <div class="menu-image-wrapper">
             <img th:src="@{${menu.menuImage}}"
                 onerror="this.onerror=null;this.src='/images/noimage.jpg'"

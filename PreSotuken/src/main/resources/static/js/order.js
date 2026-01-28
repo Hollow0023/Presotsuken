@@ -605,8 +605,6 @@ function switchTab(tabElement) {
             item.classList.remove('d-none');
         } else {
             item.classList.add('d-none');
-            // 飲み放題メニューの表示クラスも削除して確実に非表示にする
-            item.classList.remove('active-plan-menu');
         }
     });
 }
@@ -716,28 +714,10 @@ window.addEventListener('DOMContentLoaded', () => {
                     document.cookie = 'visitId=; Max-Age=0; path=/';
                     window.location.href = '/visits/orderwait';
                 } else if (body.type === 'PLAN_ACTIVATED') {
-                    const activatedMenuGroupIds = body.activatedMenuGroupIds;
+                    // プランアクティベーションの処理
                     const activatedPlanId = body.planId;
                     
                     console.log(`プラン ${activatedPlanId} がシート ${seatId} でアクティブ化されました。`);
-                    console.log("表示されるメニューグループID:", activatedMenuGroupIds);
-
-                    document.querySelectorAll('.menu-tab[data-is-plan-target="true"]').forEach(tab => {
-                        tab.classList.remove('active-plan-group');
-                    });
-                    document.querySelectorAll('.menu-item[data-is-plan-target="true"]').forEach(item => {
-                        item.classList.remove('active-plan-menu');
-                    });
-
-                    activatedMenuGroupIds.forEach(groupId => {
-                        const menuGroupTab = document.querySelector(`.menu-tab[data-group-id="${groupId}"]`);
-                        if (menuGroupTab) {
-                            menuGroupTab.classList.add('active-plan-group');
-                        }
-                        document.querySelectorAll(`.menu-item[data-group-id="${groupId}"]`).forEach(item => {
-                            item.classList.add('active-plan-menu');
-                        });
-                    });
                     
                     const currentUrl = new URL(window.location.href);
                     currentUrl.searchParams.set('toastMessage', '飲み放題が開始されました！メニューが増えました！');
@@ -811,25 +791,9 @@ window.onload = () => {
     
     handleUrlToastMessage();
 
-    const firstNonPlanTargetTab = document.querySelector('.menu-tab:not([data-is-plan-target="true"])');
-    if (firstNonPlanTargetTab) {
-        switchTab(firstNonPlanTargetTab);
-    } else {
-        const anyTab = document.querySelector('.menu-tab');
-        if (anyTab) {
-            switchTab(anyTab);
-        }
+    // 最初のタブをアクティブにする
+    const firstTab = document.querySelector('.menu-tab');
+    if (firstTab) {
+        switchTab(firstTab);
     }
 };
-
-function activatePlanGroups(groupIds) {
-    groupIds.forEach(groupId => {
-        const menuGroupTab = document.querySelector(`.menu-tab[data-group-id="${groupId}"]`);
-        if (menuGroupTab) {
-            menuGroupTab.classList.add('active-plan-group');
-        }
-        document.querySelectorAll(`.menu-item[data-group-id="${groupId}"]`).forEach(item => {
-            item.classList.add('active-plan-menu');
-        });
-    });
-}
