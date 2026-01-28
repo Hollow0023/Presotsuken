@@ -610,6 +610,9 @@ function switchTab(tabElement) {
                 item.classList.add('active-plan-menu');
             } else if (isPlanTarget) {
                 item.classList.remove('active-plan-menu');
+            } else {
+                // プラン対象でないメニューからもactive-plan-menuクラスを削除
+                item.classList.remove('active-plan-menu');
             }
         } else {
             item.classList.add('d-none');
