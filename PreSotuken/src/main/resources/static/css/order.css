@@ -62,6 +62,15 @@ main {
 /* メニュータブとリスト */
 /* ----------------------------------------------------------------------------- */
 
+/* ★メニュータブ（グループ）の表示制御は data-is-plan-target と active-plan-group を使用 */
+.menu-tab[data-is-plan-target="true"] {
+    display: none; /* 初期は非表示 */
+}
+.menu-tab.active-plan-group {
+    display: block !important; /* JavaScriptで表示する際に強制的に表示 */
+}
+
+/* ★メニューアイテムの表示制御は d-none クラスのみを使用 */
 
 .menu-tabs {
     width: 150px;

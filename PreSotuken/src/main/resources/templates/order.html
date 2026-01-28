@@ -32,7 +32,7 @@
 			</div>
 			<div th:each="group : ${menuGroups}"
 				th:data-group-id="${group.groupId}" th:text="${group.groupName}"
-				th:classappend="${group.isPlanTarget ? 'd-none' : ''}"
+				th:data-is-plan-target="${group.isPlanTarget}"
 				class="menu-tab"></div>
 		</div>
 
