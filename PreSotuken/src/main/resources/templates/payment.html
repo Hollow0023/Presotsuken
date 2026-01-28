@@ -390,7 +390,9 @@
 			});
 			
 			// 呼び出しシステムの初期化
-			window.callListManager = new CallListManager();
+			if (typeof CallListManager !== 'undefined') {
+				window.callListManager = new CallListManager();
+			}
 		};
 
 		/**
