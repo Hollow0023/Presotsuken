@@ -596,6 +596,7 @@ function switchTab(tabElement) {
     tabElement.classList.add('active');
 
     const groupId = tabElement.getAttribute('data-group-id');
+    const isPlanGroupActivated = tabElement.classList.contains('active-plan-group');
 
     // 関連するメニューアイテムのみ表示し、他は非表示にする
     document.querySelectorAll('.menu-item').forEach(item => {
@@ -604,10 +605,10 @@ function switchTab(tabElement) {
         
         if (itemGroupId === groupId) {
             item.classList.remove('d-none');
-            // プラン対象メニューの場合、active-plan-menuクラスを追加して表示
-            if (isPlanTarget) {
+            // プラン対象メニューの場合、対応するプラングループがアクティブ化されている場合のみactive-plan-menuクラスを追加して表示
+            if (isPlanTarget && isPlanGroupActivated) {
                 item.classList.add('active-plan-menu');
-            } else {
+            } else if (isPlanTarget) {
                 item.classList.remove('active-plan-menu');
             }
         } else {
