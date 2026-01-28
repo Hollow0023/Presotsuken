@@ -54,16 +54,28 @@ public class AdminTerminalController {
      * 
      * @param dto 端末作成用DTO
      * @param storeId 店舗ID（Cookieから取得）
+     * @param request HTTPリクエスト（クライアントIP取得用）
      * @return 処理結果のレスponse
      */
     @PostMapping
     @ResponseBody
     public ResponseEntity<Map<String, String>> addTerminal(@RequestBody TerminalCreationDto dto,
-                                                           @CookieValue("storeId") Integer storeId) {
+                                                           @CookieValue("storeId") Integer storeId,
+                                                           HttpServletRequest request) {
         try {
-            terminalService.createTerminal(dto, storeId);
+            Terminal terminal = terminalService.createTerminal(dto, storeId);
+            
+            // 登録された端末が現在のクライアントIPと一致する場合、再ログインを促す
+            String clientIp = getClientIpAddress(request);
             Map<String, String> response = new HashMap<>();
-            response.put("message", "端末が正常に追加されました。");
+            
+            if (terminal.getIpAddress().equals(clientIp)) {
+                response.put("message", "端末が正常に追加されました。変更を反映するため、再ログインしてください。");
+                response.put("requireRelogin", "true");
+            } else {
+                response.put("message", "端末が正常に追加されました。");
+            }
+            
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
             Map<String, String> response = new HashMap<>();
@@ -182,6 +194,19 @@ public class AdminTerminalController {
     @GetMapping("/client-ip")
     @ResponseBody
     public ResponseEntity<Map<String, String>> getClientIp(HttpServletRequest request) {
+        String ip = getClientIpAddress(request);
+        Map<String, String> response = new HashMap<>();
+        response.put("ip", ip);
+        return ResponseEntity.ok(response);
+    }
+    
+    /**
+     * HTTPリクエストからクライアントIPアドレスを取得するヘルパーメソッド
+     * 
+     * @param request HTTPリクエスト
+     * @return IPアドレス
+     */
+    private String getClientIpAddress(HttpServletRequest request) {
         String xfHeader = request.getHeader("X-Forwarded-For");
         String ip = (xfHeader == null) ? request.getRemoteAddr() : xfHeader.split(",")[0];
 
@@ -190,8 +215,6 @@ public class AdminTerminalController {
             ip = "127.0.0.1";
         }
 
-        Map<String, String> response = new HashMap<>();
-        response.put("ip", ip);
-        return ResponseEntity.ok(response);
+        return ip;
     }
 }

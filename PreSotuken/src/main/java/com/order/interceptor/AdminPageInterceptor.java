@@ -17,15 +17,29 @@ public class AdminPageInterceptor implements HandlerInterceptor {
 
         if (uri.startsWith("/admin")) {
             boolean isAdmin = false;
+            boolean isPendingTerminalRegistration = false;
+            
             if (request.getCookies() != null) {
                 for (Cookie cookie : request.getCookies()) {
                     if ("adminFlag".equals(cookie.getName()) && "true".equals(cookie.getValue())) {
                         isAdmin = true;
-                        break;
+                    }
+                    if ("pendingTerminalRegistration".equals(cookie.getName()) && "true".equals(cookie.getValue())) {
+                        isPendingTerminalRegistration = true;
                     }
                 }
             }
 
+            // 端末登録待ちの場合は /admin/terminals のみアクセス可能
+            if (isPendingTerminalRegistration) {
+                if (!uri.startsWith("/admin/terminals")) {
+                    response.sendRedirect("/admin/terminals");
+                    return false;
+                }
+                return true;
+            }
+
+            // 通常の管理者チェック
             if (!isAdmin) {
                 response.sendRedirect("/login?admin=denied");
                 return false;

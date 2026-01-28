@@ -32,8 +32,9 @@ public class LoginController {
 		Cookie[] cookies = request.getCookies();
 		Integer storeId = null;
 		String storeName = null;
+		String adminFlag = null;
 
-		// cookieにstoreIDがある場合、IDから店舗名を求めて保存する
+		// cookieから必要な情報を取得
 		if (cookies != null) {
 			for (Cookie cookie : cookies) {
 				switch (cookie.getName()) {
@@ -47,6 +48,9 @@ public class LoginController {
 				case "storeName":
 					storeName = cookie.getValue();
 					break;
+				case "adminFlag":
+					adminFlag = cookie.getValue();
+					break;
 				}
 			}
 		}
@@ -59,7 +63,10 @@ public class LoginController {
 					.orElse(null);
 
 			if (found != null) {
-				return "redirect:/seats"; // クッキーが有効ならそのままログイン成功
+				// 管理者端末かどうかで遷移先を変更
+				// adminFlagがnullまたは"true"以外の場合は非管理者として扱う
+				boolean isAdmin = "true".equals(adminFlag);
+				return isAdmin ? "redirect:/seats" : "redirect:/visits/orderwait";
 			}
 		}
 		// 通常ログイン画面
@@ -87,7 +94,9 @@ public class LoginController {
 		
 		// Terminal未登録の場合はTerminal登録画面へ遷移
 		if (optTerminal.isEmpty()) {
-			addCookie(response, "adminFlag", "true");
+			// 端末登録待ち状態であることを示すフラグを設定
+			addCookie(response, "pendingTerminalRegistration", "true");
+			addCookie(response, "adminFlag", "false");
 			return "redirect:/admin/terminals";
 		}
 
