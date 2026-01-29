@@ -63,26 +63,26 @@ public class PaymentSplitService {
             throw new IllegalArgumentException("分割人数は入店人数（" + numberOfPeople + "人）以下で指定してください。");
         }
         
-        // 合計金額を計算
+        // 合計金額を計算（四捨五入して整数化）
         List<PaymentDetail> details = paymentDetailRepository.findByPaymentPaymentId(request.getPaymentId());
-        double totalAmount = calculateTotalWithTax(details, originalPayment.getDiscount());
+        double totalAmount = Math.round(calculateTotalWithTax(details, originalPayment.getDiscount()));
         
-        // 1人あたりの金額を計算 (切り捨て)
+        // 1人あたりの金額を計算 (切り捨てして整数化)
         double amountPerPerson = Math.floor(totalAmount / request.getNumberOfSplits());
         
         // 今回の会計金額を決定 (最後の会計は余りを含める)
         double currentAmount;
         if (request.getCurrentSplit().equals(request.getNumberOfSplits())) {
-            // 最後の会計: 余りを含める
+            // 最後の会計: 余りを含める（整数として計算）
             double alreadyPaid = amountPerPerson * (request.getNumberOfSplits() - 1);
             currentAmount = totalAmount - alreadyPaid;
         } else {
             currentAmount = amountPerPerson;
         }
         
-        // 預かり金額の検証
+        // 預かり金額の検証（整数として比較）
         if (request.getDeposit() != null && request.getDeposit() < currentAmount) {
-            throw new IllegalArgumentException("預かり金額が不足しています。必要額: " + currentAmount + "円、預かり: " + request.getDeposit() + "円");
+            throw new IllegalArgumentException("預かり金額が不足しています。必要額: " + (long)currentAmount + "円、預かり: " + Math.round(request.getDeposit()) + "円");
         }
         
         // 既に支払い済みの分割回数を確認
@@ -98,12 +98,12 @@ public class PaymentSplitService {
             throw new IllegalArgumentException("会計の順序が正しくありません。次の会計は " + (paidCount + 1) + " 人目です（現在" + paidCount + "人分支払い済み）");
         }
         
-        // 既に合計額以上支払われていないか確認
-        double alreadyPaidTotal = existingChildPayments.stream()
+        // 既に合計額以上支払われていないか確認（整数として計算）
+        double alreadyPaidTotal = Math.round(existingChildPayments.stream()
             .mapToDouble(p -> p.getTotal() != null ? p.getTotal() : 0.0)
-            .sum();
+            .sum());
         
-        if (alreadyPaidTotal + currentAmount > totalAmount + 0.01) { // 浮動小数点の誤差を考慮
+        if (alreadyPaidTotal + currentAmount > totalAmount) { // 整数として比較
             throw new IllegalArgumentException("合計支払額が元の会計額を超えています");
         }
         
@@ -125,22 +125,22 @@ public class PaymentSplitService {
             childPayment.setPaymentStatus("COMPLETED");
             Payment saved = paymentRepository.save(childPayment);
             
-            // 全ての子会計を取得して親会計の情報を集計
+            // 全ての子会計を取得して親会計の情報を集計（整数として計算）
             List<Payment> allChildPayments = paymentRepository.findByParentPaymentPaymentId(originalPayment.getPaymentId());
             
-            // 各フィールドを集計
-            double aggregatedSubtotal = allChildPayments.stream()
+            // 各フィールドを集計（四捨五入して整数化）
+            double aggregatedSubtotal = Math.round(allChildPayments.stream()
                 .mapToDouble(p -> p.getSubtotal() != null ? p.getSubtotal() : 0.0)
-                .sum();
-            double aggregatedTotal = allChildPayments.stream()
+                .sum());
+            double aggregatedTotal = Math.round(allChildPayments.stream()
                 .mapToDouble(p -> p.getTotal() != null ? p.getTotal() : 0.0)
-                .sum();
-            double aggregatedDeposit = allChildPayments.stream()
+                .sum());
+            double aggregatedDeposit = Math.round(allChildPayments.stream()
                 .mapToDouble(p -> p.getDeposit() != null ? p.getDeposit() : 0.0)
-                .sum();
-            double aggregatedDiscount = allChildPayments.stream()
+                .sum());
+            double aggregatedDiscount = Math.round(allChildPayments.stream()
                 .mapToDouble(p -> p.getDiscount() != null ? p.getDiscount() : 0.0)
-                .sum();
+                .sum());
             
             // 親会計の情報を更新
             originalPayment.setPaymentStatus("COMPLETED");
@@ -220,8 +220,8 @@ public class PaymentSplitService {
             // 税率を取得
             double taxRate = originalDetail.getTaxRate() != null ? originalDetail.getTaxRate().getRate() : 0;
             
-            // 税込み金額を計算
-            double itemTotalWithTax = itemSubtotal * (1 + taxRate);
+            // 税込み金額を計算（四捨五入して整数化）
+            double itemTotalWithTax = Math.round(itemSubtotal * (1 + taxRate));
             totalAmount += itemTotalWithTax;
             
             // 元の PaymentDetail の数量を減らす
@@ -249,16 +249,16 @@ public class PaymentSplitService {
             newDetails.add(newDetail);
         }
         
-        // 割引を適用
+        // 割引を適用（四捨五入して整数化）
         if (request.getDiscount() != null && request.getDiscount() > 0) {
             totalAmount -= request.getDiscount();
         }
         
-        totalAmount = Math.max(0, totalAmount); // 負にならないようにする
+        totalAmount = Math.round(Math.max(0, totalAmount)); // 負にならないようにし、整数化
         
-        // 預かり金額の検証
+        // 預かり金額の検証（整数として比較）
         if (request.getDeposit() != null && request.getDeposit() < totalAmount) {
-            throw new IllegalArgumentException("預かり金額が不足しています。必要額: " + totalAmount + "円、預かり: " + request.getDeposit() + "円");
+            throw new IllegalArgumentException("預かり金額が不足しています。必要額: " + (long)totalAmount + "円、預かり: " + Math.round(request.getDeposit()) + "円");
         }
         
         // 新しい会計レコードを作成
