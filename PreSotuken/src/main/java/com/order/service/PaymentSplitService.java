@@ -82,7 +82,7 @@ public class PaymentSplitService {
         
         // 預かり金額の検証（整数として比較）
         if (request.getDeposit() != null && request.getDeposit() < currentAmount) {
-            throw new IllegalArgumentException("預かり金額が不足しています。必要額: " + Math.round(currentAmount) + "円、預かり: " + Math.round(request.getDeposit()) + "円");
+            throw new IllegalArgumentException("預かり金額が不足しています。必要額: " + (long)currentAmount + "円、預かり: " + Math.round(request.getDeposit()) + "円");
         }
         
         // 既に支払い済みの分割回数を確認
@@ -258,7 +258,7 @@ public class PaymentSplitService {
         
         // 預かり金額の検証（整数として比較）
         if (request.getDeposit() != null && request.getDeposit() < totalAmount) {
-            throw new IllegalArgumentException("預かり金額が不足しています。必要額: " + Math.round(totalAmount) + "円、預かり: " + Math.round(request.getDeposit()) + "円");
+            throw new IllegalArgumentException("預かり金額が不足しています。必要額: " + (long)totalAmount + "円、預かり: " + Math.round(request.getDeposit()) + "円");
         }
         
         // 新しい会計レコードを作成
